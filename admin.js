@@ -1,0 +1,3610 @@
+const adminApp = document.querySelector("#admin-app");
+const escapeAdminHtml = (value = "") =>
+  String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+const adminMediaUrl = (value = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(value) || value || "";
+window.adminMediaUrl = adminMediaUrl;
+const supabaseClient = window.RSVP_STORAGE.getSupabaseClient();
+let invitationData = window.INVITATION_DATA;
+window.WEDDING_AI_SETTINGS = () => invitationData?.designSystem?.aiSettings || {};
+window.AI_DESIGN_SERVICE = (() => {
+  const settings = (context = {}) => ({ ...(window.WEDDING_AI_SETTINGS?.() || {}), ...(context.settings || {}) });
+  const isLocalPage = () => ["localhost", "127.0.0.1", ""].includes(window.location.hostname) || window.location.protocol === "file:";
+  const configuredEndpoint = () => window.RSVP_CONFIG?.aiEndpoint || "/api/ai-design";
+  const normalizeEndpoint = (endpoint = "") => {
+    const value = String(endpoint || "").trim();
+    const fallback = isLocalPage() ? configuredEndpoint() : "/api/ai-design";
+    if (!value || value === "undefined" || value === "null") return fallback;
+    try {
+      const url = new URL(value, window.location.origin);
+      if (url.pathname === "/api/ai-design") {
+        if (url.origin !== window.location.origin) return url.href;
+        return isLocalPage() ? configuredEndpoint() : `/api/ai-design${url.search}`;
+      }
+    } catch {}
+    return fallback;
+  };
+  const storedAccessToken = () => {
+    try {
+      const projectRef = new URL(window.RSVP_CONFIG?.supabaseUrl || "").hostname.split(".")[0];
+      const keys = projectRef ? [`sb-${projectRef}-auth-token`] : [];
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith("sb-") && key.endsWith("-auth-token") && !keys.includes(key)) keys.push(key);
+      }
+      for (const key of keys) {
+        const session = JSON.parse(localStorage.getItem(key) || "null");
+        const token = session?.access_token || session?.currentSession?.access_token;
+        if (token) return token;
+      }
+    } catch {}
+    return "";
+  };
+  const authHeaders = async () => {
+    const client = window.RSVP_STORAGE?.getSupabaseClient?.();
+    try {
+      const { data } = client ? await client.auth.getSession() : { data: {} };
+      if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` };
+    } catch {}
+    const token = storedAccessToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+  const result = (type, context = {}, extras = {}) => ({
+    id: `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type,
+    createdAt: new Date().toISOString(),
+    instruction: context.instruction || "",
+    ...extras,
+  });
+  const request = async (type, context, mock) => {
+    const current = settings(context);
+    if (current.mockMode !== false) return mock();
+    const endpoint = normalizeEndpoint(current.endpoint);
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({ type, provider: current.provider || "Gemini", context }),
+      });
+    } catch (error) {
+      throw new Error(`AI 서버에 연결하지 못했습니다. 현재 요청 주소: ${endpoint}. (${error.message || "Failed to fetch"})`);
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok && /혼잡|high demand|overloaded|temporarily|일시/i.test(payload.error || "")) {
+      return { ...mock(), fallbackReason: payload.error || "AI 서버가 일시적으로 혼잡해 임시 결과를 사용했습니다." };
+    }
+    if (!response.ok) throw new Error(payload.error || "AI 서버 호출에 실패했습니다.");
+    return { ...payload, id: payload.id || `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, type, createdAt: payload.createdAt || new Date().toISOString() };
+  };
+  const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
+    items: [
+      { title: "가까운 역에서 오시는 길", text: `${context.venue || "예식장"} 인근 주요 역에서 택시 또는 대중교통 이용을 권장합니다. 정확한 노선은 예식 전 다시 확인해 주세요.` },
+      { title: "가까운 정류장에서 오시는 길", text: "가장 가까운 버스정류장에서 하차 후 도보 이동 시간을 확인해 안내해 주세요. 도보 20분 이상이면 차량 이동을 권장합니다." },
+    ],
+    caution: "Mock Mode 결과입니다.",
+  }));
+  const generateVenueGuide = async (context = {}) => request("venueGuide", context, () => result("venueGuide", context, {
+    notices: [
+      { title: "주차 안내", text: "주차 가능 여부와 등록 위치를 식장에 확인 후 안내해 주세요." },
+      { title: "식사 안내", text: "연회장 위치와 식사 시간을 확인 후 하객에게 안내해 주세요." },
+      { title: "홀 안내", text: `${context.hall || "예식홀"} 위치는 식장 안내 표지 또는 로비 안내 데스크를 확인해 주세요.` },
+    ],
+    caution: "Mock Mode 결과입니다.",
+  }));
+  return { generateTransportGuide, generateVenueGuide };
+})();
+const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
+const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
+const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
+const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
+let currentInvitationSite = null;
+const GALLERY_MAX = 30;
+const SAVED_LOGIN_EMAIL_KEY = "wedding-admin-remembered-email";
+const GENERAL_ADMIN_VIEW_KEY = "wedding-general-admin-active-view";
+const defaultWelcomeOverlay = {
+  eyebrow: "Vivid Vows",
+  text: "결혼을 축하드립니다!\n커스텀하여 청첩장을 꾸며보세요.",
+  textSize: 30,
+  backgroundColor: "#eff7fa",
+  cardColor: "#ffffff",
+  textColor: "#3b6674",
+  overlayOpacity: 94,
+  cardOpacity: 88,
+  borderColor: "#d8e8ee",
+  borderWidth: 1,
+  borderRadius: 30,
+  shadowEnabled: true,
+  shadowColor: "#3b6674",
+  shadowOpacity: 24,
+};
+
+function themeWelcomePalette(source = invitationData) {
+  const resolved = window.WEDDING_DESIGN?.resolve?.(source);
+  const palette = resolved?.palette || source.designSystem?.themes?.find((theme) => theme.id === source.appearance?.design?.presetId)?.palette || {};
+  return {
+    backgroundColor: palette.background || defaultWelcomeOverlay.backgroundColor,
+    cardColor: palette.card || defaultWelcomeOverlay.cardColor,
+    textColor: palette.accent || palette.ink || defaultWelcomeOverlay.textColor,
+    borderColor: palette.line && /^#/.test(palette.line) ? palette.line : palette.accent || defaultWelcomeOverlay.borderColor,
+    shadowColor: palette.accent || palette.ink || defaultWelcomeOverlay.shadowColor,
+  };
+}
+
+function applyTheme(theme) {
+  const selected = themes.includes(theme) ? theme : "sky";
+  document.body.dataset.theme = selected;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", getComputedStyle(document.body).getPropertyValue("--body-bg").trim());
+}
+
+function applyMovieConcept(movieConcept) {
+  document.body.dataset.movieConcept = movieConcepts.includes(movieConcept) ? movieConcept : "none";
+}
+
+function applyHeroDecoration(heroDecoration) {
+  document.body.dataset.heroDecoration = normalizedHeroDecoration(heroDecoration);
+}
+
+function applyHeroTextTheme(heroTextTheme) {
+  document.body.dataset.heroTextTheme = heroTextThemes.includes(heroTextTheme) ? heroTextTheme : "auto";
+}
+
+function applyAppearance(appearance = {}) {
+  const legacyPoster = appearance.heroDecoration === "poster";
+  applyTheme(appearance.theme);
+  applyMovieConcept(appearance.movieConcept);
+  applyHeroDecoration(legacyPoster ? "none" : appearance.heroDecoration);
+  applyHeroTextTheme(legacyPoster && (!appearance.heroTextTheme || appearance.heroTextTheme === "auto") ? "editorial_left" : appearance.heroTextTheme);
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString("ko-KR") : "";
+}
+
+function formatDateOnly(value) {
+  return value ? String(value).slice(0, 10) : "";
+}
+
+function formatBytes(bytes = 0) {
+  const value = Number(bytes) || 0;
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  if (value < 1024 * 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  return `${(value / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function dateInputToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+}
+
+function dateOnly(value = "") {
+  return String(value || "").slice(0, 10);
+}
+
+function addDays(dateValue = "", days = 0) {
+  if (!dateValue) return "";
+  const date = new Date(`${dateValue}T00:00:00+09:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setDate(date.getDate() + days);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(date);
+}
+
+function syncPublicPeriodFields({ weddingField, openField, closeField, forceCloseToWedding = false } = {}) {
+  if (!weddingField || !openField || !closeField) return;
+  const today = dateInputToday();
+  const weddingDay = dateOnly(weddingField.value);
+  openField.min = today;
+  openField.max = weddingDay ? addDays(weddingDay, -1) : "";
+  if (!openField.value || openField.value < today) openField.value = today;
+  if (weddingDay && openField.value > openField.max) openField.value = openField.max;
+  closeField.min = openField.value || today;
+  closeField.max = weddingDay ? addDays(weddingDay, 3) : "";
+  if (weddingDay && (forceCloseToWedding || !closeField.value || closeField.value < closeField.min || closeField.value > closeField.max)) closeField.value = weddingDay;
+}
+
+function decorateRangeDefaults(root = document) {
+  root.querySelectorAll('input[type="range"]').forEach((range) => {
+    if (!range.dataset.defaultValue) range.dataset.defaultValue = range.defaultValue || range.getAttribute("value") || range.value;
+    const min = Number(range.min || 0);
+    const max = Number(range.max || 100);
+    const defaultValue = Number(range.dataset.defaultValue);
+    const position = max === min ? 0 : ((defaultValue - min) / (max - min)) * 100;
+    range.style.setProperty("--range-default-pos", `${Math.max(0, Math.min(100, position))}%`);
+    range.title = `기본값 ${range.dataset.defaultValue}`;
+    const output = range.parentElement?.querySelector("output");
+    if (output) output.textContent = range.value;
+    setRangeFill(range);
+  });
+}
+
+function setRangeFill(range) {
+  const min = Number(range.min || 0);
+  const max = Number(range.max || 100);
+  const value = Number(range.value || 0);
+  const position = max === min ? 0 : ((value - min) / (max - min)) * 100;
+  range.style.setProperty("--range-current-pos", `${Math.max(0, Math.min(100, position))}%`);
+}
+
+document.addEventListener("input", (event) => {
+  const range = event.target.closest?.('input[type="range"]');
+  if (!range) return;
+  const output = range.parentElement?.querySelector("output");
+  if (output) output.textContent = range.value;
+  setRangeFill(range);
+});
+
+document.addEventListener("wheel", (event) => {
+  const scroller = event.target.closest?.(".editor-layout-options, .hero-decoration-list, .text-theme-choice-grid");
+  if (!scroller) return;
+  if (scroller.scrollWidth <= scroller.clientWidth) return;
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+  event.preventDefault();
+  scroller.scrollLeft += event.deltaY;
+}, { passive: false });
+
+function adminHeader(active) {
+  const ico = (d, extra = "") => `<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra}<path d="${d}"/></svg>`;
+  const coupleBadge = [invitationData.couple?.groom?.name, invitationData.couple?.bride?.name].filter(Boolean).join(" · ");
+  const cardSlug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
+  const cardUrl = cardSlug && cardSlug !== "main" ? `./index.html?card=${encodeURIComponent(cardSlug)}` : "./index.html";
+  const generalMenu = `<nav class="admin-bottom-tabs" role="tablist">
+    <button class="admin-tab-item ${active === "editor" ? "is-active" : ""}" data-admin-view="editor" role="tab">
+      ${ico("M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", '<path d="M9 22V12h6v10"/>')}
+      <span>기본</span>
+    </button>
+    <button class="admin-tab-item ${active === "copy" ? "is-active" : ""}" data-admin-view="copy-editor" role="tab">
+      ${ico("M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z")}
+      <span>편집</span>
+    </button>
+    <button class="admin-tab-item ${["content", "responses", "photos", "guestbook"].includes(active) ? "is-active" : ""}" data-admin-view="content" role="tab">
+      ${ico("", '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>')}
+      <span>콘텐츠</span>
+    </button>
+    <button class="admin-tab-item ${active === "sections" ? "is-active" : ""}" data-admin-view="sections" role="tab">
+      ${ico("M12 2l8 4-8 4-8-4z M4 10l8 4 8-4 M4 14l8 4 8-4")}
+      <span>섹션</span>
+    </button>
+    <button class="admin-tab-item ${active === "share" ? "is-active" : ""}" data-admin-view="share-settings" role="tab">
+      ${ico("M4 12v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8 M16 6l-4-4-4 4 M12 2v13")}
+      <span>공유</span>
+    </button>
+  </nav>`;
+  return `
+    <div class="admin-header general-admin-header">
+      <div class="general-admin-title">
+        ${coupleBadge ? `<strong>${escapeAdminHtml(coupleBadge)}</strong>` : "<strong>내 청첩장</strong>"}
+        <span class="section-label">관리자</span>
+      </div>
+      <div class="admin-header-actions">
+        <a class="btn btn-icon-only" href="${cardUrl}" target="_blank" rel="noopener" title="내 청첩장 보기">${ico("M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3")}</a>
+        <button class="btn btn-icon-only" id="admin-logout" title="로그아웃">${ico("M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9")}</button>
+      </div>
+    </div>
+    ${generalMenu}
+    ${active === "editor" ? '<button class="admin-floating-save" type="submit" form="invitation-editor"><span>✓</span> 저장</button>' : ""}
+    ${active === "copy" ? '<button class="admin-floating-save" type="submit" form="invitation-editor"><span>✓</span> 저장</button>' : ""}`;
+}
+
+function bindAdminNavigation() {
+  document.querySelector("#admin-logout")?.addEventListener("click", async () => {
+    if (!supabaseClient) return renderEditor("현재는 Supabase 연결 전 미리보기 모드입니다.");
+    await supabaseClient.auth.signOut();
+    renderLogin();
+  });
+  document.querySelectorAll("[data-admin-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      renderAdminView(button.dataset.adminView);
+    });
+  });
+  document.querySelector("[data-content-back]")?.addEventListener("click", () => renderAdminView("content"));
+  decorateRangeDefaults(adminApp);
+}
+
+function rememberAdminView(view) {
+  localStorage.setItem(GENERAL_ADMIN_VIEW_KEY, view);
+}
+
+function renderAdminView(view = "") {
+  const generalViews = new Set(["editor", "copy-editor", "sections", "share-settings", "content", "gallery", "responses", "photos", "guestbook"]);
+  rememberAdminView(generalViews.has(view) ? view : "editor");
+  if (view === "editor") renderEditor();
+  else if (view === "design") renderEditor("", "copy");
+  else if (view === "copy-editor") renderEditor("", "copy");
+  else if (view === "sections") renderEditor("", "sections");
+  else if (view === "share-settings") renderEditor("", "share");
+  else if (view === "content") renderContentHub();
+  else if (view === "gallery") renderEditor("", "gallery");
+  else if (view === "responses") renderResponses();
+  else if (view === "photos") renderGuestPhotos();
+  else if (view === "guestbook") renderGuestbookEntries();
+  else renderResponses();
+}
+
+function renderContentHub() {
+  rememberAdminView("content");
+  adminApp.innerHTML = `${adminHeader("content")}
+    <section class="admin-card admin-hub">
+      <p class="section-label">Content</p><h2>콘텐츠 관리</h2>
+      <p class="admin-message">자주 확인하고 관리하는 콘텐츠를 한곳에 모았습니다.</p>
+      <div class="admin-hub-grid">
+        <button type="button" data-content-open="gallery"><strong>갤러리</strong><span>청첩장 사진 순서와 확대 방식을 관리합니다.</span></button>
+        <button type="button" data-content-open="responses"><strong>참석 현황</strong><span>하객이 전달한 참석 여부와 동행 정보를 확인합니다.</span></button>
+        <button type="button" data-content-open="photos"><strong>하객 사진·영상</strong><span>하객이 공유한 원본 파일을 저장하고 정리합니다.</span></button>
+        <button type="button" data-content-open="guestbook"><strong>방명록</strong><span>축하 메시지를 확인하고 숨김 처리합니다.</span></button>
+      </div>
+    </section>`;
+  bindAdminNavigation();
+  document.querySelectorAll("[data-content-open]").forEach((button) => button.addEventListener("click", () => {
+    renderAdminView(button.dataset.contentOpen);
+  }));
+}
+
+function contentBackBar(title) {
+  return `<div class="admin-subpage-bar">
+    <button class="btn" type="button" data-content-back>← 콘텐츠 관리</button>
+    <strong>${escapeAdminHtml(title)}</strong>
+  </div>`;
+}
+
+function renderLogin(message = "") {
+  const rememberedEmail = localStorage.getItem(SAVED_LOGIN_EMAIL_KEY) || "";
+  const generalSignup = `
+      <div class="admin-signup-panel">
+        <button class="btn btn-secondary signup-open" type="button" data-signup-open>회원가입</button>
+        <div class="oauth-grid">
+          <button class="btn btn-kakao" type="button" data-oauth-provider="kakao"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.48 3 2 6.48 2 10.74c0 2.7 1.78 5.07 4.46 6.43-.2.73-.71 2.6-.81 3-.13.5.18.49.38.36.16-.1 2.5-1.7 3.52-2.39.78.11 1.59.17 2.45.17 5.52 0 10-3.48 10-7.74S17.52 3 12 3z"/></svg> 카카오로 시작</button>
+          <button class="btn btn-naver" type="button" data-oauth-provider="custom:naver"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14.6 3v8.2L9.4 3H3v18h6.4v-8.2L14.6 21H21V3z"/></svg> 네이버로 시작</button>
+        </div>
+      </div>
+      <div class="signup-modal-backdrop" data-signup-modal hidden>
+        <form class="form-grid signup-form signup-modal" id="admin-signup-form">
+          <div class="signup-modal-head">
+            <div><p class="section-label">Create Account</p><h2>내 청첩장 만들기</h2></div>
+            <button class="icon-btn" type="button" data-signup-close aria-label="회원가입 닫기">×</button>
+          </div>
+          <div class="signup-progress" aria-label="회원가입 단계"><span class="is-active">동의</span><span>계정</span></div>
+          <section class="signup-step is-active" data-signup-step="0">
+            <h2>서비스 이용 동의</h2>
+            <p class="admin-message micro-help">가입하면 계정별 청첩장 페이지와 일반관리자 페이지가 각각 생성됩니다.</p>
+            <div class="signup-consents">
+              <label class="consent"><input name="agreeTerms" type="checkbox" required> <span>서비스 이용약관에 동의합니다.</span></label>
+              <label class="consent"><input name="agreePrivacy" type="checkbox" required> <span>개인정보 수집 및 이용에 동의합니다.</span></label>
+              <label class="consent"><input name="agreeMarketing" type="checkbox"> <span>업데이트 및 혜택 안내 수신에 동의합니다. 선택 항목입니다.</span></label>
+            </div>
+            <button class="btn btn-primary" type="button" data-signup-next>다음</button>
+          </section>
+          <section class="signup-step" data-signup-step="1">
+            <h2>로그인 계정 만들기</h2>
+            <label class="field"><span>가입 이메일</span><input name="email" type="email" required autocomplete="email"></label>
+            <label class="field"><span>비밀번호</span><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+            <p class="admin-message micro-help">가입 후 기본정보를 입력하면 전용 청첩장과 일반관리자 페이지가 생성됩니다.</p>
+            <div class="signup-actions"><button class="btn" type="button" data-signup-prev>이전</button><button class="btn btn-primary" type="submit">회원가입 완료</button></div>
+          </section>
+        </form>
+      </div>`;
+  adminApp.innerHTML = `
+    <section class="admin-card admin-login">
+      <p class="section-label">Wedding Admin</p>
+      <h1>청첩장 일반관리자</h1>
+      <p class="admin-message">${escapeAdminHtml(message || "등록된 관리자 계정으로 로그인해 주세요.")}</p>
+      <form class="form-grid" id="admin-login-form">
+        <label class="field"><span>이메일</span><input name="email" type="email" required autocomplete="username" value="${escapeAdminHtml(rememberedEmail)}"></label>
+        <label class="field"><span>비밀번호</span><input name="password" type="password" required autocomplete="current-password"></label>
+        <label class="consent remember-login"><input name="rememberEmail" type="checkbox" ${rememberedEmail ? "checked" : ""}> <span>아이디 저장</span></label>
+        <button class="btn btn-primary">로그인</button>
+        <div class="login-help-actions">
+          <button class="link-button" type="button" data-find-email>아이디 찾기</button>
+          <button class="link-button" type="button" data-reset-password>비밀번호 찾기</button>
+        </div>
+      </form>
+      ${generalSignup}
+    </section>`;
+  document.querySelector("#admin-login-form").addEventListener("submit", login);
+  document.querySelector("#admin-signup-form")?.addEventListener("submit", signup);
+  const signupForm = document.querySelector("#admin-signup-form");
+  const signupModal = document.querySelector("[data-signup-modal]");
+  const setSignupStep = (step) => {
+    signupForm?.querySelectorAll("[data-signup-step]").forEach((item) => item.classList.toggle("is-active", Number(item.dataset.signupStep) === step));
+    signupForm?.querySelectorAll(".signup-progress span").forEach((item, index) => item.classList.toggle("is-active", index === step));
+    if (signupForm) signupForm.dataset.step = String(step);
+  };
+  document.querySelector("[data-signup-open]")?.addEventListener("click", (event) => {
+    signupModal.hidden = false;
+    setSignupStep(0);
+    signupForm?.querySelector("[data-signup-step='0'] input")?.focus();
+  });
+  document.querySelector("[data-signup-close]")?.addEventListener("click", () => { signupModal.hidden = true; });
+  signupModal?.addEventListener("click", (event) => {
+    if (event.target === signupModal) signupModal.hidden = true;
+  });
+  signupForm?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-signup-next]")) {
+      const step = Number(signupForm.dataset.step || 0);
+      const fields = [...signupForm.querySelectorAll(`[data-signup-step="${step}"] input[required]`)];
+      if (fields.some((field) => !field.reportValidity())) return;
+      setSignupStep(Math.min(1, step + 1));
+    }
+    if (event.target.closest("[data-signup-prev]")) setSignupStep(Math.max(0, Number(signupForm.dataset.step || 0) - 1));
+  });
+  const syncSignupPublicPeriod = (forceCloseToWedding = false) => {
+    syncPublicPeriodFields({ weddingField: signupForm?.elements.weddingDate, openField: signupForm?.elements.publicOpenDate, closeField: signupForm?.elements.publicCloseDate, forceCloseToWedding });
+  };
+  signupForm?.elements.weddingDate?.addEventListener("change", () => syncSignupPublicPeriod(true));
+  signupForm?.elements.publicOpenDate?.addEventListener("change", () => syncSignupPublicPeriod(false));
+  syncSignupPublicPeriod();
+  document.querySelector("[data-find-email]")?.addEventListener("click", () => {
+    const saved = localStorage.getItem(SAVED_LOGIN_EMAIL_KEY);
+    alert(saved ? `저장된 아이디는 ${saved} 입니다.` : "보안을 위해 전체 가입 이메일 목록은 표시하지 않습니다. 아이디 저장을 사용했거나 관리자에게 가입 이메일을 문의해 주세요.");
+  });
+  document.querySelector("[data-reset-password]")?.addEventListener("click", async () => {
+    const emailField = document.querySelector('#admin-login-form input[name="email"]');
+    const email = emailField?.value?.trim();
+    if (!email) {
+      emailField?.focus();
+      alert("비밀번호를 재설정할 이메일을 먼저 입력해 주세요.");
+      return;
+    }
+    if (!supabaseClient) {
+      alert("Supabase 연결 후 비밀번호 찾기를 사용할 수 있습니다.");
+      return;
+    }
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}` });
+    alert(error ? `비밀번호 재설정 메일을 보내지 못했습니다.\n${error.message}` : "비밀번호 재설정 메일을 보냈습니다.");
+  });
+  const startOAuth = async (button, event) => {
+    event?.preventDefault();
+    if (button.dataset.oauthBusy === "true") return;
+    const label = button.textContent;
+    button.dataset.oauthBusy = "true";
+    button.disabled = true;
+    button.textContent = "연결 중...";
+    try {
+      await window.RSVP_STORAGE.signInWithProvider(button.dataset.oauthProvider);
+    } catch (error) {
+      renderLogin(`${label} 연동을 시작하지 못했습니다. ${error.message || "Provider 설정을 확인해 주세요."}`);
+    }
+  };
+  document.querySelectorAll("[data-oauth-provider]").forEach((button) => {
+    button.addEventListener("pointerup", (event) => startOAuth(button, event));
+    button.addEventListener("click", async (event) => {
+      if (button.dataset.oauthBusy === "true") return;
+      try {
+        await startOAuth(button, event);
+      } catch (error) {
+        renderLogin(`${button.textContent} 연동을 시작하지 못했습니다. ${error.message || "Provider 설정을 확인해 주세요."}`);
+      }
+    });
+  });
+}
+
+function renderBasicInfoOnboarding(message = "") {
+  const today = dateInputToday();
+  // 레이아웃 미리보기 카드 생성 (builtInLayouts 기준)
+  const layouts = [
+    { id: "classic",       name: "클래식",     desc: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.",        bg: "#f7f0e7", accent: "#8d3440", heroShape: "full" },
+    { id: "editorial_red", name: "스칼렛 데이", desc: "딥레드 + 흑백 사진. 잡지형 큰 타이포·폴라로이드 프로필 구도.",     bg: "#f8f3ec", accent: "#c41230", heroShape: "full" },
+    { id: "garden_doodle", name: "러브 두들",  desc: "초록 낙서 프레임 + 하트 사진. 손그림 감성의 사랑스러운 결혼식.",   bg: "#eef2eb", accent: "#c23b2a", heroShape: "heart" },
+    { id: "navy_arch",     name: "달빛 서약",  desc: "파란 배경 + 아치 사진. 단정하고 품격 있는 커플의 웨딩.",          bg: "#f5f7fa", accent: "#1a2456", heroShape: "arch" },
+    { id: "cream_organic", name: "봄날 연가",  desc: "크림 + 라벤더 아치 패널. 둥글고 부드러운 봄 웨딩 무드.",          bg: "#faf8f4", accent: "#7c6d9a", heroShape: "full" },
+    { id: "crimson_silk",  name: "벨벳 나이트", desc: "진홍 다크 히어로 + 크림 본문. 연인의 열정을 담은 스플릿 구조.",   bg: "#f8f2ec", accent: "#8b1a2f", heroShape: "inset" },
+  ];
+  const heroShapeStyle = (shape, accent) => {
+    if (shape === "arch")  return `position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:58%;height:68%;border-radius:100px 100px 0 0;overflow:hidden;background:${accent};opacity:0.72;`;
+    if (shape === "inset") return `position:absolute;inset:28% 10% 8%;border-radius:10px;background:${accent};opacity:0.55;`;
+    if (shape === "heart") return `position:absolute;left:50%;transform:translateX(-50%);top:28%;width:56%;height:52%;clip-path:path('M50 80Q10 58 10 34C10 17 22 10 35 10Q43 10 50 18Q57 10 65 10C78 10 90 17 90 34Q90 58 50 80Z');background:${accent};opacity:0.62;`;
+    return `position:absolute;inset:0;background:${accent};opacity:0.35;`;
+  };
+  const layoutCards = layouts.map((l) => `
+    <button class="onboarding-layout-card ${l.id === "classic" ? "is-selected" : ""}" type="button" data-layout-pick="${escapeAdminHtml(l.id)}"
+      style="--olc-bg:${escapeAdminHtml(l.bg)};--olc-accent:${escapeAdminHtml(l.accent)}">
+      <div class="onboarding-layout-thumb onboarding-layout-live">
+        <iframe loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true" title="${escapeAdminHtml(l.name)} 미리보기" src="./index.html?card=main&__layout=${escapeAdminHtml(l.id)}&__thumb=1"></iframe>
+        <span class="onboarding-layout-preview-btn" data-layout-preview="${escapeAdminHtml(l.id)}" data-layout-preview-name="${escapeAdminHtml(l.name)}" role="button">전체 미리보기</span>
+      </div>
+      <div class="onboarding-layout-label">
+        <strong>${escapeAdminHtml(l.name)}</strong>
+        <small>${escapeAdminHtml(l.desc)}</small>
+      </div>
+    </button>`).join("");
+  adminApp.innerHTML = `
+    <section class="admin-card admin-login onboarding-card">
+      <p class="section-label">Create Wedding Card</p>
+      <h1>기본정보 입력</h1>
+      <p class="admin-message">${escapeAdminHtml(message || "소셜 로그인 또는 회원가입이 완료되었습니다. 청첩장 생성을 위해 기본정보를 입력해 주세요.")}</p>
+      <form class="form-grid" id="basic-info-form">
+        <div data-onboard-step="1">
+        <div class="quick-input-grid">
+          <label class="field"><span>신랑 이름</span><input name="groomName" required autocomplete="given-name"></label>
+          <label class="field"><span>신부 이름</span><input name="brideName" required autocomplete="additional-name"></label>
+          <label class="field"><span>신랑 생년월일</span><input name="groomBirthday" type="date"></label>
+          <label class="field"><span>신부 생년월일</span><input name="brideBirthday" type="date"></label>
+          <label class="field"><span>예식일자</span><input name="weddingDate" type="datetime-local" required></label>
+          <label class="field"><span>예식 장소</span><input name="weddingVenue" required></label>
+          <label class="field"><span>홀 이름</span><input name="weddingHall"></label>
+          <label class="field"><span>청첩장 공개 시작일</span><input name="publicOpenDate" type="date" value="${today}" min="${today}" data-public-open></label>
+          <label class="field"><span>청첩장 공개 종료일</span><input name="publicCloseDate" type="date" data-public-close></label>
+        </div>
+        <p class="admin-message micro-help">공개 종료일은 예식일 기준 이후 3일까지만 설정할 수 있습니다.</p>
+        <div class="onboarding-actions" style="display:flex;gap:10px;margin-top:6px;align-items:center">
+          <button type="button" class="btn" data-onboarding-cancel>가입 취소</button>
+          <button type="button" class="btn btn-primary" data-onboard-next style="flex:1">다음 · 레이아웃 선택 →</button>
+        </div>
+        </div>
+        <div data-onboard-step="2" hidden>
+          <div class="onboarding-layout-section">
+            <p class="section-label" style="margin:0 0 8px">청첩장 레이아웃 선택</p>
+            <p class="admin-message micro-help" style="margin:0 0 10px">미리보기를 보고 마음에 드는 디자인을 선택하세요. 일반관리자 페이지에서 언제든지 변경할 수 있습니다.</p>
+            <div class="onboarding-layout-grid">${layoutCards}</div>
+            <input type="hidden" name="layoutId" value="classic">
+          </div>
+          <div class="onboarding-actions" style="display:flex;gap:10px;margin-top:6px;align-items:center">
+            <button type="button" class="btn" data-onboard-prev>← 이전</button>
+            <button class="btn btn-primary" style="flex:1">내 일반관리자 페이지 만들기</button>
+          </div>
+        </div>
+      </form>
+      <div class="ltp-preview-modal" id="onboarding-layout-preview-modal" hidden>
+        <div class="ltp-preview-backdrop" data-onboarding-preview-close></div>
+        <div class="ltp-preview-panel">
+          <div class="ltp-preview-topbar">
+            <strong id="onboarding-layout-preview-title">레이아웃 미리보기</strong>
+            <button class="btn" type="button" data-onboarding-preview-close>닫기</button>
+          </div>
+          <div class="ltp-preview-iframe-wrap">
+            <iframe id="onboarding-layout-preview-iframe" class="ltp-preview-iframe" src="about:blank" title="레이아웃 전체 미리보기"></iframe>
+          </div>
+        </div>
+      </div>
+    </section>`;
+  const form = document.querySelector("#basic-info-form");
+  document.querySelector("[data-onboarding-cancel]")?.addEventListener("click", async () => {
+    if (!confirm("가입을 취소하고 처음으로 돌아갈까요? 입력하신 정보는 저장되지 않습니다.")) return;
+    try { await supabaseClient?.auth?.signOut(); } catch {}
+    renderLogin();
+  });
+  // 단계 이동: 기본정보 → 레이아웃 선택
+  const onboardStep = (n) => form.querySelector(`[data-onboard-step="${n}"]`);
+  // 레이아웃 미리보기 iframe을 480px 디자인 기준으로 렌더링한 뒤, 카드 크기에 맞춰 축소 표시
+  const scaleLayoutPreviews = () => {
+    const REF_WIDTH = 380;
+    form.querySelectorAll(".onboarding-layout-live").forEach((thumb) => {
+      const iframe = thumb.querySelector("iframe");
+      if (!iframe) return;
+      const rect = thumb.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const scale = rect.width / REF_WIDTH;
+      iframe.style.width = `${REF_WIDTH}px`;
+      iframe.style.height = `${rect.height / scale}px`;
+      iframe.style.transform = `scale(${scale})`;
+    });
+  };
+  form.querySelector("[data-onboard-next]")?.addEventListener("click", () => {
+    const required = [...onboardStep(1).querySelectorAll("input[required]")];
+    if (required.some((field) => !field.reportValidity())) return;
+    onboardStep(1).hidden = true;
+    onboardStep(2).hidden = false;
+    onboardStep(2).scrollIntoView({ behavior: "smooth", block: "start" });
+    requestAnimationFrame(scaleLayoutPreviews);
+  });
+  form.querySelector("[data-onboard-prev]")?.addEventListener("click", () => {
+    onboardStep(2).hidden = true;
+    onboardStep(1).hidden = false;
+  });
+  window.addEventListener("resize", scaleLayoutPreviews);
+  // 레이아웃 선택 인터랙션
+  form.querySelectorAll("[data-layout-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      form.querySelectorAll("[data-layout-pick]").forEach((b) => b.classList.remove("is-selected"));
+      btn.classList.add("is-selected");
+      form.elements.layoutId.value = btn.dataset.layoutPick;
+    });
+  });
+  // 레이아웃별 전체 미리보기 모달
+  const layoutPreviewModal = document.getElementById("onboarding-layout-preview-modal");
+  const layoutPreviewIframe = document.getElementById("onboarding-layout-preview-iframe");
+  const layoutPreviewTitle = document.getElementById("onboarding-layout-preview-title");
+  const closeLayoutPreview = () => {
+    if (!layoutPreviewModal) return;
+    layoutPreviewModal.hidden = true;
+    layoutPreviewIframe.src = "about:blank";
+  };
+  form.querySelectorAll("[data-layout-preview]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!layoutPreviewModal) return;
+      layoutPreviewTitle.textContent = `${btn.dataset.layoutPreviewName || ""} 미리보기`;
+      layoutPreviewIframe.src = `./index.html?card=main&__layout=${encodeURIComponent(btn.dataset.layoutPreview)}&__heroimg=1`;
+      layoutPreviewModal.hidden = false;
+    });
+  });
+  layoutPreviewModal?.querySelectorAll("[data-onboarding-preview-close]").forEach((el) => el.addEventListener("click", closeLayoutPreview));
+  const syncPublicPeriod = (forceCloseToWedding = false) => {
+    syncPublicPeriodFields({ weddingField: form.elements.weddingDate, openField: form.elements.publicOpenDate, closeField: form.elements.publicCloseDate, forceCloseToWedding });
+  };
+  form.elements.weddingDate.addEventListener("change", () => syncPublicPeriod(true));
+  form.elements.publicOpenDate.addEventListener("change", () => syncPublicPeriod(false));
+  syncPublicPeriod();
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"], .btn-primary');
+    button.disabled = true;
+    button.textContent = "생성 중...";
+    const fields = new FormData(form);
+    const selectedLayout = fields.get("layoutId") || "classic";
+    try {
+      currentInvitationSite = await window.RSVP_STORAGE.ensureInvitationForCurrentUser(window.INVITATION_DATA, {
+        groomName: fields.get("groomName")?.trim(),
+        brideName: fields.get("brideName")?.trim(),
+        groomBirthday: fields.get("groomBirthday"),
+        brideBirthday: fields.get("brideBirthday"),
+        weddingDate: fields.get("weddingDate"),
+        weddingVenue: fields.get("weddingVenue")?.trim(),
+        weddingHall: fields.get("weddingHall")?.trim(),
+        publicOpenDate: fields.get("publicOpenDate"),
+        publicCloseDate: fields.get("publicCloseDate"),
+      });
+      if (!currentInvitationSite?.slug) throw new Error("기본정보가 부족합니다.");
+      await loadInvitationData();
+      // 선택한 레이아웃 저장
+      if (selectedLayout !== "classic") {
+        invitationData.designSystem.activeLayoutId = selectedLayout;
+        try { await window.RSVP_STORAGE.saveInvitationData(invitationData); } catch {}
+        if (typeof applyLayoutTemplate === "function") applyLayoutTemplate(selectedLayout);
+      }
+      renderAdminView("editor");
+      showAdminWelcomeOverlay(true);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = "내 일반관리자 페이지 만들기";
+      alert(`일반관리자 페이지를 만들지 못했습니다.\n${error.message || "입력값과 Supabase 설정을 확인해 주세요."}`);
+    }
+  });
+}
+
+async function renderSetupNotice() {
+  await loadInvitationData();
+  renderEditor("현재는 Supabase 연결 전 미리보기 모드입니다. 변경 내용은 이 브라우저에 저장되며 공개 청첩장을 새로고침하면 반영됩니다.");
+}
+
+function responsesView(responses, isPreview = false) {
+  const attending = responses.filter((response) => response.attendance === "참석");
+  const totalGuests = attending.reduce((sum, response) => sum + Number(response.total_count || 0), 0);
+  const rooms = attending.filter((response) => response.needs_accommodation === "예").length;
+  return `
+    <section class="admin-card">
+      <div class="admin-toolbar"><h2>${isPreview ? "테스트 응답" : "참석 응답"}</h2></div>
+      <div class="admin-summary">
+        <div><strong>${responses.length}</strong><span>전체 응답</span></div>
+        <div><strong>${totalGuests}</strong><span>예상 참석 인원</span></div>
+        <div><strong>${rooms}</strong><span>숙소 요청 건</span></div>
+      </div>
+      <div class="response-list">
+        ${responses.length ? responses.map(responseCard).join("") : '<p class="admin-message">아직 전달된 참석 정보가 없습니다.</p>'}
+      </div>
+    </section>`;
+}
+
+function responseCard(response) {
+  const companions = Array.isArray(response.companions) && response.companions.length
+    ? response.companions.map((person) => escapeAdminHtml(person)).join(", ")
+    : "없음";
+  return `
+    <article class="response-card">
+      <h3>${escapeAdminHtml(response.guest_name)} <span class="badge">${escapeAdminHtml(response.attendance)}</span></h3>
+      <p>${escapeAdminHtml(response.phone)}</p>
+      ${response.attendance === "참석" ? `<p>출발지: ${escapeAdminHtml(response.origin)} · 이동: ${escapeAdminHtml(response.transport)} · 출발: ${escapeAdminHtml(response.departure_date)}
+${response.travel_details ? `기타 이동 정보: ${escapeAdminHtml(response.travel_details)}
+` : ""}${response.needs_accommodation === "예" ? `숙소 인원: ${escapeAdminHtml(response.accommodation_details || "미입력")}
+` : ""}총 ${escapeAdminHtml(response.total_count)}명 · 동행인: ${companions}
+숙소 필요: ${escapeAdminHtml(response.needs_accommodation)}</p>` : ""}
+      ${response.notes ? `<p>전달 사항: ${escapeAdminHtml(response.notes)}</p>` : ""}
+      <p class="response-meta">${escapeAdminHtml(formatDate(response.created_at))}</p>
+    </article>`;
+}
+
+function input(name, label, value = "", type = "text") {
+  return `<label class="field"><span>${label}</span><input name="${name}" type="${type}" value="${escapeAdminHtml(value)}"></label>`;
+}
+
+function textarea(name, label, value = "", rows = 3) {
+  return `<label class="field"><span>${label}</span><textarea name="${name}" rows="${rows}">${escapeAdminHtml(value)}</textarea></label>`;
+}
+
+function rangeInput(name, label, value, min, max, step = 1) {
+  return `<label class="field range-field"><span>${label}</span><input name="${name}" type="range" min="${min}" max="${max}" step="${step}" value="${escapeAdminHtml(value)}"><output>${escapeAdminHtml(value)}</output></label>`;
+}
+
+function select(name, label, value, options) {
+  return `<label class="field"><span>${label}</span><select name="${name}">${options.map(([optionValue, text]) => `<option value="${escapeAdminHtml(optionValue)}" ${String(value) === optionValue ? "selected" : ""}>${text}</option>`).join("")}</select></label>`;
+}
+
+function visibilitySelect(name, label, value = true) {
+  const isVisible = value !== false;
+  return `
+    <label class="visibility-switch">
+      <span>${label}</span>
+      <input type="hidden" name="${name}" value="${isVisible ? "true" : "false"}">
+      <input type="checkbox" data-visibility-toggle ${isVisible ? "checked" : ""} aria-label="${label} 공개 여부">
+      <i aria-hidden="true"></i>
+    </label>
+  `;
+}
+
+function introRange(name, label, value, min, max) {
+  return `<label class="text-layout-control"><span>${label}</span><input name="hero.introDesign.${name}" type="range" min="${min}" max="${max}" value="${escapeAdminHtml(value)}" data-intro-design="${name}"><output>${escapeAdminHtml(value)}</output></label>`;
+}
+
+function introDesignEditor(groom, bride) {
+  const design = invitationData.hero.introDesign || {};
+  const defaultNames = `${groom.name} · ${bride.name}`;
+  const introName = invitationData.hero.introName || defaultNames;
+  const introNameValue = introName;
+  return `
+    <div class="copy-editor-intro-preview" data-intro-design-preview>
+      <small data-intro-preview-eyebrow>${escapeAdminHtml(invitationData.hero.introEyebrow || invitationData.hero.eyebrow || "our wedding day")}</small>
+      <strong data-intro-preview-name>${escapeAdminHtml(introName)}</strong>
+      <span data-intro-preview-date>${escapeAdminHtml(invitationData.hero.introDate || invitationData.wedding.displayDate)}</span>
+    </div>
+    <p class="admin-message micro-help">기본값은 신랑·신부 이름 조합입니다. 필요하면 진입화면 전용 문구로 직접 바꿀 수 있습니다.</p>
+    ${input("hero.introEyebrow", "진입 화면 영문 문구", invitationData.hero.introEyebrow || invitationData.hero.eyebrow || "")}
+    ${input("hero.introName", "진입 화면 메인 문구", introNameValue)}
+    ${input("hero.introDate", "진입 화면 날짜 문구 · 비우면 예식 일시 사용", invitationData.hero.introDate || "")}
+    ${select("hero.introDesign.align", "문구 정렬", design.align || "center", [["left", "왼쪽"], ["center", "가운데"], ["right", "오른쪽"]])}
+    <div class="text-layout-editor">
+      ${introRange("eyebrowSize", "영문 문구 크기", design.eyebrowSize ?? 11, 8, 24)}
+      ${introRange("nameSize", "이름 크기", design.nameSize ?? 30, 20, 54)}
+      ${introRange("dateSize", "날짜 크기", design.dateSize ?? 11, 8, 20)}
+      ${introRange("eyebrowNameGap", "영문 ↔ 이름 간격", design.eyebrowNameGap ?? 10, 0, 40)}
+      ${introRange("nameDateGap", "이름 ↔ 날짜 간격", design.nameDateGap ?? 10, 0, 40)}
+      ${introRange("offsetY", "전체 위아래 위치", design.offsetY ?? 0, -160, 160)}
+    </div>`;
+}
+
+function appearancePresetValue(appearance = {}) {
+  return appearance.movieConcept && appearance.movieConcept !== "none"
+    ? `movie:${appearance.movieConcept}`
+    : `theme:${appearance.theme || "sky"}`;
+}
+
+function appearancePresetField(appearance = {}) {
+  const value = appearancePresetValue(appearance);
+  const option = ([optionValue, text]) => `<option value="${optionValue}" ${value === optionValue ? "selected" : ""}>${text}</option>`;
+  return `
+    <label class="field concept-preset"><span>전체 디자인 프리셋</span>
+      <select name="appearance.preset">
+        <optgroup label="기본 컬러 테마">
+          ${[["theme:beige", "베이지"], ["theme:sky", "하늘색"], ["theme:pink", "핑크"], ["theme:gray", "연한 회색"], ["theme:black", "블랙"], ["theme:white", "화이트"], ["theme:green", "그린"]].map(option).join("")}
+        </optgroup>
+        <optgroup label="영화 컨셉">
+          ${[["movie:about_time", "어바웃타임"], ["movie:la_la_land", "라라랜드"], ["movie:spirited_away", "지브리 센과 치히로 무드"], ["movie:you_are_the_apple", "그 시절, 우리가 좋아했던 소녀 무드"]].map(option).join("")}
+        </optgroup>
+      </select>
+      <input name="appearance.theme" type="hidden" value="${escapeAdminHtml(appearance.theme || "sky")}">
+      <input name="appearance.movieConcept" type="hidden" value="${escapeAdminHtml(appearance.movieConcept || "none")}">
+    </label>`;
+}
+
+function normalizedHeroDecoration(value = "none") {
+  const legacyDecorations = { line_frame: "doodle_hearts", heart_frame: "organic_heart" };
+  const selected = legacyDecorations[value] || value;
+  return heroDecorations.includes(selected) ? selected : "none";
+}
+
+function heroDecorationField(value = "none") {
+  const selected = normalizedHeroDecoration(value);
+  const decorations = [
+    ["none", "꾸밈 없음", "사진을 화면에 가득 채워 깔끔하게 보여줍니다."],
+    ["doodle_hearts", "손그림 하트 낙서", "하트와 꽃, 반짝임을 사진 위에 가볍게 흩뿌립니다."],
+    ["organic_heart", "유기적 하트 프레임", "손으로 그린 듯한 큰 하트 라인이 사진을 감쌉니다."],
+    ["wedding_rings", "웨딩 링 리본", "반지와 리본, 작은 하트로 청첩장다운 테두리를 만듭니다."],
+    ["poster_card", "포스터 카드", "여백과 둥근 사진 틀을 사용해 에디토리얼 포스터처럼 표현합니다."],
+  ];
+  return `
+    <fieldset class="hero-decoration-field">
+      <legend>메인 이미지 꾸밈</legend>
+      <p class="admin-message">사진 위에 더할 웨딩 그래픽을 선택해 주세요. 선택한 꾸밈만 표시됩니다.</p>
+      <div class="hero-decoration-list">
+        ${decorations.map(([optionValue, label, description]) => `
+          <label class="hero-decoration-option">
+            <input type="radio" name="appearance.heroDecoration" value="${optionValue}" ${selected === optionValue ? "checked" : ""}>
+            <span class="hero-decoration-preview" data-decoration-preview="${optionValue}"><i></i></span>
+            <span class="hero-decoration-copy"><strong>${label}</strong><small>${description}</small></span>
+          </label>`).join("")}
+      </div>
+    </fieldset>`;
+}
+
+function imageField(name, label, value = "") {
+  const isProfile = ["couple.groom.photo", "couple.bride.photo"].includes(name);
+  const originalName = isProfile ? `${name}Original` : "";
+  const originalValue = originalName ? getNested(invitationData, originalName, "") : "";
+  const cropName = isProfile ? `${name}Crop` : "";
+  const cropValue = cropName ? getNested(invitationData, cropName, "") : "";
+  return `
+    <div class="image-field ${isProfile ? "image-field-profile" : ""}">
+      <input name="${name}" type="hidden" value="${escapeAdminHtml(value)}">
+      ${isProfile ? `<input name="${originalName}" type="hidden" value="${escapeAdminHtml(originalValue)}">` : ""}
+      ${isProfile ? `<input name="${cropName}" type="hidden" value="${escapeAdminHtml(cropValue)}">` : ""}
+      <div class="image-preview" data-image-preview="${name}">
+        ${value ? `<img src="${escapeAdminHtml(adminMediaUrl(value))}" alt="${label} 미리보기">` : '<span>등록된 사진이 없습니다.</span>'}
+      </div>
+      <div class="image-field-controls">
+        <strong>${label}</strong>
+        <span class="micro-help">휴대폰 갤러리에서 한 장을 선택해 주세요.</span>
+        <div class="image-actions">
+          <label class="btn image-upload">${value ? "변경" : "＋ 선택"}<input type="file" accept="image/*" data-image-target="${name}"></label>
+          ${isProfile ? `<button class="btn" type="button" data-image-crop-edit="${name}">영역 맞추기</button>` : ""}
+          <button class="btn" type="button" data-image-remove="${name}">× 제거</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function videoField(name, label, value = "") {
+  return `
+    <div class="image-field">
+      <input name="${name}" type="hidden" value="${escapeAdminHtml(value)}">
+      <div class="image-preview" data-video-preview="${name}">
+        ${value ? `<video src="${escapeAdminHtml(adminMediaUrl(value))}" muted controls playsinline></video>` : '<span>등록된 영상이 없습니다.</span>'}
+      </div>
+      <div class="image-field-controls">
+        <strong>${label}</strong>
+        <span class="micro-help">MP4, WebM 또는 MOV 영상을 선택해 주세요. 영상 로드가 어려운 기기에서는 메인 사진이 대신 표시됩니다.</span>
+        <div class="image-actions">
+          <label class="btn image-upload">＋ 영상 선택<input type="file" accept="video/mp4,video/webm,video/quicktime" data-video-target="${name}"></label>
+          <button class="btn" type="button" data-video-remove="${name}">× 제거</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function tagFields(name, label, values = []) {
+  const normalized = [...values, "", "", ""].slice(0, 3).map((value) => String(value || "").replace(/^#+/, ""));
+  return `
+    <div class="tag-field-group" data-tag-group="${name}">
+      <strong>${label}</strong>
+      <div class="tag-field-list">
+        ${normalized.map((value, index) => `<label class="field tag-field"><span>#</span><input name="${name}" type="text" maxlength="18" value="${escapeAdminHtml(value)}" placeholder="태그 ${index + 1}"></label>`).join("")}
+      </div>
+    </div>`;
+}
+
+function heroActiveMediaField(hero = {}) {
+  const active = hero.activeMedia === "video" && hero.video ? "video" : "image";
+  const hasBoth = Boolean(hero.image && hero.video);
+  return `
+    <div class="hero-active-media ${hasBoth ? "" : "is-hidden"}" data-hero-active-media>
+      <strong>첫 화면 활성 미디어</strong>
+      <div class="segmented-control">
+        <label><input type="radio" name="hero.activeMedia" value="image" ${active !== "video" ? "checked" : ""}> <span>이미지</span></label>
+        <label><input type="radio" name="hero.activeMedia" value="video" ${active === "video" ? "checked" : ""}> <span>영상</span></label>
+      </div>
+      <p class="admin-message micro-help">이미지와 영상이 모두 등록된 경우, 공개 첫 화면에 어떤 미디어를 먼저 보여줄지 선택합니다.</p>
+    </div>`;
+}
+
+function heroMediaDock(hero = {}) {
+  const active = hero.activeMedia === "video" && hero.video ? "video" : "image";
+  return `
+    <div class="editor-hero-media-tools">
+      <button class="editor-media-card ${hero.image ? "has-media" : ""}" type="button" data-tool-action="hero-image" data-tool-context="hero">
+        <span class="editor-media-thumb" data-hero-image-thumb style="${hero.image ? `background-image:url('${escapeAdminHtml(adminMediaUrl(hero.image))}')` : ""}"></span>
+        <strong>${hero.image ? "이미지 등록됨" : "이미지 업로드"}</strong>
+      </button>
+      <div class="editor-media-actions" data-hero-media-actions="image" hidden>
+        <button type="button" data-tool-action="hero-image-change">변경</button>
+        <button type="button" data-tool-action="hero-image-remove">삭제</button>
+      </div>
+      <button class="editor-media-card ${hero.video ? "has-media" : ""}" type="button" data-tool-action="hero-video" data-tool-context="hero">
+        <span class="editor-media-thumb is-video" data-hero-video-thumb>${hero.video ? "VIDEO" : "＋"}</span>
+        <strong>${hero.video ? "영상 등록됨" : "영상 업로드"}</strong>
+      </button>
+      <div class="editor-media-actions" data-hero-media-actions="video" hidden>
+        <button type="button" data-tool-action="hero-video-change">변경</button>
+        <button type="button" data-tool-action="hero-video-remove">삭제</button>
+      </div>
+      <div class="editor-media-active-toggle ${hero.image && hero.video ? "" : "is-hidden"}" data-hero-dock-active>
+        <button type="button" class="${active !== "video" ? "is-active" : ""}" data-hero-active="image">이미지 활성</button>
+        <button type="button" class="${active === "video" ? "is-active" : ""}" data-hero-active="video">영상 활성</button>
+      </div>
+    </div>`;
+}
+
+function editorPresetValue(appearance = {}) {
+  return appearance.movieConcept && appearance.movieConcept !== "none"
+    ? appearance.movieConcept
+    : (appearance.design?.presetId || appearance.theme || "sky");
+}
+
+function editorDesignOptions(items, selected) {
+  return items.filter((item) => item.enabled !== false).map((item) =>
+    `<option value="${escapeAdminHtml(item.id)}" ${item.id === selected ? "selected" : ""}>${escapeAdminHtml(item.name)}</option>`).join("");
+}
+
+function editorPresetSelect(name, label, themes, selected) {
+  const group = (type, groupLabel) => `<optgroup label="${groupLabel}">${editorDesignOptions(themes.filter((theme) => theme.type === type), selected)}</optgroup>`;
+  return `<label class="field"><span>${label}</span><select name="${name}">${group("color", "컬러테마")}${group("movie", "영화테마")}</select></label>`;
+}
+
+function editorDesignFramePicker(frames, selected) {
+  const option = (frame) => `<label class="hero-decoration-option">
+    <input type="radio" name="appearance.design.heroDecoration" value="${escapeAdminHtml(frame.id)}" ${selected === frame.id ? "checked" : ""}>
+    <span class="hero-decoration-preview" data-decoration-preview="${escapeAdminHtml(frame.id)}"><i></i></span>
+    <span class="hero-decoration-copy"><strong>${escapeAdminHtml(frame.name)}</strong><small>${frame.id === "inherit" ? "선택한 프리셋의 기본 꾸밈을 사용합니다." : frame.mode === "outer" ? "사진 바깥 프레임" : "사진 위 오버레이"}</small></span>
+  </label>`;
+  return `<fieldset class="hero-decoration-field"><legend>메인 이미지 꾸밈</legend><div class="hero-decoration-list">${option({ id: "inherit", name: "프리셋 기본값 사용" })}${frames.map(option).join("")}</div></fieldset>`;
+}
+
+function editorDesignTextThemePicker(themes, selected) {
+  return `<div class="text-theme-choice-grid">${themes.filter((theme) => theme.enabled !== false).map((theme) => `
+    <button class="text-theme-choice ${selected === theme.id ? "is-selected" : ""}" type="button" data-design-text-theme="${escapeAdminHtml(theme.id)}">
+      ${typeof textThemeSample === "function" ? textThemeSample(theme) : ""}
+      <span>${escapeAdminHtml(theme.name || theme.id)}</span>
+    </button>`).join("")}</div>`;
+}
+
+function editorOnboardingPicker(system, selectedPreset, selectedTextTheme) {
+  const themeCard = (theme) => `
+    <button class="editor-start-card ${theme.id === selectedPreset ? "is-selected" : ""}" type="button" data-onboarding-preset="${escapeAdminHtml(theme.id)}">
+      <span class="editor-start-preview" style="--preview-bg:${escapeAdminHtml(theme.palette?.background || "#f7f0e7")};--preview-accent:${escapeAdminHtml(theme.palette?.accent || "#999")}"></span>
+      <strong>${escapeAdminHtml(theme.name || theme.id)}</strong>
+      <small>${theme.type === "movie" ? "영화테마" : "컬러테마"}</small>
+    </button>`;
+  const textCard = (theme) => `
+    <button class="editor-start-card editor-start-text ${theme.id === selectedTextTheme ? "is-selected" : ""}" type="button" data-onboarding-text-theme="${escapeAdminHtml(theme.id)}">
+      <span class="editor-start-text-preview">${typeof textThemeSample === "function" ? textThemeSample(theme) : "<b>Text</b><em>Theme</em>"}</span>
+      <strong>${escapeAdminHtml(theme.name || theme.id)}</strong>
+      <small>메인문구테마</small>
+    </button>`;
+  return `
+    <section class="editor-start-backdrop" data-editor-onboarding>
+      <div class="editor-start-sheet">
+        <button class="editor-start-close" type="button" data-editor-start-close aria-label="편집 시작 창 닫기">×</button>
+        <div class="editor-start-title">
+          <p class="section-label">Start Edit</p>
+          <h2>원하는 테마로<br>청첩장 편집을 시작해보세요</h2>
+        </div>
+        <div class="editor-start-section">
+          <h3>컬러 · 영화테마</h3>
+          <div class="editor-start-grid">${system.themes.filter((theme) => theme.enabled !== false).map(themeCard).join("")}</div>
+        </div>
+        <div class="editor-start-section">
+          <h3>메인 문구 테마</h3>
+          <div class="editor-start-grid">${system.assets.textThemes.filter((theme) => theme.enabled !== false).map(textCard).join("")}</div>
+        </div>
+        <button class="editor-start-apply" type="button" data-editor-start-apply>선택하고 편집하기</button>
+      </div>
+    </section>`;
+}
+
+function editorDesignPanel() {
+  window.WEDDING_DESIGN?.normalize(invitationData);
+  const system = invitationData.designSystem;
+  const design = invitationData.appearance.design || {};
+  const selectedPreset = editorPresetValue(invitationData.appearance || {});
+  const selectedTextTheme = design.heroTextTheme || "auto";
+  const hasPreset = Boolean(invitationData.appearance?.design?.presetId || invitationData.appearance?.theme || invitationData.appearance?.movieConcept);
+  const onboarding = editorOnboardingPicker(system, selectedPreset, selectedTextTheme)
+    .replace('<section class="editor-start-backdrop"', `<section class="editor-start-backdrop"${hasPreset ? " hidden" : ""}`);
+  const activeLayoutId = system.activeLayoutId || "classic";
+  const layoutBtns = (system.layoutTemplates || []).map((tpl) =>
+    `<button class="editor-layout-btn ${tpl.id === activeLayoutId ? "is-active" : ""}" type="button" data-editor-layout="${escapeAdminHtml(tpl.id)}" style="--elb-bg:${escapeAdminHtml(tpl.previewBg || "#f5f0ea")};--elb-accent:${escapeAdminHtml(tpl.previewAccent || "#8d3440")}" title="${escapeAdminHtml(tpl.description || tpl.name)}">${escapeAdminHtml(tpl.name)}</button>`
+  ).join("");
+  return `
+    <section class="editor-layout-strip">
+      <span>레이아웃</span>
+      <div class="editor-layout-options">${layoutBtns}</div>
+    </section>
+    <section class="editor-theme-strip">
+      <span>테마</span>
+      ${editorPresetSelect("editorPresetId", "컬러테마 · 영화테마", system.themes, selectedPreset)}
+      <button class="editor-theme-open" type="button" data-editor-theme-open>전체보기</button>
+    </section>
+    ${onboarding}
+    <div class="editor-design-hidden-fields">
+      <input type="hidden" name="appearance.design.presetId" value="${escapeAdminHtml(selectedPreset)}">
+      <input type="hidden" name="appearance.design.heroTextTheme" value="${escapeAdminHtml(selectedTextTheme)}">
+    </div>
+    <section class="editor-tooldock" data-editor-tool-panel hidden>
+      <div class="editor-tooldock-head">
+        <button class="editor-tooldock-close" type="button" data-tooldock-collapse aria-label="편집 도구 아래로 숨기기"><span aria-hidden="true"></span></button>
+        <div><strong data-tooldock-title>편집 도구</strong><span data-tooldock-help>수정할 영역을 누르면 도구가 바뀝니다.</span></div>
+      </div>
+      <nav class="editor-tooldock-tabs" aria-label="편집 도구 탭">
+        <button type="button" data-tooldock-tab="media">미디어</button>
+        <button type="button" data-tooldock-tab="frame">꾸밈</button>
+        <button type="button" data-tooldock-tab="text">문구테마</button>
+        <button type="button" data-tooldock-tab="position">메인 문구위치</button>
+        <button type="button" data-tooldock-tab="style">글자/위치</button>
+        <button type="button" data-tooldock-tab="items">항목관리</button>
+      </nav>
+      <div class="editor-tooldock-pane" data-tooldock-pane="media">
+        <div class="editor-tool-buttons" data-profile-media-tools>
+          <button class="editor-tool-button is-primary" type="button" data-tool-action="profile-photo" data-tool-context="profile"><span>＋</span>업로드</button>
+          <button class="editor-tool-button" type="button" data-tool-action="profile-crop" data-tool-context="profile"><span>↔</span>영역맞추기</button>
+          <button class="editor-tool-button" type="button" data-tool-action="profile-remove" data-tool-context="profile"><span>−</span>삭제</button>
+        </div>
+        <div data-hero-media-tools>${heroMediaDock(invitationData.hero)}</div>
+      </div>
+      <div class="editor-tooldock-pane" data-tooldock-pane="frame">
+        ${editorDesignFramePicker(system.assets.frames, design.heroDecoration || "inherit")}
+        <div class="editor-color-strip">${input("appearance.design.heroDecorationTint", "꾸밈 색상", design.heroDecorationTint || "#ffffff", "color")}</div>
+        ${rangeInput("appearance.design.heroDecorationSize", "꾸밈 크기 (하트·프레임)", Number(design.heroDecorationSize) || 100, 70, 130, 5)}
+      </div>
+      <div class="editor-tooldock-pane" data-tooldock-pane="text">
+        ${editorDesignTextThemePicker(system.assets.textThemes, selectedTextTheme)}
+        <div class="hero-copy-toggle-grid">
+          <label class="consent"><input type="checkbox" name="appearance.design.heroEyebrowEnabled" ${design.heroEyebrowEnabled !== false ? "checked" : ""}> <span>영문</span></label>
+          <label class="consent"><input type="checkbox" name="appearance.design.heroNamesEnabled" ${design.heroNamesEnabled !== false ? "checked" : ""}> <span>이름</span></label>
+          <label class="consent"><input type="checkbox" name="appearance.design.heroDateEnabled" ${design.heroDateEnabled !== false ? "checked" : ""}> <span>날짜</span></label>
+        </div>
+      </div>
+      <div class="editor-tooldock-pane" data-tooldock-pane="position">
+        ${select("hero.contentPosition", "메인 사진 문구 위치", invitationData.hero.contentPosition || "bottom", [["top", "상단"], ["middle", "중간"], ["bottom", "하단"]])}
+        <div class="text-layout-editor">
+          <label class="text-layout-control"><span>좌우 위치</span><input name="appearance.design.heroTextXPercent" type="range" min="10" max="90" value="${escapeAdminHtml(design.heroTextXPercent ?? 50)}"><output>${escapeAdminHtml(design.heroTextXPercent ?? 50)}</output></label>
+          <label class="text-layout-control"><span>위아래 위치</span><input name="appearance.design.heroTextYPercent" type="range" min="10" max="90" value="${escapeAdminHtml(design.heroTextYPercent ?? 76)}"><output>${escapeAdminHtml(design.heroTextYPercent ?? 76)}</output></label>
+        </div>
+      </div>
+      <div class="editor-tooldock-pane" data-tooldock-pane="style">
+        <div class="text-layout-editor">
+          <label class="text-layout-control"><span>선택 문구 크기</span><input type="range" min="10" max="44" value="16" data-preview-text-size><output data-preview-text-size-output>현재 16 · 원래 16</output></label>
+          <label class="text-layout-control"><span>선택 문구 위아래</span><input type="range" min="-40" max="40" value="0" data-preview-text-y><output data-preview-text-y-output>현재 0 · 원래 0</output></label>
+        </div>
+        <button class="editor-tool-button editor-tool-reset" type="button" data-preview-text-reset><span>↺</span>원래값</button>
+      </div>
+      <div class="editor-tooldock-pane editor-tooldock-manager" data-tooldock-pane="items">
+        <div data-tooldock-items="information">${noticeManager(invitationData.notices)}</div>
+        <div data-tooldock-items="location">${transportManager(invitationData.transport)}</div>
+        <div class="editor-detail-fields" data-tooldock-items="wedding-snap-detail">
+          ${textarea("guestPhotos.modalGuideTitle", "게스트앨범 모달 제목", invitationData.guestPhotos?.modalGuideTitle || "여러분의 사진첩이 우리 앨범이 됩니다.")}
+          ${textarea("guestPhotos.modalGuideText", "게스트앨범 모달 설명", invitationData.guestPhotos?.modalGuideText || "1. 두 사람의 설렘 가득한 스냅\n2. 멋진 입장 & 환한 행진\n3. 가족·친구와의 찰칵 한 컷\n4. 당신의 시선으로 포착한 장면들", 5)}
+          ${textarea("guestPhotos.modalGuideFootnote", "게스트앨범 모달 하단 문구", invitationData.guestPhotos?.modalGuideFootnote || "작은 한 컷이 우리에게 큰 선물이 돼요.")}
+          ${textarea("guestPhotos.manageDescription", "내가 보낸 파일 안내 문구", invitationData.guestPhotos?.manageDescription || "이 휴대폰에서 보낸 사진과 영상을 확인하거나 삭제할 수 있습니다.")}
+        </div>
+        <div class="editor-detail-fields" data-tooldock-items="rsvp-detail">
+          ${textarea("rsvp.modalGuide", "RSVP 모달 안내 문구", invitationData.rsvp?.modalGuide || "기차표와 숙소 준비를 위해 필요한 정보입니다.")}
+          ${textarea("rsvp.transportOptions", "오는 방법 선택지", (invitationData.rsvp?.transportOptions || ["자가용", "기차", "버스", "택시", "도보", "직접입력"]).join("\n"))}
+          ${input("rsvp.originPlaceholder", "출발지 입력 예시", invitationData.rsvp?.originPlaceholder || "예: 서울역, 창원시 성산구")}
+          ${input("rsvp.transportPlaceholder", "오는 방법 입력 예시", invitationData.rsvp?.transportPlaceholder || "예: 자가용, KTX, 버스")}
+          ${textarea("rsvp.notesPlaceholder", "추가 전달사항 입력 예시", invitationData.rsvp?.notesPlaceholder || "교통편이나 숙소 관련 요청을 자유롭게 적어 주세요.")}
+          ${textarea("rsvp.accommodationGuide", "숙소 필요 ON 안내 문구", invitationData.rsvp?.accommodationGuide || "숙소 준비를 위해 함께 오는 인원 이름 또는 명수를 적어 주세요.")}
+        </div>
+      </div>
+    </section>`;
+}
+
+async function decodeCropImage(file) {
+  try {
+    if ("createImageBitmap" in window) return await createImageBitmap(file);
+  } catch {}
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function parseCropSettings(value = "") {
+  try {
+    const settings = JSON.parse(value);
+    return {
+      zoom: Number(settings.zoom) || 112,
+      x: Number.isFinite(Number(settings.x)) ? Number(settings.x) : 50,
+      y: Number.isFinite(Number(settings.y)) ? Number(settings.y) : 50,
+    };
+  } catch {
+    return { zoom: 112, x: 50, y: 50 };
+  }
+}
+
+async function cropProfileImage(file, { initialZoom = 112, initialX = 50, initialY = 50 } = {}) {
+  let currentFile = file;
+  let bitmap = await decodeCropImage(currentFile);
+  let previewUrl = URL.createObjectURL(currentFile);
+  const root = document.createElement("div");
+  root.className = "image-crop-backdrop";
+  root.innerHTML = `<section class="image-crop-modal">
+    <h2>대표사진 영역 맞추기</h2>
+    <p class="micro-help">사진을 확대하고 보여줄 영역을 맞춘 뒤 적용해 주세요.</p>
+    <canvas class="image-crop-preview" width="480" height="600" aria-label="대표사진 자르기 미리보기"></canvas>
+    <label class="btn image-upload">새 사진 업로드<input type="file" accept="image/*" data-crop-replace></label>
+    <label class="field"><span>확대</span><input type="range" min="100" max="220" value="${escapeAdminHtml(initialZoom)}" data-default-value="112" data-crop-zoom><output>${escapeAdminHtml(initialZoom)}</output></label>
+    <label class="field"><span>좌우 중심</span><input type="range" min="0" max="100" value="${escapeAdminHtml(initialX)}" data-default-value="50" data-crop-x><output>${escapeAdminHtml(initialX)}</output></label>
+    <label class="field"><span>상하 중심</span><input type="range" min="0" max="100" value="${escapeAdminHtml(initialY)}" data-default-value="50" data-crop-y><output>${escapeAdminHtml(initialY)}</output></label>
+    <div class="modal-actions"><button class="btn" type="button" data-crop-cancel>취소</button><button class="btn btn-primary" type="button" data-crop-apply>적용</button></div>
+  </section>`;
+  document.body.append(root);
+  decorateRangeDefaults(root);
+  const preview = root.querySelector(".image-crop-preview");
+  const zoom = root.querySelector("[data-crop-zoom]");
+  const x = root.querySelector("[data-crop-x]");
+  const y = root.querySelector("[data-crop-y]");
+  const cropSource = () => {
+    const ratio = 4 / 5;
+    const sourceRatio = bitmap.width / bitmap.height;
+    const scale = Number(zoom.value) / 100;
+    const baseWidth = sourceRatio > ratio ? bitmap.height * ratio : bitmap.width;
+    const baseHeight = sourceRatio > ratio ? bitmap.height : bitmap.width / ratio;
+    const cropWidth = baseWidth / scale;
+    const cropHeight = baseHeight / scale;
+    return {
+      x: Math.max(0, Math.min(bitmap.width - cropWidth, (bitmap.width - cropWidth) * Number(x.value) / 100)),
+      y: Math.max(0, Math.min(bitmap.height - cropHeight, (bitmap.height - cropHeight) * Number(y.value) / 100)),
+      width: cropWidth,
+      height: cropHeight,
+    };
+  };
+  const update = () => {
+    const source = cropSource();
+    const context = preview.getContext("2d");
+    context.clearRect(0, 0, preview.width, preview.height);
+    context.drawImage(bitmap, source.x, source.y, source.width, source.height, 0, 0, preview.width, preview.height);
+    [zoom, x, y].forEach((input) => {
+      input.nextElementSibling.textContent = input.value;
+      setRangeFill(input);
+    });
+  };
+  zoom.addEventListener("input", update);
+  x.addEventListener("input", update);
+  y.addEventListener("input", update);
+  update();
+  root.querySelector("[data-crop-replace]").addEventListener("change", async (event) => {
+    const replacement = event.currentTarget.files[0];
+    if (!replacement) return;
+    bitmap.close?.();
+    URL.revokeObjectURL(previewUrl);
+    currentFile = replacement;
+    bitmap = await decodeCropImage(currentFile);
+    previewUrl = URL.createObjectURL(currentFile);
+    zoom.value = String(initialZoom);
+    x.value = String(initialX);
+    y.value = String(initialY);
+    update();
+  });
+  return new Promise((resolve) => {
+    const finish = (result) => {
+      bitmap.close?.();
+      URL.revokeObjectURL(previewUrl);
+      root.remove();
+      resolve(result);
+    };
+    root.querySelector("[data-crop-cancel]").addEventListener("click", () => finish(null));
+    root.querySelector("[data-crop-apply]").addEventListener("click", async () => {
+      const source = cropSource();
+      const canvas = document.createElement("canvas");
+      canvas.width = 960;
+      canvas.height = 1200;
+      canvas.getContext("2d").drawImage(bitmap, source.x, source.y, source.width, source.height, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((done) => canvas.toBlob(done, "image/webp", 0.88));
+      const settings = { zoom: Number(zoom.value), x: Number(x.value), y: Number(y.value) };
+      const croppedFile = blob ? new File([blob], `${currentFile.name.replace(/\.[^.]+$/, "")}-crop.webp`, { type: "image/webp" }) : currentFile;
+      finish({ file: croppedFile, settings });
+    });
+  });
+}
+
+function galleryManager(images, thumbs = []) {
+  const slots = Array.from({ length: GALLERY_MAX }, (_, index) => images[index] || "");
+  const thumbSlots = Array.from({ length: GALLERY_MAX }, (_, index) => thumbs[index] || "");
+  return `
+    <div class="gallery-manager">
+      ${slots.map((image, index) => `<input name="gallery.${index}" type="hidden" value="${escapeAdminHtml(image)}"><input name="galleryThumb.${index}" type="hidden" value="${escapeAdminHtml(thumbSlots[index])}">`).join("")}
+      <div class="gallery-manager-actions">
+        <label class="btn btn-primary image-upload">사진 추가<input type="file" accept="image/*" multiple data-gallery-upload></label>
+        <button class="btn" type="button" data-gallery-clear>전체 비우기</button>
+      </div>
+      <p class="admin-message" data-gallery-status>최대 ${GALLERY_MAX}장까지 등록할 수 있습니다. 기존 사진은 유지되고, 사진별 변경/삭제도 가능합니다.</p>
+      <div class="gallery-manager-grid" data-gallery-editor-preview>
+        ${galleryManagerPreview(slots, thumbSlots)}
+      </div>
+    </div>`;
+}
+
+function galleryManagerPreview(images, thumbs = []) {
+  const photos = images.map((image, originalIndex) => ({ image, thumb: thumbs[originalIndex] || image })).filter((photo) => photo.image);
+  return photos.length
+    ? photos.map((photo, index) => `
+      <article class="gallery-manager-item">
+        <img src="${escapeAdminHtml(adminMediaUrl(photo.thumb))}" alt="갤러리 ${index + 1} 미리보기">
+        <div class="gallery-manager-item-actions">
+          <label class="btn image-upload">변경<input type="file" accept="image/*" data-gallery-replace="${index}"></label>
+          <button class="btn btn-danger" type="button" data-gallery-remove="${index}">삭제</button>
+        </div>
+      </article>`).join("")
+    : '<p class="admin-message">등록된 갤러리 사진이 없습니다.</p>';
+}
+
+function copyEditorVisual(key) {
+  if (key === "invitation") return `<div class="copy-editor-notice">${invitationData.invitation.paragraphs.map((text) => `<p>${escapeAdminHtml(text)}</p>`).join("")}</div>`;
+  if (key === "aboutUs") return `<div class="copy-editor-profile-grid">${[invitationData.couple.groom, invitationData.couple.bride].map((person) => `<img src="${escapeAdminHtml(adminMediaUrl(person.photo))}" alt="">`).join("")}</div>`;
+  if (key === "gallery") return `<div class="copy-editor-gallery">${invitationData.gallery.map((photo, index) => ({ photo, thumb: invitationData.galleryThumbs?.[index] || photo })).filter((item) => item.photo).slice(0, 4).map((item) => `<img src="${escapeAdminHtml(adminMediaUrl(item.thumb))}" alt="">`).join("")}</div>`;
+  if (key === "location") return `<div class="copy-editor-location"><strong>${escapeAdminHtml(invitationData.wedding.venue)}</strong><span>${escapeAdminHtml(invitationData.wedding.hall || "")}</span><small>${escapeAdminHtml(invitationData.wedding.address)}</small></div>`;
+  if (key === "weddingDay") return `<p class="copy-editor-date">${escapeAdminHtml(invitationData.wedding.displayDate)}</p>`;
+  if (key === "information") return `<div class="copy-editor-notice">${invitationData.notices.filter((notice) => !notice.hidden).slice(0, 1).map((notice) => `<strong>${escapeAdminHtml(notice.title)}</strong><p>${escapeAdminHtml(notice.text)}</p>`).join("")}</div>`;
+  if (key === "weddingSnap") return '<div class="copy-editor-notice"><strong>Guest Album</strong><p>예식 당일 함께한 사진과 영상을 공유해 주세요.</p></div>';
+  if (key === "attendance") return '<div class="copy-editor-notice"><p>신랑, 신부에게 참석 의사를 미리 전달할 수 있어요.</p></div>';
+  if (key === "account") return `<div class="copy-editor-notice">${invitationData.accounts.slice(0, 2).map((account) => `<p><strong>${escapeAdminHtml(account.side)}</strong> ${escapeAdminHtml(account.bank)} ${escapeAdminHtml(account.number)}</p>`).join("")}</div>`;
+  if (key === "guestbook") return '<div class="copy-editor-notice"><p>따뜻한 축하 메시지를 남겨 주세요.</p></div>';
+  return "";
+}
+
+function listText(items, fields) {
+  return items.map((item) => fields.map((field) => item[field] || "").join(" | ")).join("\n");
+}
+
+function parseList(value, fields) {
+  return value.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+    const values = line.split("|").map((part) => part.trim());
+    return Object.fromEntries(fields.map((field, index) => [field, values[index] || ""]));
+  });
+}
+
+const validSectionIds = ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
+const sectionLabels = {
+  invitation: "초대글",
+  "about-us": "두 사람 소개",
+  "wedding-day": "예식일",
+  location: "오시는 길",
+  gallery: "갤러리",
+  "wedding-snap": "하객 사진·영상 업로드",
+  information: "식장 안내",
+  attendance: "참석 여부",
+  account: "마음 전하기",
+  guestbook: "방명록",
+};
+const venuePresets = [
+  {
+    names: ["그랜드 머큐어 앰배서더 창원", "창원 그랜드머큐어 호텔웨딩", "그랜드머큐어 창원"],
+    address: "경상남도 창원시 성산구 원이대로 332",
+    transport: [
+      { title: "지하철 · 기차", text: "KTX 창원중앙역 또는 창원역에서 호텔까지 차량으로 약 10분입니다." },
+      { title: "버스", text: "창원고속버스터미널에서 호텔까지 차량으로 약 10분입니다. 버스 노선은 변동될 수 있으니 지도 앱에서 최신 경로를 확인해 주세요." },
+      { title: "자가용 · 주차", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요. 주차 안내는 예식 전 호텔에 확인해 주세요." },
+    ],
+  },
+];
+const noticePresets = [
+  ["", "직접 입력"],
+  ["meal", "식사 안내"],
+  ["parking", "주차 안내"],
+  ["photo", "사진 촬영 안내"],
+  ["flower", "화환 안내"],
+];
+const noticePresetValues = {
+  meal: { title: "식사 안내", text: "예식 전후로 연회장을 편하게 이용해 주세요." },
+  parking: { title: "주차 안내", text: "주차 등록은 예식장 로비 키오스크에서 가능합니다." },
+  photo: { title: "사진 촬영 안내", text: "예식 중 사진 촬영은 다른 하객의 관람에 방해되지 않도록 부탁드립니다." },
+  flower: { title: "화환 안내", text: "축하 화환은 정중히 사양합니다. 따뜻한 마음만 감사히 받겠습니다." },
+};
+const bankOptions = ["", "국민은행", "신한은행", "우리은행", "하나은행", "농협은행", "기업은행", "카카오뱅크", "토스뱅크", "새마을금고", "부산은행", "경남은행", "직접 입력"];
+
+function sectionOrderText(items = []) {
+  return items.join("\n");
+}
+
+function parseSectionOrder(value) {
+  return value.split("\n")
+    .map((item) => item.trim())
+    .filter((item, index, items) => validSectionIds.includes(item) && items.indexOf(item) === index);
+}
+
+function sectionOrderEditor(name, label, selected = []) {
+  const ordered = [...selected.filter((id) => validSectionIds.includes(id)), ...validSectionIds.filter((id) => !selected.includes(id))];
+  return `
+    <div class="section-order-editor" data-section-order>
+      <strong>${label}</strong>
+      <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(selected))}">
+      <div class="section-order-list">
+        ${ordered.map((id) => `
+          <div class="section-order-item" data-section-id="${id}">
+            <label><input type="checkbox" ${selected.includes(id) ? "checked" : ""}> <span>${sectionLabels[id]}</span></label>
+            <div>
+              <button class="btn" type="button" data-section-move="-1" aria-label="${sectionLabels[id]} 위로 이동">↑</button>
+              <button class="btn" type="button" data-section-move="1" aria-label="${sectionLabels[id]} 아래로 이동">↓</button>
+            </div>
+          </div>`).join("")}
+      </div>
+    </div>`;
+}
+
+function weddingDateInputValue(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+function weddingDateIso(value) {
+  return value ? `${value}:00+09:00` : "";
+}
+
+function birthdayInputValue(value = "") {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const match = String(value).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if (!match) return "";
+  return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+}
+
+function birthdayDisplayValue(value = "") {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  return `${year}년 ${Number(month)}월 ${Number(day)}일`;
+}
+
+function weddingDisplayDate(value, format = "long_ko") {
+  if (!value) return "";
+  const date = new Date(weddingDateIso(value));
+  if (Number.isNaN(date.getTime())) return "";
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const day = weekdays[date.getDay()];
+  const year = date.getFullYear();
+  const shortYear = String(year).slice(2);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const dateOfMonth = String(date.getDate()).padStart(2, "0");
+  const hour = date.getHours();
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const period = hour < 12 ? "오전" : "오후";
+  const twelveHour = hour % 12 || 12;
+  if (format === "short_ko") return `${shortYear}-${month}-${dateOfMonth} (${day}) ${String(hour).padStart(2, "0")}시 ${minute}분`;
+  if (format === "dot_numeric") return `${year}.${month}.${dateOfMonth} (${day}) ${String(hour).padStart(2, "0")}:${minute}`;
+  if (format === "english") return `${year}. ${month}. ${dateOfMonth}. ${day}요일 · ${String(hour).padStart(2, "0")}:${minute}`;
+  return `${year}. ${month}. ${dateOfMonth}. ${day}요일 ${period} ${twelveHour}시 ${minute}분`;
+}
+
+function venueMapSearchUrl(value) {
+  return `https://map.kakao.com/link/search/${encodeURIComponent(value)}`;
+}
+
+function findVenuePreset(value = "") {
+  const normalized = value.replace(/\s+/g, "").toLowerCase();
+  return venuePresets.find((preset) => preset.names.some((name) => normalized.includes(name.replace(/\s+/g, "").toLowerCase())));
+}
+
+function mapLinksFor(venue = "", address = "") {
+  const query = encodeURIComponent(String(address || "").trim() || String(venue || "").trim());
+  return [
+    { label: "네이버 지도", url: `https://map.naver.com/p/search/${query}` },
+    { label: "카카오맵", url: `https://map.kakao.com/link/search/${query}` },
+    { label: "티맵", url: `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}` },
+  ];
+}
+
+function openAddressSearchModal({ venue = "", address = "", onSelect }) {
+  const root = document.createElement("div");
+  root.className = "address-search-backdrop";
+  const resultMarkup = (query) => {
+    const value = query || venue || address;
+    const preset = findVenuePreset(value);
+    const links = mapLinksFor(value, preset?.address || value);
+    return `
+      <div class="address-search-results">
+        ${preset ? `<button class="address-result-card" type="button" data-address-result="${escapeAdminHtml(preset.address)}" data-venue-result="${escapeAdminHtml(preset.names[0])}">
+          <strong>${escapeAdminHtml(preset.names[0])}</strong>
+          <span>${escapeAdminHtml(preset.address)}</span>
+          <small>이 항목 선택</small>
+        </button>` : ""}
+        <div class="map-links address-map-links">
+          ${links.map((link) => `<a class="btn" href="${escapeAdminHtml(link.url)}" target="_blank" rel="noopener">${escapeAdminHtml(link.label)}</a>`).join("")}
+        </div>
+      </div>`;
+  };
+  root.innerHTML = `<section class="address-search-modal">
+    <div class="signup-modal-head">
+      <div><p class="section-label">Address Search</p><h2>예식장 주소 검색</h2></div>
+      <button class="icon-btn" type="button" data-address-close aria-label="주소 검색 닫기">×</button>
+    </div>
+    <label class="field"><span>웨딩홀 이름으로 검색</span><input data-address-query value="${escapeAdminHtml(venue)}" placeholder="웨딩홀 이름을 입력해 주세요."></label>
+    <div class="address-postcode-embed" data-address-postcode><p class="admin-message">웨딩홀 이름을 입력하면 검색 결과가 표시됩니다.</p></div>
+    <div data-address-results>${resultMarkup(venue || address)}</div>
+    <div class="address-manual">
+      <label class="field"><span>직접 입력 / 수정</span><input data-address-manual value="${escapeAdminHtml(address)}" placeholder="주소를 직접 입력하거나 수정할 수 있어요."></label>
+      <button class="btn btn-primary" type="button" data-address-manual-apply>직접입력 적용</button>
+    </div>
+  </section>`;
+  document.body.append(root);
+  const close = () => root.remove();
+  const queryInput = root.querySelector("[data-address-query]");
+  const results = root.querySelector("[data-address-results]");
+  const postcodeBox = root.querySelector("[data-address-postcode]");
+  const runPostcodeSearch = (keyword) => {
+    if (!postcodeBox) return;
+    if (!keyword) {
+      postcodeBox.innerHTML = `<p class="admin-message">웨딩홀 이름을 입력하면 검색 결과가 표시됩니다.</p>`;
+      return;
+    }
+    if (!window.daum?.Postcode) {
+      postcodeBox.innerHTML = `<p class="admin-message">주소 검색 위젯을 불러오지 못했습니다. 지도 링크나 직접 입력을 이용해 주세요.</p>`;
+      return;
+    }
+    postcodeBox.innerHTML = "";
+    new window.daum.Postcode({
+      oncomplete: (data) => {
+        const roadAddr = data.roadAddress || data.jibunAddress || data.autoRoadAddress || data.autoJibunAddress || "";
+        onSelect({ venue: data.buildingName || queryInput.value.trim() || venue, address: roadAddr });
+        close();
+      },
+      width: "100%",
+      height: "100%",
+    }).embed(postcodeBox, { autoClose: false, q: keyword });
+  };
+  if ((venue || "").trim()) runPostcodeSearch(venue.trim());
+  let searchTimer;
+  queryInput?.addEventListener("input", () => {
+    results.innerHTML = resultMarkup(queryInput.value.trim());
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runPostcodeSearch(queryInput.value.trim()), 450);
+  });
+  root.addEventListener("click", (event) => {
+    if (event.target === root || event.target.closest("[data-address-close]")) close();
+    const result = event.target.closest("[data-address-result]");
+    if (result) {
+      onSelect({ venue: result.dataset.venueResult, address: result.dataset.addressResult });
+      close();
+    }
+    if (event.target.closest("[data-address-manual-apply]")) {
+      onSelect({ venue: queryInput.value.trim(), address: root.querySelector("[data-address-manual]")?.value.trim() || "" });
+      close();
+    }
+  });
+  queryInput?.focus();
+}
+
+function parentNames(value = "") {
+  const parts = String(value || "").split("·").map((item) => item.trim());
+  return parts.length > 1 ? [parts[0] || "", parts[1] || ""] : [parts[0] || "", ""];
+}
+
+function joinParentNames(...names) {
+  const [father = "", mother = ""] = names.map((name) => String(name || "").trim());
+  return father || mother ? `${father} · ${mother}` : "";
+}
+
+function displayParentNames(value = "") {
+  return parentNames(value).filter(Boolean).join(" · ");
+}
+
+function quickInput(key, label, value = "", type = "text") {
+  return `<label class="field"><span>${label}</span><input type="${type}" value="${escapeAdminHtml(value)}" data-quick="${key}"></label>`;
+}
+
+function recommendationEditor(name, label, value, items, isTextarea = false, useModal = false) {
+  return `
+    <div class="recommendation-editor" data-recommendation-editor>
+      ${isTextarea ? textarea(name, label, value, 6) : input(name, label, value)}
+      ${useModal
+        ? `<button class="btn recommendation-open" type="button" data-recommendation-open>추천 문구 목록에서 선택</button>
+          <div class="recommendation-modal" hidden>
+            <div class="recommendation-modal-head"><strong>${label} 추천</strong><button class="btn" type="button" data-recommendation-close>닫기</button></div>
+            <div class="recommendation-modal-list">${items.map((item) => `<button class="recommendation-modal-option" type="button" data-recommendation="${escapeAdminHtml(item)}">${escapeAdminHtml(item)}</button>`).join("")}</div>
+          </div>`
+        : `<div class="recommendation-options">
+            ${items.map((item, index) => `<button class="recommendation-option ${index > 2 ? "is-extra" : ""}" type="button" data-recommendation="${escapeAdminHtml(item)}">${escapeAdminHtml(item)}</button>`).join("")}
+            <button class="recommendation-more" type="button" data-recommendation-more aria-label="${label} 추천 더 보기">＋</button>
+          </div>`}
+    </div>`;
+}
+
+function recommendationSets(groom, bride) {
+  return {
+    hero: ["our wedding day", "together, always", "a beautiful beginning", "with love, forever", "our favorite day", "the start of us"],
+    title: [`${groom.name} ♥ ${bride.name} 결혼합니다`, `${groom.name} · ${bride.name}의 결혼식`, `저희 두 사람, 결혼합니다`, `함께하는 첫날에 초대합니다`, `우리의 새로운 시작`, `소중한 날, 함께해 주세요`],
+    invitationTitle: ["소중한 분들을 초대합니다", "저희의 시작을 함께해 주세요", "따뜻한 축복으로 함께해 주세요", "두 사람이 하나 되는 날", "기쁜 날에 모시고 싶습니다", "함께해 주시면 감사하겠습니다"],
+    invitationParagraphs: [
+      "저희 두 사람이 서로의 가장 가까운 사람이 되어\n새로운 시작을 함께하려 합니다.\n소중한 자리에 함께해 주세요.",
+      "서로를 아끼고 사랑하며\n평생의 동반자로 걸어가려 합니다.\n따뜻한 축복을 나누어 주세요.",
+      "좋은 날, 좋은 분들과 함께\n저희의 첫걸음을 내딛고 싶습니다.\n귀한 걸음으로 자리를 빛내 주세요.",
+      "오랜 시간 곁을 지켜준 두 사람이\n이제 한 가족이 되려 합니다.\n기쁜 마음으로 함께해 주세요.",
+      "서로의 하루를 다정히 지켜주며\n평생을 함께 살아가겠습니다.\n저희의 시작을 축복해 주세요.",
+      "설레는 마음으로 새로운 계절을 맞이합니다.\n두 사람의 약속이 오래도록 빛날 수 있도록\n함께해 주세요.",
+      "각자의 자리에서 서로 다른 시간을 걸어온 저희가\n이제 같은 방향을 바라보며 한 걸음씩 나아가려 합니다.\n저희 두 사람의 새로운 출발을 따뜻한 마음으로 지켜봐 주세요.",
+      "처음 만난 날의 설렘과 함께 웃었던 수많은 순간을 간직하며\n서로의 가장 좋은 친구이자 든든한 가족이 되기로 약속했습니다.\n소중한 분들과 이 기쁨을 함께 나누고 싶습니다.",
+      "서로의 평범한 하루를 특별하게 만들어 준 두 사람이\n이제 매일의 기쁨과 어려움까지 함께 나누려 합니다.\n귀한 걸음으로 저희의 첫날을 축복해 주세요.",
+    ],
+  };
+}
+
+function noticeEditor(notice = {}, index = 0) {
+  return `
+    <div class="notice-editor" data-notice-editor>
+      <div class="notice-editor-head"><strong>식장 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-notice-remove aria-label="식장 안내 ${index + 1} 삭제">−</button></div>
+      ${select(`noticePreset.${index}`, `식장 안내 ${index + 1} 추천`, "", noticePresets)}
+      ${input(`notice.${index}.title`, "제목", notice.title || "")}
+      ${textarea(`notice.${index}.text`, "내용", notice.text || "", 2)}
+      <label class="consent"><input type="checkbox" name="notice.${index}.hidden" ${notice.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
+    </div>`;
+}
+
+function noticeManager(notices = []) {
+  return `
+    <section class="editor-subsection"><div class="editor-subsection-head"><strong>식장 안내</strong><span>식사, 주차, 촬영 등 하객에게 알릴 내용을 관리합니다.</span></div>
+    <div class="notice-manager" data-notice-manager>
+      <div class="notice-manager-list" data-notice-list>${notices.slice(0, 3).map(noticeEditor).join("")}</div>
+      <div class="notice-ai-actions">
+        <button class="btn ai-generate-btn" type="button" data-ai-venue-guide>AI로 식장안내 생성</button>
+        <button class="btn notice-add" type="button" data-notice-add>＋ 식장 안내 추가</button>
+      </div>
+    </div></section>`;
+}
+
+function transportEditor(item = {}, index = 0) {
+  return `
+    <div class="notice-editor" data-transport-editor>
+      <div class="notice-editor-head"><strong>교통 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-transport-remove aria-label="교통 안내 ${index + 1} 삭제">×</button></div>
+      ${input(`transport.${index}.title`, "제목", item.title || "")}
+      ${textarea(`transport.${index}.text`, "내용", item.text || "", 2)}
+      <label class="consent"><input type="checkbox" name="transport.${index}.hidden" ${item.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
+    </div>`;
+}
+
+function transportManager(items = []) {
+  return `
+    <section class="editor-subsection"><div class="editor-subsection-head"><strong>교통 안내</strong><span>가까운 역·정류장 기준으로 경로와 소요시간을 항목별로 관리합니다.</span></div>
+    <p class="admin-message micro-help">AI 연결 시에는 식장 주소 기준 가장 가까운 기차/지하철역과 버스정류장을 찾아 차량·버스·지하철·도보 소요시간을 생성합니다. 도보는 20분 이하일 때만 표시하는 기준으로 작성해 주세요.</p>
+    <div class="notice-manager" data-transport-manager>
+      <div class="notice-manager-list" data-transport-list>${items.map(transportEditor).join("")}</div>
+      <div class="notice-ai-actions">
+        <button class="btn ai-generate-btn" type="button" data-ai-transport-guide>AI로 교통안내 생성</button>
+        <button class="btn notice-add" type="button" data-transport-add>＋ 교통 안내 추가</button>
+      </div>
+    </div></section>`;
+}
+
+function ensureAccountRows(accounts = [], sourceData = invitationData) {
+  const [groomFather = "", groomMother = ""] = parentNames(sourceData.couple?.groom?.parents || "");
+  const [brideFather = "", brideMother = ""] = parentNames(sourceData.couple?.bride?.parents || "");
+  const expectedNames = {
+    "신랑측:신랑": sourceData.couple?.groom?.name || "신랑",
+    "신랑측:아버님": groomFather,
+    "신랑측:어머님": groomMother,
+    "신부측:신부": sourceData.couple?.bride?.name || "신부",
+    "신부측:아버님": brideFather,
+    "신부측:어머님": brideMother,
+  };
+  const defaults = [
+    { side: "신랑측", relation: "신랑", name: expectedNames["신랑측:신랑"], bank: "", number: "" },
+    { side: "신랑측", relation: "아버님", name: groomFather, bank: "", number: "" },
+    { side: "신랑측", relation: "어머님", name: groomMother, bank: "", number: "" },
+    { side: "신부측", relation: "신부", name: expectedNames["신부측:신부"], bank: "", number: "" },
+    { side: "신부측", relation: "아버님", name: brideFather, bank: "", number: "" },
+    { side: "신부측", relation: "어머님", name: brideMother, bank: "", number: "" },
+  ].filter((account) => ["신랑", "신부"].includes(account.relation) || account.name);
+  const normalizeRelation = (relation = "") => {
+    if (relation.includes("아버")) return "아버님";
+    if (relation.includes("어머")) return "어머님";
+    if (relation === "신랑") return "신랑";
+    if (relation === "신부") return "신부";
+    return relation || "";
+  };
+  const normalized = accounts.map((account) => {
+    const side = account.side || "신랑측";
+    const relation = normalizeRelation(account.relation);
+    const expectedName = expectedNames[`${side}:${relation}`];
+    if (expectedName === "") return null;
+    return {
+      side,
+      relation,
+      personName: expectedName || account.personName || account.name || "",
+      name: expectedName || account.name || account.personName || "",
+      bank: account.bank || "",
+      number: account.number || "",
+    };
+  }).filter(Boolean);
+  const missingDefaults = defaults.filter((fallback) =>
+    !normalized.some((account) => account.side === fallback.side && account.relation === fallback.relation));
+  return [...normalized, ...missingDefaults];
+}
+
+function accountManager(accounts = []) {
+  const groups = ["신랑측", "신부측"];
+  const relationOptions = ["신랑", "신부", "아버님", "어머님", "형제", "자매", "직접입력"];
+  const normalizedAccounts = ensureAccountRows(accounts);
+  const accountEditor = (account, index) => `
+    <div class="account-editor" data-account-editor>
+      <button class="icon-btn account-remove" type="button" data-account-remove aria-label="계좌 삭제">×</button>
+      <input type="hidden" name="account.${index}.side" value="${escapeAdminHtml(account.side)}">
+      <div class="account-row account-row-main">
+        ${input(`account.${index}.personName`, "이름", account.personName || account.name || "")}
+        ${select(`account.${index}.relation`, "관계", relationOptions.includes(account.relation) ? account.relation : account.relation ? "직접입력" : "", [["", "선택"], ...relationOptions.map((item) => [item, item])])}
+        ${input(`account.${index}.name`, "예금주", account.name || account.personName || "")}
+      </div>
+      <div class="account-row account-row-custom" data-account-relation-custom ${relationOptions.includes(account.relation) || !account.relation ? "hidden" : ""}>
+        ${input(`account.${index}.relationCustom`, "관계 직접 입력", relationOptions.includes(account.relation) ? "" : account.relation || "")}
+      </div>
+      <div class="account-row account-row-bank">
+        ${select(`account.${index}.bankSelect`, "은행", bankOptions.includes(account.bank) ? account.bank : account.bank ? "직접 입력" : "", bankOptions.map((bank) => [bank, bank || "선택"]))}
+        ${input(`account.${index}.number`, "계좌번호", account.number)}
+      </div>
+      <div class="account-row account-row-custom" data-account-bank-custom ${bankOptions.includes(account.bank) ? "hidden" : ""}>
+        ${input(`account.${index}.bank`, "은행 직접 입력", account.bank)}
+      </div>
+    </div>`;
+  return `
+    <section class="editor-subsection account-manager-section" data-account-manager><div class="editor-subsection-head"><strong>계좌 안내</strong><span>필요한 계좌만 남기고 추가·삭제할 수 있습니다.</span></div>
+    <div class="account-manager" data-account-list>
+      ${groups.map((side) => `
+        <section class="account-side-group" data-account-side="${side}">
+          <div class="account-side-head"><strong>${side}</strong><span>${side === "신랑측" ? "신랑 가족 계좌" : "신부 가족 계좌"}</span></div>
+          <div class="account-side-list">
+            ${normalizedAccounts.map((account, index) => ({ account, index })).filter(({ account }) => account.side === side).map(({ account, index }) => accountEditor(account, index)).join("")}
+          </div>
+          <button class="btn account-add" type="button" data-account-add="${side}">＋ ${side} 계좌 추가</button>
+        </section>`).join("")}
+    </div></section>`;
+}
+
+function renderEditor(message = "", focus = "") {
+  const viewByFocus = { copy: "copy-editor", share: "share-settings", gallery: "gallery", sections: "sections" };
+  rememberAdminView(viewByFocus[focus] || "editor");
+  window.WEDDING_DESIGN?.normalize(invitationData);
+  if (focus !== "copy") document.documentElement.style.removeProperty("--floating-save-bottom");
+  invitationData.accounts = ensureAccountRows(invitationData.accounts);
+  const { groom, bride } = invitationData.couple;
+  const [groomFather = "", groomMother = ""] = parentNames(groom.parents);
+  const [brideFather = "", brideMother = ""] = parentNames(bride.parents);
+  const recommendations = recommendationSets(groom, bride);
+  const gallery = Array.from({ length: GALLERY_MAX }, (_, index) => invitationData.gallery[index] || "");
+  const galleryThumbs = Array.from({ length: GALLERY_MAX }, (_, index) => invitationData.galleryThumbs?.[index] || "");
+  const editorTitle = focus === "share" ? "공유 설정" : focus === "gallery" ? "갤러리 설정" : focus === "copy" ? "편집 기능" : focus === "sections" ? "섹션 설정" : "청첩장 기본 설정";
+  const editorActiveMenu = focus === "copy" ? "copy" : focus === "share" ? "share" : focus === "gallery" ? "content" : focus === "sections" ? "sections" : "editor";
+  const publicToday = dateInputToday();
+  const publicWeddingDay = dateOnly(invitationData.wedding.date);
+  const publicOpenMax = publicWeddingDay ? addDays(publicWeddingDay, -1) : "";
+  let publicOpenValue = invitationData.publicPeriod?.openDate || publicToday;
+  if (publicOpenValue < publicToday) publicOpenValue = publicToday;
+  if (publicOpenMax && publicOpenValue > publicOpenMax) publicOpenValue = publicOpenMax;
+  const publicCloseMax = publicWeddingDay ? addDays(publicWeddingDay, 3) : "";
+  let publicCloseValue = invitationData.publicPeriod?.closeDate || publicWeddingDay;
+  if (publicCloseValue && publicOpenValue && publicCloseValue < publicOpenValue) publicCloseValue = publicWeddingDay || publicOpenValue;
+  if (publicCloseMax && publicCloseValue > publicCloseMax) publicCloseValue = publicCloseMax;
+  adminApp.innerHTML = `
+    ${adminHeader(editorActiveMenu)}
+    ${focus === "gallery" ? contentBackBar("갤러리") : ""}
+    <section class="admin-card admin-editor-view view-${escapeAdminHtml(focus || "basic")}">
+      <div class="admin-editor-intro">
+        <div><p class="section-label">Wedding Workspace</p><h2>${editorTitle}</h2></div>
+        <span class="admin-mode-badge">모바일 편집</span>
+      </div>
+      <p class="admin-message">${escapeAdminHtml(message || "수정 후 맨 아래 저장 버튼을 눌러 주세요. 사진은 선택하면 즉시 업로드됩니다.")}</p>
+      <nav class="admin-quick-actions basic-pane guided-progress" aria-label="입력 단계">
+        <button type="button" data-editor-jump="couple-settings"><strong>1. 핵심 정보</strong><span>이름과 예식 일시</span></button>
+        <button type="button" data-editor-jump="main-media-settings"><strong>2. 첫 화면</strong><span>메인 사진·영상</span></button>
+        <button type="button" data-editor-jump="people-detail-settings"><strong>3. 두 사람</strong><span>연락처와 대표사진</span></button>
+        <button type="button" data-editor-jump="wedding-detail-settings"><strong>4. 장소 안내</strong><span>주소와 표시 일시</span></button>
+      </nav>
+      <form class="editor-form" id="invitation-editor">
+        <fieldset class="basic-pane guided-step" id="couple-settings" data-guided-step="core"><legend>1. 가장 먼저 입력해 주세요</legend>
+          <p class="admin-message">여기에서 입력한 이름, 부모님 성함, 식장과 예식 일시는 아래 세부 설정에 자동으로 반영됩니다.</p>
+          <div class="quick-couple-cards">
+            <section class="quick-side-card">
+              <h3>신랑측 정보</h3>
+              ${quickInput("couple.groom.name", "신랑 이름", groom.name)}
+              ${quickInput("couple.groom.birthday", "신랑 생일", birthdayInputValue(groom.birthday), "date")}
+              ${quickInput("groomFather", "신랑 아버지", groomFather)}
+              ${quickInput("groomMother", "신랑 어머니", groomMother)}
+            </section>
+            <section class="quick-side-card">
+              <h3>신부측 정보</h3>
+              ${quickInput("couple.bride.name", "신부 이름", bride.name)}
+              ${quickInput("couple.bride.birthday", "신부 생일", birthdayInputValue(bride.birthday), "date")}
+              ${quickInput("brideFather", "신부 아버지", brideFather)}
+              ${quickInput("brideMother", "신부 어머니", brideMother)}
+            </section>
+          </div>
+          <div class="quick-input-grid">
+            ${quickInput("wedding.venue", "식장 이름", invitationData.wedding.venue)}
+            ${quickInput("wedding.hall", "홀 정보", invitationData.wedding.hall || "")}
+            ${quickInput("wedding.date", "예식 일시", weddingDateInputValue(invitationData.wedding.date), "datetime-local")}
+          </div>
+          <div class="visibility-switch-grid">
+            ${visibilitySelect("displaySettings.showInvitationParents", "초대글 부모님 성함", invitationData.displaySettings?.showInvitationParents)}
+            ${visibilitySelect("displaySettings.showProfileParents", "두 사람 소개 부모님 성함", invitationData.displaySettings?.showProfileParents)}
+            ${visibilitySelect("displaySettings.showProfileBirthdays", "두 사람 소개 생일", invitationData.displaySettings?.showProfileBirthdays)}
+          </div>
+          <p class="admin-message micro-help">비공개로 바꿔도 계좌 항목 자동 생성에는 부모님 성함을 그대로 사용합니다.</p>
+          <button class="btn quick-apply" type="button" data-quick-apply><span>권장</span> 1번 입력값을 아래 항목에 반영하기</button>
+          <p class="admin-message micro-help">이 버튼으로 관련 항목을 먼저 맞춘 뒤, 우측 하단의 변경사항 저장 버튼으로 최종 저장합니다.</p>
+        </fieldset>
+        <fieldset class="basic-pane guided-step" id="main-media-settings" data-guided-step="media" data-step-requires="core"><legend>2. 첫 화면</legend>
+          ${heroActiveMediaField(invitationData.hero)}
+          ${imageField("hero.image", "메인 사진", invitationData.hero.image)}
+          ${videoField("hero.video", "메인 영상 (선택)", invitationData.hero.video || "")}
+        </fieldset>
+        <fieldset class="share-pane" id="share-settings"><legend>카카오톡 공유와 SEO</legend>
+          ${imageField("meta.shareImage", "카카오톡 공유 대표 이미지 (선택 · 세로 3:4 권장)", invitationData.meta.shareImage || "")}
+          <p class="admin-message micro-help">공유 대표 이미지를 등록하지 않으면 메인 사진이 자동으로 동일하게 적용됩니다. 카카오톡 카드에 별도 세로 사진을 사용하려면 600 x 800px 또는 같은 3:4 비율 이미지를 등록해 주세요.</p>
+          ${recommendationEditor("meta.title", "공유 카드·검색 페이지 제목", invitationData.meta.title, recommendations.title)}
+          ${textarea("meta.description", "공유 설명", invitationData.meta.description)}
+          <p class="admin-message micro-help">카카오톡으로 링크를 보낼 때 대표 이미지 아래에 함께 표시되는 소개 문구입니다. 청첩장 본문에는 표시되지 않습니다.</p>
+        </fieldset>
+        <div class="couple-editor-grid basic-pane guided-step" id="people-detail-settings" data-guided-step="people" data-step-requires="media">
+        <fieldset class="couple-editor-card"><legend>신랑 정보</legend>
+          <input type="hidden" name="couple.groom.name" value="${escapeAdminHtml(groom.name)}">
+          <input type="hidden" name="couple.groom.parents" value="${escapeAdminHtml(groom.parents)}">
+          <input type="hidden" name="couple.groom.birthday" value="${escapeAdminHtml(birthdayInputValue(groom.birthday))}">
+          <div class="auto-filled-fields"><strong>${escapeAdminHtml(groom.name)}</strong><span><b>부모님</b>${escapeAdminHtml(displayParentNames(groom.parents) || "미입력")}</span><span><b>생일</b>${escapeAdminHtml(groom.birthday || "미입력")}</span></div>
+          ${input("couple.groom.relation", "부모님 성함 뒤 관계 문구 · 직접 수정", groom.relation)}
+          ${input("couple.groom.phone", "연락처", groom.phone)}
+          ${input("couple.groom.mbti", "별칭·MBTI 등", groom.mbti)}
+          ${tagFields("couple.groom.tags", "성격태그", groom.tags)}
+          ${imageField("couple.groom.photo", "신랑 사진", groom.photo)}
+        </fieldset>
+        <fieldset class="couple-editor-card"><legend>신부 정보</legend>
+          <input type="hidden" name="couple.bride.name" value="${escapeAdminHtml(bride.name)}">
+          <input type="hidden" name="couple.bride.parents" value="${escapeAdminHtml(bride.parents)}">
+          <input type="hidden" name="couple.bride.birthday" value="${escapeAdminHtml(birthdayInputValue(bride.birthday))}">
+          <div class="auto-filled-fields"><strong>${escapeAdminHtml(bride.name)}</strong><span><b>부모님</b>${escapeAdminHtml(displayParentNames(bride.parents) || "미입력")}</span><span><b>생일</b>${escapeAdminHtml(bride.birthday || "미입력")}</span></div>
+          ${input("couple.bride.relation", "부모님 성함 뒤 관계 문구 · 직접 수정", bride.relation)}
+          ${input("couple.bride.phone", "연락처", bride.phone)}
+          ${input("couple.bride.mbti", "별칭·MBTI 등", bride.mbti)}
+          ${tagFields("couple.bride.tags", "성격태그", bride.tags)}
+          ${imageField("couple.bride.photo", "신부 사진", bride.photo)}
+        </fieldset>
+        </div>
+        <fieldset class="basic-pane guided-step" id="wedding-detail-settings" data-guided-step="wedding" data-step-requires="media"><legend>3. 예식 장소와 표시 정보</legend>
+          <input type="hidden" name="wedding.date" value="${escapeAdminHtml(weddingDateInputValue(invitationData.wedding.date))}">
+          <input type="hidden" name="wedding.venue" value="${escapeAdminHtml(invitationData.wedding.venue)}">
+          <input type="hidden" name="wedding.hall" value="${escapeAdminHtml(invitationData.wedding.hall || "")}">
+          <div class="auto-filled-fields"><strong>${escapeAdminHtml(invitationData.wedding.venue)}</strong><span>${escapeAdminHtml(invitationData.wedding.hall || "홀 정보 없음")} · ${escapeAdminHtml(invitationData.wedding.displayDate)}</span></div>
+          ${select("wedding.displayDateFormat", "화면 표시 일시 형식", invitationData.wedding.displayDateFormat || "long_ko", [["long_ko", "2026. 10. 04. 일요일 오후 12시 20분"], ["short_ko", "26-10-04 (일) 12시 20분"], ["dot_numeric", "2026.10.04 (일) 12:20"], ["english", "2026. 10. 04. 일요일 · 12:20"], ["custom", "직접 입력"]])}
+          ${input("wedding.displayDateCustom", "화면 표시 일시 · 선택 후 수정 가능", invitationData.wedding.displayDateCustom || invitationData.wedding.displayDate)}
+          ${input("wedding.address", "주소", invitationData.wedding.address)}
+          ${input("wedding.officialUrl", "식장 공식홈페이지 URL", invitationData.wedding.officialUrl || "", "url")}
+          <div class="venue-actions">
+            <button class="btn btn-primary" type="button" data-address-search>주소 검색</button>
+          </div>
+          <p class="admin-message" data-venue-status>등록된 식장은 이름을 입력하면 주소가 자동으로 채워집니다. 다른 식장은 주소 검색에서 지도 확인 또는 직접입력을 사용할 수 있습니다.</p>
+        </fieldset>
+        <details class="editor-details basic-pane guided-step" open data-guided-step="accounts" data-step-requires="wedding"><summary>4. 계좌 안내</summary><div class="editor-details-body">
+          ${textarea("sectionDescriptions.account", "계좌 안내 문구", invitationData.sectionDescriptions?.account || "참석이 어려우신 분들을 위해\n계좌번호를 안내해 드립니다.")}
+          ${accountManager(invitationData.accounts)}
+        </div></details>
+        <details class="editor-details basic-pane guided-step" open data-guided-step="guestPhotos" data-step-requires="wedding"><summary>5. 공개기간과 하객앨범</summary><div class="editor-details-body">
+          <div class="quick-input-grid">
+            <label class="field"><span>청첩장 공개 시작일</span><input name="publicPeriod.openDate" type="date" value="${escapeAdminHtml(publicOpenValue)}" min="${escapeAdminHtml(publicToday)}" max="${escapeAdminHtml(publicOpenMax)}"></label>
+            <label class="field"><span>청첩장 공개 종료일</span><input name="publicPeriod.closeDate" type="date" value="${escapeAdminHtml(publicCloseValue)}" min="${escapeAdminHtml(publicOpenValue)}" max="${escapeAdminHtml(publicCloseMax)}"></label>
+            ${input("guestPhotos.eventDate", "하객 업로드 오픈 날짜", invitationData.guestPhotos?.eventDate || dateOnly(invitationData.wedding.date) || "", "date")}
+            ${select("guestPhotos.previewVisible", "하객앨범 미리보기", String(invitationData.guestPhotos?.previewVisible ?? true), [["true", "표시"], ["false", "숨김"]])}
+          </div>
+          <p class="admin-message micro-help">공개 종료일은 예식일 기준 이후 3일까지만 설정할 수 있습니다. 이 값들은 각 일반관리자 계정의 청첩장에만 적용됩니다.</p>
+        </div></details>
+        <section class="copy-pane" data-copy-editor-panel>
+          <div class="copy-editor-page">
+            <div class="copy-editor-toolbar"><div><strong>편집 기능</strong><small>점선 영역을 누르면 아래 도구가 해당 영역에 맞게 바뀝니다.</small></div></div>
+            ${editorDesignPanel()}
+            <p class="admin-message copy-editor-guide">공개 청첩장에서 수정 가능한 영역만 점선으로 표시됩니다.</p>
+            <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260609-v13" title="공개 청첩장 문구 수정 미리보기" data-copy-editor-frame></iframe>
+            <aside class="copy-editor-drawer" data-copy-editor-drawer>
+            <section class="copy-editor-section copy-editor-intro-settings">
+              <p class="section-label">Intro Overlay</p><h2>진입 화면</h2>
+              <p class="admin-message micro-help">링크 접속 직후 반투명 배경 위에서 이름이 타이핑되는 화면입니다.</p>
+          ${introDesignEditor(groom, bride)}
+            </section>
+            </aside>
+            <div class="copy-editor-field-store" hidden>
+          ${Object.entries(invitationData.sectionTitles || {}).map(([key, title]) => `
+              <div class="quick-input-grid">
+              ${input(`sectionTitles.${key}.en`, `${key} 영문 타이틀`, title.en || "")}
+              ${input(`sectionTitles.${key}.ko`, `${key} 국문 타이틀`, title.ko || "")}
+              </div>
+              ${key === "invitation" ? `${recommendationEditor("invitation.title", "초대 문구 제목", invitationData.invitation.title, recommendations.invitationTitle)}
+              ${textarea("invitation.paragraphs", "초대 문구", invitationData.invitation.paragraphs.join("\n\n"))}` : ""}`).join("")}
+          ${textarea("sectionDescriptions.attendance", "참석 의사 안내 문구", invitationData.sectionDescriptions?.attendance || "신랑, 신부에게 참석의사를\n미리 전달할 수 있어요.")}
+          ${textarea("sectionDescriptions.guestbook", "방명록 안내 문구", invitationData.sectionDescriptions?.guestbook || "따뜻한 마음을 짧게 남겨 주세요.")}
+          ${textarea("sectionDescriptions.weddingSnap", "게스트앨범 안내 문구", invitationData.sectionDescriptions?.weddingSnap || "오늘의 추억은 여러분의 한 장에서 완성돼요.\n예식 당일, 아래 버튼으로 가볍게 공유해주세요!")}
+          ${textarea("ending.text", "마지막 문구", invitationData.ending.text)}
+          ${imageField("ending.image", "마지막 사진", invitationData.ending.image)}
+            </div>
+          </div>
+        </section>
+        <section class="editor-details content-pane content-settings-card" id="gallery-settings"><div class="editor-details-title">갤러리<button class="btn btn-secondary gallery-modal-close" type="button" data-gallery-modal-close hidden>닫기</button></div><div class="editor-details-body">
+          <p class="admin-message">최대 ${GALLERY_MAX}장까지 등록할 수 있습니다. 공개 화면에는 접속할 때마다 등록 사진 중 무작위 6장이 미리보기로 표시됩니다.</p>
+          ${select("galleryDisplayMode", "사진 확대 화면 표시 방식", invitationData.galleryDisplayMode || "portrait", [["portrait", "세로형 화면에 맞추기"], ["original", "원본 사진 비율 유지"]])}
+          ${galleryManager(gallery, galleryThumbs)}
+        </div></section>
+        <details class="editor-details section-pane" open data-guided-step="sections" data-step-requires="wedding"><summary>섹션 순서와 노출 설정</summary><div class="editor-details-body">
+          <p class="admin-message">표시할 섹션을 체크하고 화살표 버튼으로 순서를 정해 주세요.</p>
+          <div class="section-order-columns">
+            ${sectionOrderEditor("sectionSettings.preWedding", "결혼식 전날까지", invitationData.sectionSettings?.preWedding)}
+            ${sectionOrderEditor("sectionSettings.weddingDay", "결혼식 당일 이후", invitationData.sectionSettings?.weddingDay)}
+          </div>
+          <div class="section-preview-actions">
+            <a class="btn" href="./index.html?previewSectionMode=preWedding" target="_blank" rel="noopener">결혼식 전 화면 미리보기</a>
+            <a class="btn btn-primary" href="./index.html?previewSectionMode=weddingDay" target="_blank" rel="noopener">결혼식 당일 이후 미리보기</a>
+          </div>
+          <p class="admin-message micro-help">변경한 순서를 저장한 다음 미리보기 버튼을 눌러 주세요.</p>
+        </div></details>
+        <button class="btn btn-primary editor-save" id="editor-save">청첩장 저장</button>
+      </form>
+    </section>`;
+  bindAdminNavigation();
+  bindEditor();
+  if (focus === "share") document.querySelector("#share-settings")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setNested(target, path, value) {
+  const keys = path.split(".");
+  const last = keys.pop();
+  const parent = keys.reduce((object, key) => {
+    if (!object[key] || typeof object[key] !== "object") object[key] = {};
+    return object[key];
+  }, target);
+  parent[last] = value;
+}
+
+function getNested(target, path, fallback = "") {
+  return path.split(".").reduce((current, key) => current?.[key], target) ?? fallback;
+}
+
+function editorData(form) {
+  const next = JSON.parse(JSON.stringify(invitationData));
+  const fields = new FormData(form);
+  for (const [name, value] of fields.entries()) {
+    if (name === "appearance.preset" || name === "editorPresetId" || name.startsWith("notice.") || name.startsWith("noticePreset.") || name.startsWith("account.") || name.startsWith("transport.")) {
+      continue;
+    }
+    if (name === "guestPhotos.previewVisible" || name.startsWith("displaySettings.")) {
+      setNested(next, name, value === "true");
+    } else if (name === "wedding.date") {
+      setNested(next, name, weddingDateIso(value));
+    } else if (name === "couple.groom.birthday" || name === "couple.bride.birthday") {
+      setNested(next, name, birthdayDisplayValue(value));
+    } else if (name.startsWith("sectionSettings.")) {
+      setNested(next, name, parseSectionOrder(value));
+    } else if (name === "couple.groom.tags" || name === "couple.bride.tags") {
+      continue;
+    } else if (name === "invitation.paragraphs") {
+      setNested(next, name, value.split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean));
+    } else if (name === "rsvp.transportOptions") {
+      const options = value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+      setNested(next, name, options.includes("직접입력") ? options : [...options, "직접입력"]);
+    } else if (name === "notices") {
+      next.notices = parseList(value, ["title", "text"]);
+    } else {
+      setNested(next, name, value.trim());
+    }
+  }
+  next.notices = [...form.querySelectorAll("[data-notice-editor]")].map((editor) => ({
+    title: editor.querySelector('input[name*=".title"]').value.trim(),
+    text: editor.querySelector('textarea[name*=".text"]').value.trim(),
+    hidden: editor.querySelector('input[name*=".hidden"]').checked,
+  })).filter((notice) => notice.title || notice.text);
+  next.transport = [...form.querySelectorAll("[data-transport-editor]")].map((editor) => ({
+    title: editor.querySelector('input[name*=".title"]').value.trim(),
+    text: editor.querySelector('textarea[name*=".text"]').value.trim(),
+    hidden: editor.querySelector('input[name*=".hidden"]').checked,
+  })).filter((item) => item.title || item.text);
+  next.couple.groom.tags = fields.getAll("couple.groom.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
+  next.couple.bride.tags = fields.getAll("couple.bride.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
+  next.accounts = ensureAccountRows([...form.querySelectorAll("[data-account-editor]")].map((editor) => {
+    const relationSelect = editor.querySelector('select[name*=".relation"]')?.value || "";
+    const relationCustom = editor.querySelector('input[name*=".relationCustom"]')?.value.trim() || "";
+    const bankSelect = editor.querySelector('select[name*=".bankSelect"]')?.value || "";
+    const bankCustom = editor.querySelector('input[name*=".bank"]')?.value.trim() || "";
+    return {
+      side: editor.querySelector('input[name*=".side"]')?.value.trim() || "신랑측",
+      personName: editor.querySelector('input[name*=".personName"]')?.value.trim() || "",
+      name: editor.querySelector('input[name*=".name"]')?.value.trim() || "",
+      bank: bankSelect === "직접 입력" ? bankCustom : bankSelect,
+      number: editor.querySelector('input[name*=".number"]')?.value.trim() || "",
+      relation: relationSelect === "직접입력" ? relationCustom : relationSelect,
+    };
+  }).filter((account) => account.name || account.bank || account.number || account.relation), next);
+  const selectedPreset = next.designSystem?.themes?.find((theme) => theme.id === fields.get("editorPresetId"));
+  if (selectedPreset) {
+    next.appearance.theme = selectedPreset.type === "color" ? selectedPreset.id : (next.appearance.theme || "sky");
+    next.appearance.movieConcept = selectedPreset.type === "movie" ? selectedPreset.id : "none";
+    next.appearance.design = next.appearance.design || {};
+    next.appearance.design.presetId = selectedPreset.id;
+  }
+  next.appearance.design = next.appearance.design || {};
+  next.appearance.design.heroEyebrowEnabled = fields.get("appearance.design.heroEyebrowEnabled") === "on";
+  next.appearance.design.heroNamesEnabled = fields.get("appearance.design.heroNamesEnabled") === "on";
+  next.appearance.design.heroDateEnabled = fields.get("appearance.design.heroDateEnabled") === "on";
+  next.appearance.design.heroTextXPercent = Number(fields.get("appearance.design.heroTextXPercent") || next.appearance.design.heroTextXPercent || 50);
+  next.appearance.design.heroTextYPercent = Number(fields.get("appearance.design.heroTextYPercent") || next.appearance.design.heroTextYPercent || 76);
+  if (fields.get("appearance.design.heroDecoration")) next.appearance.design.heroDecoration = fields.get("appearance.design.heroDecoration");
+  if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
+  next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
+  next.wedding.displayDate = form.elements["wedding.displayDateCustom"].value.trim();
+  next.wedding.mapLinks = mapLinksFor(next.wedding.venue, next.wedding.address);
+  return next;
+}
+
+function bindEditor() {
+  const form = document.querySelector("#invitation-editor");
+  const copyEditor = form.querySelector("[data-copy-editor-panel]");
+  const bindGuidedBasicFlow = () => {
+    const host = document.querySelector(".admin-editor-view.view-basic");
+    if (!host) return;
+    const steps = [...form.querySelectorAll("[data-guided-step]")];
+    const saveButtons = [...document.querySelectorAll('#editor-save, .admin-floating-save[form="invitation-editor"]')];
+    const requiredByStep = {
+      core: ["couple.groom.name", "couple.bride.name", "wedding.venue", "wedding.date"],
+      media: ["hero.image"],
+      people: [],
+      wedding: ["wedding.address"],
+      accounts: [],
+      guestPhotos: [],
+      sections: [],
+    };
+    const savedValueFieldsByStep = {
+      media: ["hero.image", "hero.video"],
+      people: ["couple.groom.phone", "couple.bride.phone", "couple.groom.photo", "couple.bride.photo"],
+      wedding: ["wedding.address"],
+      accounts: ["account.0.number", "account.1.number", "account.2.number", "account.3.number", "account.4.number", "account.5.number"],
+      guestPhotos: ["guestPhotos.eventDate", "publicPeriod.openDate", "publicPeriod.closeDate"],
+      sections: ["sectionSettings.preWedding", "sectionSettings.weddingDay"],
+    };
+    const hasValue = (name) => Boolean(form.elements[name]?.value?.trim?.());
+    const complete = (step) => (requiredByStep[step] || []).every(hasValue);
+    const hasAnySavedValue = (step) => (savedValueFieldsByStep[step] || []).some(hasValue);
+    const update = () => {
+      host.classList.add("is-guided-ready");
+      const opened = new Set(["core"]);
+      const stepOrder = ["media", "people", "wedding", "accounts", "guestPhotos", "sections"];
+      stepOrder.forEach((stepName) => {
+        const step = steps.find((item) => item.dataset.guidedStep === stepName);
+        if (!step) return;
+        const requires = step.dataset.stepRequires;
+        const canOpen = hasAnySavedValue(stepName) || !requires || complete(requires);
+        if (canOpen) opened.add(stepName);
+      });
+      steps.forEach((step) => {
+        const visible = opened.has(step.dataset.guidedStep);
+        step.classList.toggle("is-visible", visible);
+        step.classList.toggle("is-complete", complete(step.dataset.guidedStep));
+      });
+      saveButtons.forEach((button) => { button.disabled = !(complete("core") && complete("wedding")); });
+    };
+    form.addEventListener("input", update);
+    form.addEventListener("change", update);
+    update();
+  };
+  bindGuidedBasicFlow();
+  const updateIntroDesignPreview = () => {
+    const preview = copyEditor.querySelector("[data-intro-design-preview]");
+    if (!preview) return;
+    const value = (name, fallback) => form.elements[`hero.introDesign.${name}`]?.value || fallback;
+    preview.style.setProperty("--intro-align", form.elements["hero.introDesign.align"]?.value || "center");
+    preview.style.setProperty("--intro-eyebrow-size", `${value("eyebrowSize", 11)}px`);
+    preview.style.setProperty("--intro-name-size", `${value("nameSize", 30)}px`);
+    preview.style.setProperty("--intro-date-size", `${value("dateSize", 11)}px`);
+    preview.style.setProperty("--intro-eyebrow-name-gap", `${value("eyebrowNameGap", 10)}px`);
+    preview.style.setProperty("--intro-name-date-gap", `${value("nameDateGap", 10)}px`);
+    preview.style.setProperty("--intro-offset-y", `${value("offsetY", 0)}px`);
+    preview.querySelector("[data-intro-preview-eyebrow]").textContent = form.elements["hero.introEyebrow"].value || invitationData.hero.eyebrow || "our wedding day";
+    preview.querySelector("[data-intro-preview-name]").textContent = form.elements["hero.introName"].value || `${form.elements["couple.groom.name"].value} · ${form.elements["couple.bride.name"].value}`;
+    preview.querySelector("[data-intro-preview-date]").textContent = form.elements["hero.introDate"].value || form.elements["wedding.displayDateCustom"].value;
+  };
+  copyEditor.querySelectorAll('[name^="hero.intro"]').forEach((field) => field.addEventListener("input", () => {
+    if (field.type === "range") field.nextElementSibling.textContent = field.value;
+    updateIntroDesignPreview();
+  }));
+  copyEditor.querySelector('[name="hero.introDesign.align"]')?.addEventListener("change", updateIntroDesignPreview);
+  updateIntroDesignPreview();
+  const toolPanel = copyEditor.querySelector("[data-editor-tool-panel]");
+  let activeProfileTarget = "";
+  let activeTextTarget = null;
+  let activeInlineEditor = null;
+  let frameDocumentRef = null;
+  let refreshEditHandles = () => {};
+  const previewDraft = () => {
+    try {
+      return editorData(form);
+    } catch {
+      return JSON.parse(JSON.stringify(invitationData));
+    }
+  };
+  const refreshFrameAppearance = () => {
+    const frameWindow = copyEditor.querySelector("[data-copy-editor-frame]")?.contentWindow;
+    const frameDocument = frameWindow?.document;
+    if (!frameWindow || !frameDocument?.body) return;
+    const draft = previewDraft();
+    frameWindow.WEDDING_DESIGN?.normalize(draft);
+    frameWindow.WEDDING_DESIGN?.apply(draft, frameDocument.body);
+    const position = draft.hero?.contentPosition || "bottom";
+    const heroContent = frameDocument.querySelector(".hero-content");
+    if (heroContent) {
+      heroContent.classList.remove("hero-content-top", "hero-content-middle", "hero-content-bottom");
+      heroContent.classList.add(`hero-content-${position}`);
+    }
+    renderHeroFrameMedia();
+  };
+  const refreshFrameLists = () => {
+    const frameDocument = frameDocumentRef;
+    if (!frameDocument) return;
+    const draft = previewDraft();
+    const transportWrap = frameDocument.querySelector(".transport");
+    if (transportWrap) {
+      transportWrap.innerHTML = (draft.transport || [])
+        .filter((item) => !item.hidden)
+        .map((item) => `<div><strong>${escapeAdminHtml(item.title)}</strong>${escapeAdminHtml(item.text)}</div>`)
+        .join("");
+    }
+    const notices = (draft.notices || []).filter((notice) => !notice.hidden);
+    const informationSlide = frameDocument.querySelector("[data-information-slide]");
+    if (informationSlide) {
+      informationSlide.innerHTML = notices.length
+        ? `<article class="information-slide"><h3>${escapeAdminHtml(notices[0].title)}</h3><p>${escapeAdminHtml(notices[0].text)}</p></article>`
+        : '<article class="information-slide"><p>표시할 식장 안내가 없습니다.</p></article>';
+    }
+    frameDocument.querySelectorAll(".information-dots i").forEach((dot, index) => {
+      dot.hidden = index >= notices.length;
+      dot.classList.toggle("is-active", index === 0);
+    });
+    frameDocument.querySelector(".information-slider")?.setAttribute("data-information-index", "0");
+    frameDocument.querySelectorAll(".transport, .information-slider").forEach((item) => item.classList.add("copy-editable-target"));
+    refreshEditHandles();
+  };
+  const refreshFrameGallery = () => {
+    if (!frameDocumentRef) return;
+    const images = Array.from({ length: GALLERY_MAX }, (_, index) => form.elements[`gallery.${index}`]?.value || "");
+    const thumbs = Array.from({ length: GALLERY_MAX }, (_, index) => form.elements[`galleryThumb.${index}`]?.value || "");
+    const photos = images.map((image, index) => ({ image, thumb: thumbs[index] || image })).filter((photo) => photo.image);
+    const galleryGrid = frameDocumentRef.querySelector(".gallery-grid");
+    if (!galleryGrid) return;
+    galleryGrid.innerHTML = photos.slice(0, 6).map((photo, index) => `
+      <button class="gallery-item" data-gallery="${index}" aria-label="사진 ${index + 1} 크게 보기">
+        <span class="media" style="background-image:url('${escapeAdminHtml(adminMediaUrl(photo.thumb))}')"></span>
+      </button>`).join("");
+    frameDocumentRef.querySelector("#gallery")?.classList.add("copy-editable-target");
+    frameDocumentRef.querySelector("#gallery")?.setAttribute("data-edit-label", "갤러리 사진");
+    refreshEditHandles();
+  };
+  const refreshSelectedTextStyle = () => {
+    if (!activeTextTarget) return;
+    const sizeField = copyEditor.querySelector("[data-preview-text-size]");
+    const offsetField = copyEditor.querySelector("[data-preview-text-y]");
+    const size = sizeField?.value;
+    const offset = offsetField?.value || "0";
+    const targets = [activeTextTarget, activeInlineEditor?.field].filter((target) => target?.isConnected);
+    targets.forEach((target) => {
+      if (size) target.style.fontSize = `${size}px`;
+      target.style.transform = `translateY(${offset}px)`;
+      target.style.position = "relative";
+      target.style.zIndex = "18";
+    });
+    activeTextTarget.dataset.textSize = size || "";
+    activeTextTarget.dataset.textOffsetY = offset;
+    copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(`현재 ${size} · 원래 ${activeTextTarget.dataset.originalTextSize || size}`);
+    copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(`현재 ${offset} · 원래 ${activeTextTarget.dataset.originalTextOffsetY || 0}`);
+  };
+  const selectedTranslateY = (target) => {
+    const match = /translateY\((-?\d+(?:\.\d+)?)px\)/.exec(target.style.transform || "");
+    return match ? Number(match[1]) : 0;
+  };
+  const prepareTextSliders = (target) => {
+    const computed = frameDocumentRef?.defaultView?.getComputedStyle(target);
+    const currentSize = Math.round(Number.parseFloat(target.style.fontSize || computed?.fontSize || "16"));
+    const currentOffset = Math.round(Number(target.dataset.textOffsetY || selectedTranslateY(target) || 0));
+    target.dataset.originalTextSize ||= String(currentSize);
+    target.dataset.originalTextOffsetY ||= String(currentOffset);
+    const sizeField = copyEditor.querySelector("[data-preview-text-size]");
+    const yField = copyEditor.querySelector("[data-preview-text-y]");
+    if (sizeField) sizeField.value = String(Math.max(Number(sizeField.min), Math.min(Number(sizeField.max), currentSize)));
+    if (yField) yField.value = String(Math.max(Number(yField.min), Math.min(Number(yField.max), currentOffset)));
+    copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(`현재 ${sizeField?.value || currentSize} · 원래 ${target.dataset.originalTextSize}`);
+    copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(`현재 ${yField?.value || currentOffset} · 원래 ${target.dataset.originalTextOffsetY}`);
+  };
+  const resetSelectedTextStyle = () => {
+    if (!activeTextTarget) return;
+    const size = activeTextTarget.dataset.originalTextSize || "16";
+    const offset = activeTextTarget.dataset.originalTextOffsetY || "0";
+    const sizeField = copyEditor.querySelector("[data-preview-text-size]");
+    const yField = copyEditor.querySelector("[data-preview-text-y]");
+    if (sizeField) sizeField.value = size;
+    if (yField) yField.value = offset;
+    refreshSelectedTextStyle();
+  };
+  const currentHeroActiveMedia = () => {
+    const video = form.elements["hero.video"]?.value?.trim();
+    const selected = form.elements["hero.activeMedia"]?.value || "image";
+    return selected === "video" && video ? "video" : "image";
+  };
+  const updateHeroMediaControls = () => {
+    const image = form.elements["hero.image"]?.value?.trim() || "";
+    const video = form.elements["hero.video"]?.value?.trim() || "";
+    const hasBoth = Boolean(image && video);
+    const active = currentHeroActiveMedia();
+    form.querySelectorAll("[data-hero-active-media], [data-hero-dock-active]").forEach((item) => item.classList.toggle("is-hidden", !hasBoth));
+    form.querySelectorAll('[name="hero.activeMedia"]').forEach((field) => { field.checked = field.value === active; });
+    copyEditor.querySelectorAll("[data-hero-active]").forEach((button) => button.classList.toggle("is-active", button.dataset.heroActive === active));
+    const imageThumb = copyEditor.querySelector("[data-hero-image-thumb]");
+    if (imageThumb) imageThumb.style.backgroundImage = image ? `url("${adminMediaUrl(image).replace(/"/g, "%22")}")` : "";
+    const videoThumb = copyEditor.querySelector("[data-hero-video-thumb]");
+    if (videoThumb) videoThumb.textContent = video ? "VIDEO" : "＋";
+    copyEditor.querySelector('[data-tool-action="hero-image"]')?.classList.toggle("has-media", Boolean(image));
+    copyEditor.querySelector('[data-tool-action="hero-video"]')?.classList.toggle("has-media", Boolean(video));
+    copyEditor.querySelector('[data-tool-action="hero-image"] strong')?.replaceChildren(image ? "이미지 등록됨" : "이미지 업로드");
+    copyEditor.querySelector('[data-tool-action="hero-video"] strong')?.replaceChildren(video ? "영상 등록됨" : "영상 업로드");
+    copyEditor.querySelector('[data-hero-media-actions="image"]')?.toggleAttribute("hidden", true);
+    copyEditor.querySelector('[data-hero-media-actions="video"]')?.toggleAttribute("hidden", true);
+  };
+  const renderHeroFrameMedia = () => {
+    if (!frameDocumentRef) return;
+    const heroMedia = frameDocumentRef.querySelector(".hero-media");
+    if (!heroMedia) return;
+    const image = form.elements["hero.image"]?.value?.trim() || "";
+    const video = form.elements["hero.video"]?.value?.trim() || "";
+    const active = currentHeroActiveMedia();
+    heroMedia.style.backgroundImage = image ? `url("${adminMediaUrl(image).replace(/"/g, "%22")}")` : "";
+    heroMedia.dataset.activeMedia = active;
+    heroMedia.innerHTML = active === "video" && video
+      ? `<video class="hero-video" src="${escapeAdminHtml(adminMediaUrl(video))}" poster="${escapeAdminHtml(adminMediaUrl(image))}" autoplay muted loop playsinline preload="metadata"></video>`
+      : "";
+    refreshEditHandles();
+  };
+  const refreshFrameMedia = (target, url, type = "image") => {
+    if (!frameDocumentRef) return;
+    const mediaStyleText = url ? `url("${adminMediaUrl(url).replace(/"/g, "%22")}")` : "";
+    if (target === "hero.image" || target === "hero.video") {
+      updateHeroMediaControls();
+      renderHeroFrameMedia();
+    }
+    if (target === "couple.groom.photo" || target === "couple.bride.photo") {
+      const index = target === "couple.groom.photo" ? 0 : 1;
+      const profilePhoto = frameDocumentRef.querySelectorAll(".profile-photo")[index];
+      if (profilePhoto) profilePhoto.style.backgroundImage = mediaStyleText;
+      refreshEditHandles();
+    }
+  };
+  const updateFloatingSaveForToolDock = () => {
+    const save = document.querySelector('.admin-floating-save[form="invitation-editor"]');
+    if (!save || !toolPanel || toolPanel.hidden) {
+      document.documentElement.style.removeProperty("--floating-save-bottom");
+      return;
+    }
+    const panelHeight = Math.ceil(toolPanel.getBoundingClientRect().height || 0);
+    document.documentElement.style.setProperty("--floating-save-bottom", toolPanel.classList.contains("is-collapsed")
+      ? "calc(58px + env(safe-area-inset-bottom))"
+      : `calc(${panelHeight}px + 8px + env(safe-area-inset-bottom))`);
+  };
+  const setToolDock = (title, help, activeTab = "media", context = "text") => {
+    if (!toolPanel) return;
+    toolPanel.hidden = false;
+    toolPanel.classList.remove("is-collapsed");
+    toolPanel.classList.toggle("is-manager", context === "information" || context === "location" || context === "wedding-snap-detail" || context === "rsvp-detail" || context === "hero-copy" || (context === "hero" && activeTab === "frame"));
+    toolPanel.classList.toggle("is-hero", context === "hero");
+    toolPanel.classList.toggle("is-profile", context === "profile");
+    toolPanel.classList.toggle("is-copy", context === "hero-copy" || context === "text-copy");
+    toolPanel.dataset.context = context;
+    toolPanel.querySelector("[data-tooldock-title]").textContent = title;
+    toolPanel.querySelector("[data-tooldock-help]").textContent = help;
+    toolPanel.querySelectorAll("[data-tooldock-tab]").forEach((button) => {
+      const tab = button.dataset.tooldockTab;
+      const visible = context === "hero"
+        ? ["media", "frame"].includes(tab)
+        : context === "hero-copy"
+          ? ["text", "position"].includes(tab)
+        : context === "profile"
+          ? tab === "media"
+          : context === "gallery"
+            ? tab === "media"
+          : context === "information" || context === "location" || context === "wedding-snap-detail" || context === "rsvp-detail"
+            ? tab === "items"
+            : tab === "text-copy"
+              ? tab === "style"
+              : false;
+      button.hidden = !visible;
+      button.classList.toggle("is-active", visible && tab === activeTab);
+    });
+    toolPanel.querySelectorAll("[data-tooldock-pane]").forEach((pane) => {
+      pane.classList.toggle("is-active", pane.dataset.tooldockPane === activeTab);
+    });
+    toolPanel.querySelectorAll("[data-tool-context]").forEach((button) => {
+      const contextMatches = button.dataset.toolContext === context;
+      button.hidden = !contextMatches;
+    });
+    toolPanel.querySelector("[data-profile-media-tools]")?.toggleAttribute("hidden", context !== "profile");
+    toolPanel.querySelector("[data-hero-media-tools]")?.toggleAttribute("hidden", context !== "hero");
+    toolPanel.querySelectorAll("[data-tooldock-items]").forEach((item) => {
+      item.hidden = item.dataset.tooldockItems !== context;
+    });
+    updateFloatingSaveForToolDock();
+  };
+  const triggerFileInput = (selector) => {
+    const inputElement = form.querySelector(selector);
+    if (!inputElement) return alert("이 항목의 업로드 입력창을 찾지 못했습니다.");
+    inputElement.click();
+  };
+  const triggerButton = (selector) => {
+    const button = form.querySelector(selector);
+    if (!button) return alert("먼저 사진을 업로드한 뒤 영역 맞추기를 사용할 수 있습니다.");
+    button.click();
+  };
+  const gallerySettingsPanel = form.querySelector("#gallery-settings");
+  const closeGalleryModal = () => {
+    gallerySettingsPanel?.classList.remove("is-gallery-modal");
+    gallerySettingsPanel?.querySelector("[data-gallery-modal-close]")?.setAttribute("hidden", "");
+    updateFloatingSaveForToolDock();
+  };
+  const openGalleryModal = () => {
+    if (!gallerySettingsPanel) return;
+    gallerySettingsPanel.classList.add("is-gallery-modal");
+    gallerySettingsPanel.querySelector("[data-gallery-modal-close]")?.removeAttribute("hidden");
+    toolPanel?.classList.add("is-collapsed");
+    updateFloatingSaveForToolDock();
+  };
+  gallerySettingsPanel?.querySelector("[data-gallery-modal-close]")?.addEventListener("click", closeGalleryModal);
+  const bindDesignControls = () => {
+    const preset = form.elements.editorPresetId;
+    const presetHidden = form.elements["appearance.design.presetId"];
+    const textThemeHidden = form.elements["appearance.design.heroTextTheme"];
+    preset?.addEventListener("change", () => {
+      presetHidden.value = preset.value;
+      refreshFrameAppearance();
+    });
+    copyEditor.querySelectorAll("[data-design-text-theme]").forEach((button) => button.addEventListener("click", () => {
+      textThemeHidden.value = button.dataset.designTextTheme;
+      copyEditor.querySelectorAll("[data-design-text-theme]").forEach((item) => item.classList.toggle("is-selected", item === button));
+      setToolDock("메인 문구 테마", "가로로 밀어 문구 레이아웃을 고르고 저장해 주세요.", "text", "hero-copy");
+      refreshFrameAppearance();
+    }));
+    copyEditor.querySelectorAll('input[name="appearance.design.heroDecoration"]').forEach((field) => {
+      field.addEventListener("change", () => {
+        copyEditor.querySelectorAll(".hero-decoration-option").forEach((option) => option.classList.toggle("is-selected", option.contains(field) && field.checked));
+        refreshFrameAppearance();
+        refreshEditHandles();
+      });
+    });
+    copyEditor.querySelectorAll(".editor-tooldock .hero-decoration-option").forEach((option) => {
+      option.addEventListener("click", (event) => {
+        const field = option.querySelector('input[name="appearance.design.heroDecoration"]');
+        if (!field) return;
+        event.preventDefault();
+        if (field.checked) return;
+        field.checked = true;
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+        setToolDock("메인 이미지 꾸밈", "선택한 꾸밈이 미리보기에 바로 적용됩니다.", "frame", "hero");
+      });
+    });
+    copyEditor.querySelectorAll('.editor-tooldock input[type="range"]').forEach((field) => {
+      field.addEventListener("input", () => {
+        if (field.dataset.previewTextSize || field.dataset.previewTextY) {
+          refreshSelectedTextStyle();
+        } else {
+          field.nextElementSibling.textContent = field.value;
+          refreshFrameAppearance();
+        }
+      });
+    });
+    copyEditor.querySelector("[data-preview-text-reset]")?.addEventListener("click", resetSelectedTextStyle);
+    copyEditor.querySelectorAll(".editor-tooldock select, .editor-tooldock input, .editor-tooldock textarea").forEach((field) => {
+      if (field.type === "file" || field.type === "range") return;
+      field.addEventListener("change", refreshFrameAppearance);
+    });
+    copyEditor.querySelectorAll("[data-hero-active]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const radio = form.querySelector(`[name="hero.activeMedia"][value="${button.dataset.heroActive}"]`);
+        if (radio) {
+          radio.checked = true;
+          radio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        updateHeroMediaControls();
+        renderHeroFrameMedia();
+      });
+    });
+    form.querySelectorAll('[name="hero.activeMedia"]').forEach((field) => {
+      field.addEventListener("change", () => {
+        updateHeroMediaControls();
+        renderHeroFrameMedia();
+      });
+    });
+    copyEditor.querySelectorAll("[data-tooldock-tab]").forEach((button) => {
+      button.addEventListener("click", () => setToolDock(
+        toolPanel.querySelector("[data-tooldock-title]").textContent || "편집 도구",
+        toolPanel.querySelector("[data-tooldock-help]").textContent || "수정할 항목을 고르세요.",
+        button.dataset.tooldockTab,
+        toolPanel.dataset.context || "text"
+      ));
+    });
+    copyEditor.querySelector("[data-tooldock-collapse]")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toolPanel.classList.toggle("is-collapsed");
+      updateFloatingSaveForToolDock();
+    });
+    toolPanel?.addEventListener("click", (event) => {
+      if (toolPanel.classList.contains("is-collapsed") && event.target.closest(".editor-tooldock-head") && !event.target.closest("button")) {
+        toolPanel.classList.remove("is-collapsed");
+        updateFloatingSaveForToolDock();
+      }
+    });
+    copyEditor.querySelectorAll("[data-tool-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.toolAction;
+        if (action === "hero-image") {
+          if (form.elements["hero.image"]?.value) {
+            const actions = copyEditor.querySelector('[data-hero-media-actions="image"]');
+            actions.hidden = !actions.hidden;
+          } else triggerFileInput('[data-image-target="hero.image"]');
+        }
+        if (action === "hero-video") {
+          if (form.elements["hero.video"]?.value) {
+            const actions = copyEditor.querySelector('[data-hero-media-actions="video"]');
+            actions.hidden = !actions.hidden;
+          } else triggerFileInput('[data-video-target="hero.video"]');
+        }
+        if (action === "hero-image-change") triggerFileInput('[data-image-target="hero.image"]');
+        if (action === "hero-video-change") triggerFileInput('[data-video-target="hero.video"]');
+        if (action === "hero-image-remove") triggerButton('[data-image-remove="hero.image"]');
+        if (action === "hero-video-remove") triggerButton('[data-video-remove="hero.video"]');
+        if (action === "profile-photo" && activeProfileTarget) triggerFileInput(`[data-image-target="${activeProfileTarget}"]`);
+        if (action === "profile-crop" && activeProfileTarget) {
+          toolPanel.classList.add("is-collapsed");
+          triggerButton(`[data-image-crop-edit="${activeProfileTarget}"]`);
+        }
+        if (action === "profile-remove" && activeProfileTarget) triggerButton(`[data-image-remove="${activeProfileTarget}"]`);
+      });
+    });
+  };
+  bindDesignControls();
+  const onboarding = copyEditor.querySelector("[data-editor-onboarding]");
+  const closeOnboarding = () => onboarding?.setAttribute("hidden", "");
+  copyEditor.querySelector("[data-editor-start-close]")?.addEventListener("click", closeOnboarding);
+  copyEditor.querySelector("[data-editor-theme-open]")?.addEventListener("click", () => onboarding?.removeAttribute("hidden"));
+    copyEditor.querySelector("[data-editor-start-apply]")?.addEventListener("click", () => {
+      closeOnboarding();
+    });
+  copyEditor.querySelectorAll("[data-onboarding-preset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      form.elements.editorPresetId.value = button.dataset.onboardingPreset;
+      form.elements["appearance.design.presetId"].value = button.dataset.onboardingPreset;
+      copyEditor.querySelectorAll("[data-onboarding-preset]").forEach((item) => item.classList.toggle("is-selected", item === button));
+      refreshFrameAppearance();
+    });
+  });
+  copyEditor.querySelectorAll("[data-onboarding-text-theme]").forEach((button) => {
+    button.addEventListener("click", () => {
+      form.elements["appearance.design.heroTextTheme"].value = button.dataset.onboardingTextTheme;
+      copyEditor.querySelectorAll("[data-onboarding-text-theme]").forEach((item) => item.classList.toggle("is-selected", item === button));
+      copyEditor.querySelectorAll("[data-design-text-theme]").forEach((item) => item.classList.toggle("is-selected", item.dataset.designTextTheme === button.dataset.onboardingTextTheme));
+      refreshFrameAppearance();
+    });
+  });
+  // 레이아웃 변경 핸들러
+  copyEditor.querySelectorAll("[data-editor-layout]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const layoutId = button.dataset.editorLayout;
+      copyEditor.querySelectorAll("[data-editor-layout]").forEach((b) => b.classList.toggle("is-active", b === button));
+      invitationData.designSystem.activeLayoutId = layoutId;
+      refreshFrameAppearance();
+      try {
+        await window.RSVP_STORAGE.saveInvitationData(invitationData);
+      } catch {}
+    });
+  });
+  copyEditor.querySelector("[data-copy-editor-frame]")?.addEventListener("load", (event) => {
+    const frameElement = event.currentTarget;
+    const frameDocument = frameElement.contentDocument;
+    if (!frameDocument) return;
+    frameDocumentRef = frameDocument;
+    frameElement.classList.add("is-editor-ready");
+    const logFrameSetupError = (error) => console.error("copy editor preview setup failed", error);
+    try {
+      refreshFrameAppearance();
+    } catch (error) {
+      logFrameSetupError(error);
+    }
+    const sectionIdMap = { invitation: "invitation", "about-us": "aboutUs", "wedding-day": "weddingDay", location: "location", gallery: "gallery", "wedding-snap": "weddingSnap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" };
+    const syncField = (name, value) => {
+      form.querySelectorAll(`[name="${name}"]`).forEach((field) => { field.value = value; });
+    };
+    const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-slider, .information-slide, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy, .ending-content .preserve";
+    let isMarkingEditableAreas = false;
+    const markEditableAreas = () => {
+      isMarkingEditableAreas = true;
+      frameDocument.querySelectorAll("[data-copy-edit-handle]").forEach((item) => item.remove());
+      frameDocument.querySelectorAll(".copy-editable-target").forEach((item) => {
+        item.classList.remove("copy-editable-target");
+        item.removeAttribute("data-edit-label");
+        delete item.dataset.editTargetIndex;
+      });
+      frameDocument.querySelectorAll(".hero-media, .profile-card, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, #gallery, .information-slider, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy, .ending-content .preserve").forEach((item) => {
+        item.classList.add("copy-editable-target");
+      });
+      frameDocument.querySelector(".hero-media")?.setAttribute("data-edit-label", "메인 이미지·영상");
+      frameDocument.querySelector(".hero-eyebrow")?.setAttribute("data-edit-label", "메인 영문문구");
+      frameDocument.querySelector(".hero-date")?.setAttribute("data-edit-label", "메인 날짜");
+      frameDocument.querySelectorAll(".section-label").forEach((item) => item.setAttribute("data-edit-label", "영문 타이틀"));
+      frameDocument.querySelectorAll(".section-title").forEach((item) => item.setAttribute("data-edit-label", "국문 타이틀"));
+      frameDocument.querySelectorAll(".invitation-copy").forEach((item) => item.setAttribute("data-edit-label", "초대글"));
+      frameDocument.querySelector(".location-venue")?.setAttribute("data-edit-label", "식장명");
+      frameDocument.querySelector(".location-hall")?.setAttribute("data-edit-label", "홀 정보");
+      frameDocument.querySelector(".location-address")?.setAttribute("data-edit-label", "주소");
+      frameDocument.querySelector(".transport")?.setAttribute("data-edit-label", "교통 안내 항목");
+      frameDocument.querySelector("#gallery")?.setAttribute("data-edit-label", "갤러리 사진");
+      frameDocument.querySelector(".information-slider")?.setAttribute("data-edit-label", "식장 안내 항목");
+      frameDocument.querySelector("#wedding-snap .subtle")?.setAttribute("data-edit-label", "게스트앨범 안내 문구");
+      frameDocument.querySelector("#attendance .subtle")?.setAttribute("data-edit-label", "참석 안내 문구");
+      frameDocument.querySelector("#account .subtle")?.setAttribute("data-edit-label", "계좌 안내 문구");
+      frameDocument.querySelector("#guestbook .subtle")?.setAttribute("data-edit-label", "방명록 안내 문구");
+      frameDocument.querySelector(".ending-content .preserve")?.setAttribute("data-edit-label", "마지막 문구");
+      frameDocument.querySelectorAll(".profile-card").forEach((card, index) => card.setAttribute("data-edit-label", index === 0 ? "신랑 대표이미지" : "신부 대표이미지"));
+      frameDocument.querySelectorAll(".copy-editable-target").forEach((target, index) => {
+        target.dataset.editTargetIndex = String(index);
+        const handle = frameDocument.createElement("button");
+        handle.type = "button";
+        handle.className = "copy-edit-handle";
+        handle.dataset.copyEditHandle = String(index);
+        handle.setAttribute("aria-label", `${target.dataset.editLabel || "선택 영역"} 편집`);
+        handle.textContent = "✎";
+        target.appendChild(handle);
+      });
+      setTimeout(() => { isMarkingEditableAreas = false; }, 0);
+    };
+    const safeMarkEditableAreas = () => {
+      try {
+        markEditableAreas();
+      } catch (error) {
+        isMarkingEditableAreas = false;
+        logFrameSetupError(error);
+      }
+    };
+    refreshEditHandles = safeMarkEditableAreas;
+    safeMarkEditableAreas();
+    frameElement.contentWindow?.requestAnimationFrame?.(safeMarkEditableAreas);
+    setTimeout(safeMarkEditableAreas, 180);
+    setTimeout(safeMarkEditableAreas, 650);
+    if ("MutationObserver" in window) {
+      let editableMarkTimer = 0;
+      const editableObserver = new MutationObserver(() => {
+        if (isMarkingEditableAreas) return;
+        clearTimeout(editableMarkTimer);
+        editableMarkTimer = setTimeout(safeMarkEditableAreas, 120);
+      });
+      editableObserver.observe(frameDocument.querySelector("#app") || frameDocument.body, { childList: true, subtree: true });
+    }
+    const inlineTarget = (target) => {
+      const section = target.closest(".section");
+      const key = sectionIdMap[section?.id];
+      if (target.matches(".hero-eyebrow")) return { name: "hero.eyebrow" };
+      if (target.matches(".hero-names")) return { name: "coupleNames", names: true };
+      if (target.matches(".hero-date")) return { name: "wedding.displayDateCustom" };
+      if (target.matches(".section-label") && key) return { name: `sectionTitles.${key}.en` };
+      if (target.matches(".section-title") && key) return { name: `sectionTitles.${key}.ko` };
+      if (target.matches(".location-venue")) return { name: "wedding.venue" };
+      if (target.matches(".location-hall")) return { name: "wedding.hall" };
+      if (target.matches(".location-address")) return { name: "wedding.address" };
+      if (target.matches("#wedding-snap .subtle")) return { name: "sectionDescriptions.weddingSnap", multiline: true };
+      if (target.matches("#attendance .subtle")) return { name: "sectionDescriptions.attendance", multiline: true };
+      if (target.matches("#account .subtle")) return { name: "sectionDescriptions.account", multiline: true };
+      if (target.matches("#guestbook .subtle")) return { name: "sectionDescriptions.guestbook", multiline: true };
+      if (target.matches(".ending-content .preserve")) return { name: "ending.text", multiline: true };
+      if (target.matches(".invitation-copy")) return { name: "invitation.paragraphs", multiline: true, paragraphIndex: [...section.querySelectorAll(".invitation-copy")].indexOf(target) };
+      return null;
+    };
+    const mediaTarget = (target) => {
+      const profile = target.closest(".profile-card");
+      if (profile) return [...frameDocument.querySelectorAll(".profile-card")].indexOf(profile) === 0 ? "groom" : "bride";
+      if (target.closest(".hero-media")) return "hero";
+      return "";
+    };
+    const openInlineEditor = (target, config) => {
+      if (activeInlineEditor?.field?.isConnected) activeInlineEditor.commit();
+      else frameDocument.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
+      const originalText = [...target.childNodes]
+        .filter((node) => !(node.nodeType === Node.ELEMENT_NODE && node.matches("[data-copy-edit-handle]")))
+        .map((node) => node.textContent)
+        .join("")
+        .trim();
+      const field = frameDocument.createElement(config.multiline ? "textarea" : "input");
+      field.className = "copy-inline-editor";
+      field.dataset.copyInlineEditor = "";
+      field.value = originalText;
+      if (config.multiline) field.rows = Math.max(2, originalText.split("\n").length);
+      target.replaceWith(field);
+      const update = () => {
+        if (config.names) {
+          const names = field.value.split(/[·ㆍ|/]/).map((item) => item.trim()).filter(Boolean);
+          if (names[0]) syncField("couple.groom.name", names[0]);
+          if (names[1]) syncField("couple.bride.name", names[1]);
+        } else if (Number.isInteger(config.paragraphIndex)) {
+          const paragraphsField = form.elements["invitation.paragraphs"];
+          const paragraphs = paragraphsField.value.split(/\n\s*\n/);
+          paragraphs[config.paragraphIndex] = field.value;
+          syncField(config.name, paragraphs.join("\n\n"));
+        } else {
+          syncField(config.name, field.value);
+        }
+      };
+      field.addEventListener("input", update);
+      const commit = () => {
+        if (!field.isConnected) return;
+        update();
+        target.textContent = field.value;
+        field.replaceWith(target);
+        activeTextTarget = target;
+        refreshSelectedTextStyle();
+        activeInlineEditor = null;
+        safeMarkEditableAreas();
+      };
+      activeInlineEditor = { field, target, commit };
+      field.addEventListener("blur", commit, { once: true });
+      field.focus();
+      field.select();
+    };
+    frameDocument.addEventListener("click", (clickEvent) => {
+      const detailButton = clickEvent.target.closest("[data-preview-detail-edit]");
+      if (detailButton) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeProfileTarget = "";
+        activeTextTarget = null;
+        setToolDock(
+          detailButton.dataset.previewDetailEdit === "rsvp" ? "RSVP 세부내용" : "게스트앨범 세부내용",
+          "모달 안에서 보이는 안내 문구를 수정합니다.",
+          "items",
+          detailButton.dataset.previewDetailEdit === "rsvp" ? "rsvp-detail" : "wedding-snap-detail"
+        );
+        return;
+      }
+      const handle = clickEvent.target.closest("[data-copy-edit-handle]");
+      const target = handle ? handle.closest(editableSelector) : clickEvent.target.closest(editableSelector);
+      if (!target || target.matches("[data-copy-inline-editor]")) {
+        if (!target && toolPanel && !toolPanel.hidden) {
+          toolPanel.classList.add("is-collapsed");
+          updateFloatingSaveForToolDock();
+        }
+        if (clickEvent.target.closest("a, button, input, select, textarea, label")) {
+          clickEvent.preventDefault();
+          clickEvent.stopImmediatePropagation();
+        }
+        return;
+      }
+      const media = mediaTarget(target);
+      if (media) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        if (media === "hero") {
+          activeProfileTarget = "";
+          setToolDock("메인 이미지", "이미지, 영상, 꾸밈, 메인문구테마를 아래 탭에서 수정합니다.", "media", "hero");
+        } else {
+          const fieldName = media === "groom" ? "couple.groom.photo" : "couple.bride.photo";
+          activeProfileTarget = fieldName;
+          toolPanel.dataset.profileSide = media;
+          setToolDock(media === "groom" ? "신랑 대표이미지" : "신부 대표이미지", "사진 업로드 또는 영역 맞추기만 사용할 수 있습니다.", "media", "profile");
+        }
+        return;
+      }
+      if (target.closest("#gallery")) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeProfileTarget = "";
+        activeTextTarget = null;
+        openGalleryModal();
+        return;
+      }
+      if (target.matches(".hero-names")) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeProfileTarget = "";
+        activeTextTarget = null;
+        setToolDock("메인 문구 테마", "이름 문구의 테마와 위치를 조정합니다.", "text", "hero-copy");
+        return;
+      }
+      if (target.closest("#information")) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeTextTarget = null;
+        setToolDock("식장 안내", "항목을 추가, 삭제하거나 내용을 수정합니다.", "items", "information");
+        return;
+      }
+      if (target.closest("#location") && target.closest(".transport")) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeTextTarget = null;
+        setToolDock("교통 안내", "오시는 길의 교통 항목을 추가, 삭제하거나 수정합니다.", "items", "location");
+        return;
+      }
+      const config = inlineTarget(target);
+      if (!config) return;
+      clickEvent.preventDefault();
+      clickEvent.stopImmediatePropagation();
+      activeProfileTarget = "";
+      activeTextTarget = target;
+      setToolDock("문구 글자/위치", "문구는 그 자리에서 수정하고, 크기와 위치는 아래에서 미리 조정합니다.", "style", "text-copy");
+      prepareTextSliders(target);
+      openInlineEditor(target, config);
+    }, true);
+  });
+  document.querySelectorAll("[data-editor-jump]").forEach((button) => button.addEventListener("click", () => {
+    document.querySelector(`#${button.dataset.editorJump}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  const syncParentNames = () => {
+    form.elements["couple.groom.parents"].value = joinParentNames(form.querySelector('[data-quick="groomFather"]').value, form.querySelector('[data-quick="groomMother"]').value);
+    form.elements["couple.bride.parents"].value = joinParentNames(form.querySelector('[data-quick="brideFather"]').value, form.querySelector('[data-quick="brideMother"]').value);
+    invitationData.couple.groom.parents = form.elements["couple.groom.parents"].value;
+    invitationData.couple.bride.parents = form.elements["couple.bride.parents"].value;
+  };
+  const accountItems = () => [...form.querySelectorAll("[data-account-editor]")].map((editor) => {
+    const relationSelect = editor.querySelector('select[name*=".relation"]')?.value || "";
+    const relationCustom = editor.querySelector('input[name*=".relationCustom"]')?.value.trim() || "";
+    const bankSelect = editor.querySelector('select[name*=".bankSelect"]')?.value || "";
+    const bankCustom = editor.querySelector('input[name*=".bank"]')?.value.trim() || "";
+    return {
+      side: editor.querySelector('input[name*=".side"]')?.value.trim() || "신랑측",
+      personName: editor.querySelector('input[name*=".personName"]')?.value.trim() || "",
+      name: editor.querySelector('input[name*=".name"]')?.value.trim() || "",
+      bank: bankSelect === "직접 입력" ? bankCustom : bankSelect,
+      number: editor.querySelector('input[name*=".number"]')?.value.trim() || "",
+      relation: relationSelect === "직접입력" ? relationCustom : relationSelect,
+    };
+  });
+  const renderAccountItems = (items) => {
+    const normalizedItems = ensureAccountRows(items);
+    invitationData.accounts = normalizedItems;
+    const current = form.querySelector("[data-account-manager]");
+    current.outerHTML = accountManager(normalizedItems);
+    bindAccountManager();
+  };
+  const syncAccountParentNames = () => {
+    invitationData.couple.groom.name = form.elements["couple.groom.name"]?.value || invitationData.couple.groom.name;
+    invitationData.couple.bride.name = form.elements["couple.bride.name"]?.value || invitationData.couple.bride.name;
+    invitationData.couple.groom.parents = form.elements["couple.groom.parents"]?.value || "";
+    invitationData.couple.bride.parents = form.elements["couple.bride.parents"]?.value || "";
+    const map = {
+      "신랑측:신랑": form.elements["couple.groom.name"]?.value || "",
+      "신부측:신부": form.elements["couple.bride.name"]?.value || "",
+      "신랑측:아버님": form.querySelector('[data-quick="groomFather"]')?.value || "",
+      "신랑측:어머님": form.querySelector('[data-quick="groomMother"]')?.value || "",
+      "신부측:아버님": form.querySelector('[data-quick="brideFather"]')?.value || "",
+      "신부측:어머님": form.querySelector('[data-quick="brideMother"]')?.value || "",
+    };
+    let changed = false;
+    const synced = accountItems().map((item) => {
+      const key = `${item.side}:${item.relation}`;
+      if (!Object.prototype.hasOwnProperty.call(map, key)) return item;
+      if (map[key] === "" && !["신랑", "신부"].includes(item.relation)) {
+        changed = true;
+        return null;
+      }
+      changed = changed || item.personName !== map[key] || item.name !== map[key];
+      return { ...item, personName: map[key], name: map[key] };
+    }).filter(Boolean);
+    Object.entries(map).forEach(([key, value]) => {
+      const [, relation] = key.split(":");
+      if (value && ["아버님", "어머님"].includes(relation) && !synced.some((item) => `${item.side}:${item.relation}` === key)) {
+        changed = true;
+      }
+    });
+    if (changed) renderAccountItems(synced);
+  };
+  form.querySelectorAll("[data-quick]").forEach((quickField) => {
+    quickField.addEventListener("input", () => {
+      if (["groomFather", "groomMother", "brideFather", "brideMother"].includes(quickField.dataset.quick)) {
+        syncParentNames();
+        syncAccountParentNames();
+        return;
+      }
+      const target = form.elements[quickField.dataset.quick];
+      if (!target) return;
+      target.value = quickField.value;
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+      if (["couple.groom.name", "couple.bride.name"].includes(quickField.dataset.quick)) syncAccountParentNames();
+    });
+  });
+  form.querySelectorAll("[data-visibility-toggle]").forEach((toggle) => {
+    toggle.addEventListener("change", () => {
+      const hiddenValue = toggle.closest(".visibility-switch")?.querySelector('input[type="hidden"]');
+      if (!hiddenValue) return;
+      hiddenValue.value = toggle.checked ? "true" : "false";
+      hiddenValue.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+  form.querySelector("[data-quick-apply]")?.addEventListener("click", () => {
+    syncParentNames();
+    form.querySelectorAll("[data-quick]").forEach((quickField) => {
+      const target = form.elements[quickField.dataset.quick];
+      if (target) {
+        target.value = quickField.value;
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+    syncAccountParentNames();
+    form.dispatchEvent(new Event("change", { bubbles: true }));
+    alert("1번 기본정보를 아래 항목에 반영했습니다. 최종 저장은 변경사항 저장 버튼을 눌러 주세요.");
+  });
+  form.querySelectorAll("[data-recommendation-editor]").forEach((editor) => {
+    const target = editor.querySelector("input, textarea");
+    editor.addEventListener("click", (event) => {
+      const recommendation = event.target.closest("[data-recommendation]");
+      if (recommendation) {
+        target.value = recommendation.dataset.recommendation;
+        editor.querySelector(".recommendation-modal")?.setAttribute("hidden", "");
+      }
+      if (event.target.closest("[data-recommendation-more]")) editor.classList.toggle("show-extra");
+      if (event.target.closest("[data-recommendation-open]")) editor.querySelector(".recommendation-modal")?.removeAttribute("hidden");
+      if (event.target.closest("[data-recommendation-close]")) editor.querySelector(".recommendation-modal")?.setAttribute("hidden", "");
+    });
+  });
+  const bindAccountManager = () => {
+    const manager = form.querySelector("[data-account-manager]");
+    const syncConditionalFields = () => {
+      manager?.querySelectorAll("[data-account-editor]").forEach((editor) => {
+        const relationSelect = editor.querySelector('select[name*=".relation"]');
+        const relationCustom = editor.querySelector("[data-account-relation-custom]");
+        if (relationCustom) relationCustom.hidden = relationSelect?.value !== "직접입력";
+        const bankSelect = editor.querySelector('select[name*=".bankSelect"]');
+        const bankCustom = editor.querySelector("[data-account-bank-custom]");
+        if (bankCustom) bankCustom.hidden = bankSelect?.value !== "직접 입력";
+      });
+    };
+    manager?.addEventListener("click", (event) => {
+      const add = event.target.closest("[data-account-add]");
+      if (add) {
+        renderAccountItems([...accountItems(), { side: add.dataset.accountAdd, relation: "직접입력", personName: "", name: "", bank: "", number: "" }]);
+        return;
+      }
+      const remove = event.target.closest("[data-account-remove]");
+      if (!remove) return;
+      const items = accountItems();
+      const index = [...form.querySelectorAll("[data-account-editor]")].indexOf(remove.closest("[data-account-editor]"));
+      items.splice(index, 1);
+      renderAccountItems(items);
+    });
+    manager?.addEventListener("change", (event) => {
+      if (event.target.matches('select[name*=".relation"]')) {
+        syncConditionalFields();
+        return;
+      }
+      const bankSelect = event.target.closest('select[name*=".bankSelect"]');
+      if (!bankSelect) return;
+      const bankInput = bankSelect.closest("[data-account-editor]")?.querySelector('input[name*=".bank"]');
+      if (bankInput && bankSelect.value !== "직접 입력") bankInput.value = "";
+      syncConditionalFields();
+      if (bankSelect.value === "직접 입력") bankInput?.focus();
+    });
+    manager?.addEventListener("input", (event) => {
+      const personName = event.target.closest('input[name*=".personName"]');
+      if (!personName) return;
+      const holder = personName.closest("[data-account-editor]")?.querySelector('input[name*=".name"]');
+      if (holder && !holder.dataset.touched) holder.value = personName.value;
+    });
+    manager?.querySelectorAll('input[name*=".name"]').forEach((field) => {
+      field.addEventListener("input", () => { field.dataset.touched = "1"; });
+    });
+    syncConditionalFields();
+  };
+  bindAccountManager();
+  const noticeManagerElement = form.querySelector("[data-notice-manager]");
+  const noticeList = noticeManagerElement.querySelector("[data-notice-list]");
+  const noticeAdd = noticeManagerElement.querySelector("[data-notice-add]");
+  const noticeItems = () => [...noticeList.querySelectorAll("[data-notice-editor]")].map((editor) => ({
+    title: editor.querySelector('input[name*=".title"]').value,
+    text: editor.querySelector('textarea[name*=".text"]').value,
+    hidden: editor.querySelector('input[name*=".hidden"]').checked,
+  }));
+  const renderNoticeItems = (items) => {
+    noticeList.innerHTML = items.slice(0, 3).map(noticeEditor).join("");
+    noticeAdd.disabled = items.length >= 3;
+    refreshFrameLists();
+  };
+  noticeManagerElement.addEventListener("click", (event) => {
+    const aiButton = event.target.closest("[data-ai-venue-guide]");
+    if (aiButton) {
+      generateVenueGuide(aiButton);
+      return;
+    }
+    if (event.target.closest("[data-notice-add]")) {
+      const items = noticeItems();
+      if (items.length < 3) renderNoticeItems([...items, { title: "", text: "" }]);
+    }
+    const removeButton = event.target.closest("[data-notice-remove]");
+    if (!removeButton) return;
+    const items = noticeItems();
+    const index = [...noticeList.querySelectorAll("[data-notice-editor]")].indexOf(removeButton.closest("[data-notice-editor]"));
+    items.splice(index, 1);
+    renderNoticeItems(items);
+  });
+  noticeManagerElement.addEventListener("input", refreshFrameLists);
+  noticeManagerElement.addEventListener("change", refreshFrameLists);
+  noticeManagerElement.addEventListener("change", (event) => {
+    const preset = event.target.closest('select[name^="noticePreset."]');
+    if (!preset) return;
+    const selected = noticePresetValues[preset.value];
+    if (!selected) return;
+    const editor = preset.closest("[data-notice-editor]");
+    editor.querySelector('input[name*=".title"]').value = selected.title;
+    editor.querySelector('textarea[name*=".text"]').value = selected.text;
+    refreshFrameLists();
+  });
+  renderNoticeItems(noticeItems());
+  const transportManagerElement = form.querySelector("[data-transport-manager]");
+  const transportList = transportManagerElement.querySelector("[data-transport-list]");
+  const transportItems = () => [...transportList.querySelectorAll("[data-transport-editor]")].map((editor) => ({
+    title: editor.querySelector('input[name*=".title"]').value,
+    text: editor.querySelector('textarea[name*=".text"]').value,
+    hidden: editor.querySelector('input[name*=".hidden"]').checked,
+  }));
+  const renderTransportItems = (items) => {
+    transportList.innerHTML = items.map(transportEditor).join("");
+    refreshFrameLists();
+  };
+  const aiGuideContext = () => ({
+    venue: form.elements["wedding.venue"]?.value?.trim() || invitationData.wedding?.venue || "",
+    hall: form.elements["wedding.hall"]?.value?.trim() || invitationData.wedding?.hall || "",
+    address: form.elements["wedding.address"]?.value?.trim() || invitationData.wedding?.address || "",
+    officialUrl: form.elements["wedding.officialUrl"]?.value?.trim() || invitationData.wedding?.officialUrl || "",
+    date: form.elements["wedding.date"]?.value || invitationData.wedding?.date || "",
+    notices: noticeItems(),
+  });
+  const generateVenueGuide = async (button) => {
+    if (!window.AI_DESIGN_SERVICE?.generateVenueGuide) return alert("AI 서비스 스크립트를 불러오지 못했습니다.");
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = "AI 생성 중...";
+    try {
+      const result = await window.AI_DESIGN_SERVICE.generateVenueGuide(aiGuideContext());
+      const notices = (result.notices || []).slice(0, 3).map((notice) => ({ title: notice.title || "", text: notice.text || "", hidden: false }));
+      if (!notices.length) throw new Error("생성된 식장 안내가 없습니다.");
+      renderNoticeItems(notices);
+      alert(result.caution ? `식장 안내 초안을 생성했습니다.\n${result.caution}` : "식장 안내 초안을 생성했습니다. 확인 후 저장해 주세요.");
+    } catch (error) {
+      alert(`식장 안내를 생성하지 못했습니다.\n${error.message || "AI 설정을 확인해 주세요."}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  };
+  const generateTransportGuide = async (button) => {
+    if (!window.AI_DESIGN_SERVICE?.generateTransportGuide) return alert("AI 서비스 스크립트를 불러오지 못했습니다.");
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = "AI 생성 중...";
+    try {
+      const result = await window.AI_DESIGN_SERVICE.generateTransportGuide(aiGuideContext());
+      const items = (result.items || []).map((item) => ({ title: item.title || "", text: item.text || "", hidden: false }));
+      if (!items.length) throw new Error("생성된 교통 안내가 없습니다.");
+      renderTransportItems(items);
+      alert(result.caution ? `교통 안내 초안을 생성했습니다.\n${result.caution}` : "교통 안내 초안을 생성했습니다. 확인 후 저장해 주세요.");
+    } catch (error) {
+      alert(`교통 안내를 생성하지 못했습니다.\n${error.message || "AI 설정을 확인해 주세요."}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  };
+  transportManagerElement.addEventListener("click", (event) => {
+    const aiButton = event.target.closest("[data-ai-transport-guide]");
+    if (aiButton) {
+      generateTransportGuide(aiButton);
+      return;
+    }
+    if (event.target.closest("[data-transport-add]")) renderTransportItems([...transportItems(), { title: "", text: "", hidden: false }]);
+    const removeButton = event.target.closest("[data-transport-remove]");
+    if (!removeButton) return;
+    const items = transportItems();
+    items.splice([...transportList.querySelectorAll("[data-transport-editor]")].indexOf(removeButton.closest("[data-transport-editor]")), 1);
+    renderTransportItems(items);
+  });
+  transportManagerElement.addEventListener("input", refreshFrameLists);
+  transportManagerElement.addEventListener("change", refreshFrameLists);
+  const updateDisplayDate = (force = false) => {
+    const format = form.elements["wedding.displayDateFormat"].value;
+    if (format === "custom") return;
+    if (!force && form.elements["wedding.displayDateCustom"].value.trim()) return;
+    form.elements["wedding.displayDateCustom"].value = weddingDisplayDate(form.elements["wedding.date"].value, format);
+  };
+  const syncEditorPublicPeriod = (forceCloseToWedding = false) => syncPublicPeriodFields({
+    weddingField: form.elements["wedding.date"],
+    openField: form.elements["publicPeriod.openDate"],
+    closeField: form.elements["publicPeriod.closeDate"],
+    forceCloseToWedding,
+  });
+  form.elements["wedding.date"].addEventListener("change", () => {
+    updateDisplayDate(true);
+    syncEditorPublicPeriod(true);
+  });
+  form.elements["publicPeriod.openDate"]?.addEventListener("change", () => syncEditorPublicPeriod(false));
+  form.elements["wedding.displayDateFormat"].addEventListener("change", () => updateDisplayDate(true));
+  updateDisplayDate();
+  syncEditorPublicPeriod();
+
+  const venueInput = form.elements["wedding.venue"];
+  const addressInput = form.elements["wedding.address"];
+  const venueStatus = form.querySelector("[data-venue-status]");
+  addressInput.readOnly = true;
+  addressInput.classList.add("address-field-trigger");
+  const launchAddressSearch = (venueHint) => {
+    openAddressSearchModal({
+      venue: venueHint ?? venueInput.value,
+      address: addressInput.value,
+      onSelect: ({ venue, address }) => {
+        if (venue) venueInput.value = venue;
+        if (address) addressInput.value = address;
+        const preset = findVenuePreset(venue || venueInput.value);
+        if (preset) renderTransportItems(preset.transport);
+        venueStatus.textContent = "선택한 주소를 반영했습니다.";
+        addressInput.dispatchEvent(new Event("input", { bubbles: true }));
+        venueInput.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+    });
+  };
+  venueInput.addEventListener("change", () => {
+    const preset = findVenuePreset(venueInput.value);
+    if (preset) {
+      addressInput.value = preset.address;
+      renderTransportItems(preset.transport);
+      venueStatus.textContent = "등록된 식장을 찾았습니다. 주소가 자동으로 입력되었습니다.";
+      addressInput.dispatchEvent(new Event("input", { bubbles: true }));
+    } else if (venueInput.value.trim()) {
+      venueStatus.textContent = "검색 결과에서 정확한 주소를 선택해 주세요.";
+      launchAddressSearch(venueInput.value.trim());
+    } else {
+      venueStatus.textContent = "";
+    }
+  });
+  addressInput.addEventListener("click", () => launchAddressSearch());
+  form.querySelector("[data-address-search]")?.addEventListener("click", () => launchAddressSearch());
+
+  form.querySelectorAll("[data-section-order]").forEach((editor) => {
+    const updateSectionOrder = () => {
+      editor.querySelector('input[type="hidden"]').value = [...editor.querySelectorAll(".section-order-item")]
+        .filter((item) => item.querySelector('input[type="checkbox"]').checked)
+        .map((item) => item.dataset.sectionId)
+        .join("\n");
+    };
+    editor.addEventListener("change", updateSectionOrder);
+    editor.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-section-move]");
+      if (!button) return;
+      const item = button.closest(".section-order-item");
+      const sibling = Number(button.dataset.sectionMove) < 0 ? item.previousElementSibling : item.nextElementSibling;
+      if (!sibling) return;
+      if (Number(button.dataset.sectionMove) < 0) sibling.before(item);
+      else sibling.after(item);
+      updateSectionOrder();
+    });
+    updateSectionOrder();
+  });
+  form.querySelectorAll("[data-image-target]").forEach((fileInput) => {
+    fileInput.addEventListener("change", async () => {
+      let file = fileInput.files[0];
+      if (!file) return;
+      let originalUrl = "";
+      if (["couple.groom.photo", "couple.bride.photo"].includes(fileInput.dataset.imageTarget)) {
+        try {
+          originalUrl = await window.RSVP_STORAGE.uploadInvitationImage(file, `${fileInput.dataset.imageTarget.replace(/\./g, "-")}-original`);
+          const cropResult = await cropProfileImage(file);
+          if (!cropResult) return;
+          file = cropResult.file;
+          if (form.elements[`${fileInput.dataset.imageTarget}Crop`]) {
+            form.elements[`${fileInput.dataset.imageTarget}Crop`].value = JSON.stringify(cropResult.settings);
+          }
+        } catch (error) {
+          alert(`대표사진 자르기 화면을 열지 못했습니다.\n${error.message || "다른 이미지 파일로 다시 시도해 주세요."}`);
+          return;
+        }
+      }
+      const label = fileInput.closest(".image-upload");
+      label.firstChild.textContent = "업로드 중...";
+      try {
+        const url = await window.RSVP_STORAGE.uploadInvitationImage(file, fileInput.dataset.imageTarget.replace(/\./g, "-"));
+        form.elements[fileInput.dataset.imageTarget].value = url;
+        if (originalUrl && form.elements[`${fileInput.dataset.imageTarget}Original`]) {
+          form.elements[`${fileInput.dataset.imageTarget}Original`].value = originalUrl;
+        }
+        if (fileInput.dataset.imageTarget === "hero.image") {
+          const imageActive = form.querySelector('[name="hero.activeMedia"][value="image"]');
+          if (imageActive) imageActive.checked = true;
+        }
+        const preview = form.querySelector(`[data-image-preview="${fileInput.dataset.imageTarget}"]`);
+        preview.innerHTML = `<img src="${escapeAdminHtml(adminMediaUrl(url))}" alt="업로드한 사진 미리보기">`;
+        refreshFrameMedia(fileInput.dataset.imageTarget, adminMediaUrl(url));
+        label.firstChild.textContent = "업로드 완료";
+      } catch (error) {
+        label.firstChild.textContent = "업로드 실패";
+        alert(`사진을 업로드하지 못했습니다.\n${error.message || "파일 크기와 Storage 정책을 확인해 주세요."}`);
+      }
+    });
+  });
+  form.querySelectorAll("[data-image-crop-edit]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const target = button.dataset.imageCropEdit;
+      const originalUrl = form.elements[`${target}Original`]?.value || "";
+      const currentUrl = adminMediaUrl(originalUrl || form.elements[target].value);
+      if (!currentUrl) return;
+      button.disabled = true;
+      button.textContent = "불러오는 중...";
+      try {
+        const response = await fetch(currentUrl);
+        if (!response.ok) throw new Error("등록된 사진을 불러오지 못했습니다.");
+        const original = await response.blob();
+        const savedSettings = parseCropSettings(form.elements[`${target}Crop`]?.value || "");
+        const cropResult = await cropProfileImage(new File([original], "profile-image", { type: original.type || "image/jpeg" }), {
+          initialZoom: savedSettings.zoom,
+          initialX: savedSettings.x,
+          initialY: savedSettings.y,
+        });
+        if (!cropResult) return;
+        const file = cropResult.file;
+        button.textContent = "업로드 중...";
+        const url = await window.RSVP_STORAGE.uploadInvitationImage(file, target.replace(/\./g, "-"));
+        form.elements[target].value = url;
+        if (!originalUrl && form.elements[`${target}Original`]) form.elements[`${target}Original`].value = currentUrl;
+        if (form.elements[`${target}Crop`]) form.elements[`${target}Crop`].value = JSON.stringify(cropResult.settings);
+        form.querySelector(`[data-image-preview="${target}"]`).innerHTML = `<img src="${escapeAdminHtml(adminMediaUrl(url))}" alt="업로드한 사진 미리보기">`;
+        refreshFrameMedia(target, adminMediaUrl(url));
+      } catch (error) {
+        alert(`대표사진 영역을 적용하지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = "영역 맞추기";
+      }
+    });
+  });
+  form.querySelectorAll("[data-video-target]").forEach((fileInput) => {
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const label = fileInput.closest(".image-upload");
+      label.firstChild.textContent = "업로드 중...";
+      try {
+        const url = await window.RSVP_STORAGE.uploadInvitationMedia(file, fileInput.dataset.videoTarget.replace(/\./g, "-"));
+        form.elements[fileInput.dataset.videoTarget].value = url;
+        if (fileInput.dataset.videoTarget === "hero.video") {
+          const videoActive = form.querySelector('[name="hero.activeMedia"][value="video"]');
+          if (videoActive) videoActive.checked = true;
+        }
+        form.querySelector(`[data-video-preview="${fileInput.dataset.videoTarget}"]`).innerHTML = `<video src="${escapeAdminHtml(adminMediaUrl(url))}" muted controls playsinline></video>`;
+        refreshFrameMedia(fileInput.dataset.videoTarget, adminMediaUrl(url), "video");
+        label.firstChild.textContent = "업로드 완료";
+      } catch (error) {
+        label.firstChild.textContent = "업로드 실패";
+        alert(`영상을 업로드하지 못했습니다.\n${error.message || "파일 크기와 Storage 정책을 확인해 주세요."}`);
+      }
+    });
+  });
+  form.querySelectorAll("[data-video-remove]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.videoRemove;
+      form.elements[target].value = "";
+      if (target === "hero.video") form.querySelector('[name="hero.activeMedia"][value="image"]')?.click();
+      form.querySelector(`[data-video-preview="${target}"]`).innerHTML = "<span>등록된 영상이 없습니다.</span>";
+      refreshFrameMedia(target, "", "video");
+    });
+  });
+  form.querySelectorAll("[data-image-remove]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.imageRemove;
+      form.elements[target].value = "";
+      if (form.elements[`${target}Original`]) form.elements[`${target}Original`].value = "";
+      if (form.elements[`${target}Crop`]) form.elements[`${target}Crop`].value = "";
+      if (target === "hero.image" && form.elements["hero.video"]?.value) form.querySelector('[name="hero.activeMedia"][value="video"]')?.click();
+      form.querySelector(`[data-image-preview="${target}"]`).innerHTML = "<span>등록된 사진이 없습니다.</span>";
+      refreshFrameMedia(target, "");
+    });
+  });
+  const galleryPairs = () => Array.from({ length: GALLERY_MAX }, (_, index) => ({
+    image: form.elements[`gallery.${index}`].value,
+    thumb: form.elements[`galleryThumb.${index}`]?.value || "",
+  })).filter((pair) => pair.image);
+  const galleryValues = () => galleryPairs().map((pair) => pair.image);
+  const galleryThumbValues = () => galleryPairs().map((pair) => pair.thumb);
+  const updateGallery = (images, thumbs = []) => {
+    const slots = Array.from({ length: GALLERY_MAX }, (_, index) => images[index] || "");
+    const thumbSlots = Array.from({ length: GALLERY_MAX }, (_, index) => thumbs[index] || "");
+    invitationData.gallery = slots;
+    invitationData.galleryThumbs = thumbSlots;
+    slots.forEach((image, index) => {
+      form.elements[`gallery.${index}`].value = image;
+      form.elements[`galleryThumb.${index}`].value = thumbSlots[index];
+    });
+    form.querySelector("[data-gallery-editor-preview]").innerHTML = galleryManagerPreview(slots, thumbSlots);
+    refreshFrameGallery();
+  };
+  const galleryStatus = form.querySelector("[data-gallery-status]");
+  form.querySelector("[data-gallery-upload]").addEventListener("change", async (event) => {
+    const files = [...event.currentTarget.files];
+    if (!files.length) return;
+    if (files.length > GALLERY_MAX) {
+      alert(`갤러리 사진은 최대 ${GALLERY_MAX}장까지 선택할 수 있습니다.`);
+      event.currentTarget.value = "";
+      return;
+    }
+    const currentImages = galleryValues();
+    const currentThumbs = galleryThumbValues();
+    const freeSlots = Math.max(0, GALLERY_MAX - currentImages.length);
+    if (currentImages.length && !freeSlots) {
+      alert(`갤러리 사진이 이미 ${GALLERY_MAX}장입니다. 사진별 변경 버튼을 이용하거나 일부 사진을 삭제해 주세요.`);
+      event.currentTarget.value = "";
+      return;
+    }
+    const uploadFiles = currentImages.length ? files.slice(0, freeSlots) : files;
+    if (currentImages.length && uploadFiles.length < files.length) alert(`남은 ${freeSlots}칸에 맞춰 ${uploadFiles.length}장만 추가합니다.`);
+    galleryStatus.textContent = `${uploadFiles.length}장의 사진을 업로드하고 있습니다. 창을 닫지 말아 주세요.`;
+    try {
+      const uploaded = [];
+      for (let index = 0; index < uploadFiles.length; index += 1) {
+        galleryStatus.textContent = `${uploadFiles.length}장 중 ${index + 1}장을 업로드하고 있습니다.`;
+        uploaded.push(await window.RSVP_STORAGE.uploadInvitationImage(uploadFiles[index], `gallery-${currentImages.length + index + 1}`));
+      }
+      updateGallery([...currentImages, ...uploaded.map((item) => item.path)], [...currentThumbs, ...uploaded.map((item) => item.thumbPath)]);
+      galleryStatus.textContent = `${uploaded.length}장의 사진을 추가했습니다. 아래 저장 버튼을 눌러 완료해 주세요.`;
+    } catch (error) {
+      galleryStatus.textContent = "갤러리 업로드를 완료하지 못했습니다.";
+      alert(`사진을 업로드하지 못했습니다.\n${error.message || "파일 크기와 Storage 정책을 확인해 주세요."}`);
+    }
+    event.currentTarget.value = "";
+  });
+  form.querySelector("[data-gallery-clear]").addEventListener("click", () => {
+    if (galleryValues().length && !confirm("갤러리 사진을 모두 비울까요?")) return;
+    updateGallery([]);
+    galleryStatus.textContent = "갤러리를 비웠습니다. 아래 저장 버튼을 눌러 완료해 주세요.";
+  });
+  form.querySelector("[data-gallery-editor-preview]").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-gallery-remove]");
+    if (!button) return;
+    const images = galleryValues();
+    const thumbs = galleryThumbValues();
+    images.splice(Number(button.dataset.galleryRemove), 1);
+    thumbs.splice(Number(button.dataset.galleryRemove), 1);
+    updateGallery(images, thumbs);
+    galleryStatus.textContent = "사진을 삭제했습니다. 아래 저장 버튼을 눌러 완료해 주세요.";
+  });
+  form.querySelector("[data-gallery-editor-preview]").addEventListener("change", async (event) => {
+    const input = event.target.closest("[data-gallery-replace]");
+    if (!input) return;
+    const file = input.files?.[0];
+    if (!file) return;
+    const index = Number(input.dataset.galleryReplace);
+    galleryStatus.textContent = `${index + 1}번째 사진을 변경하고 있습니다.`;
+    try {
+      const result = await window.RSVP_STORAGE.uploadInvitationImage(file, `gallery-${index + 1}`);
+      const images = galleryValues();
+      const thumbs = galleryThumbValues();
+      images[index] = result.path;
+      thumbs[index] = result.thumbPath;
+      updateGallery(images, thumbs);
+      galleryStatus.textContent = `${index + 1}번째 사진을 변경했습니다. 아래 저장 버튼을 눌러 완료해 주세요.`;
+    } catch (error) {
+      galleryStatus.textContent = "사진 변경을 완료하지 못했습니다.";
+      alert(`사진을 변경하지 못했습니다.\n${error.message || "파일 크기와 Storage 정책을 확인해 주세요."}`);
+    }
+    input.value = "";
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const buttons = [...document.querySelectorAll('#editor-save, [form="invitation-editor"]')];
+    buttons.forEach((button) => {
+      button.dataset.defaultLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = "저장 중...";
+    });
+    try {
+      const keepFocus = document.querySelector(".admin-editor-view")?.classList.contains("view-copy") ? "copy"
+        : document.querySelector(".admin-editor-view")?.classList.contains("view-share") ? "share"
+          : document.querySelector(".admin-editor-view")?.classList.contains("view-gallery") ? "gallery"
+            : document.querySelector(".admin-editor-view")?.classList.contains("view-sections") ? "sections"
+            : "";
+      syncEditorPublicPeriod();
+      invitationData = editorData(form);
+      applyAppearance(invitationData.appearance);
+      await window.RSVP_STORAGE.saveInvitationData(invitationData);
+      renderEditor("저장했습니다. 현재 편집 화면에 계속 머무릅니다.", keepFocus);
+    } catch {
+      buttons.forEach((button) => {
+        button.disabled = false;
+        button.textContent = button.dataset.defaultLabel;
+      });
+      alert("저장하지 못했습니다. 관리자 권한 설정을 확인해 주세요.");
+    }
+  });
+  const floatingSave = document.querySelector('.admin-floating-save[form="invitation-editor"]');
+  const bottomSave = document.querySelector("#editor-save");
+  if (floatingSave && bottomSave && "IntersectionObserver" in window) {
+    new IntersectionObserver(([entry]) => {
+      floatingSave.classList.toggle("is-hidden", entry.isIntersecting);
+    }, { threshold: 0.2 }).observe(bottomSave);
+  }
+}
+
+function showAdminWelcomeOverlay(force = false) {
+  const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "local";
+  const key = `admin-welcome-shown:${slug}`;
+  if (!force && sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, "1");
+  const settings = { ...defaultWelcomeOverlay, ...(invitationData.adminDefaults?.welcomeOverlay || {}) };
+  const palette = themeWelcomePalette(invitationData);
+  const overlay = document.createElement("div");
+  overlay.className = "admin-welcome-intro";
+  overlay.innerHTML = `
+    <div class="admin-welcome-card">
+      <span class="section-label">${escapeAdminHtml(settings.eyebrow || defaultWelcomeOverlay.eyebrow)}</span>
+      <p data-admin-welcome-text></p>
+    </div>`;
+  const opacity = Math.max(0, Math.min(1, Number(settings.overlayOpacity ?? defaultWelcomeOverlay.overlayOpacity) / 100));
+  const shadowOpacity = Math.max(0, Math.min(0.7, Number(settings.shadowOpacity ?? defaultWelcomeOverlay.shadowOpacity) / 100));
+  const shadowEnabled = settings.shadowEnabled !== false;
+  const shadowColor = palette.shadowColor;
+  const shadowLayer = shadowEnabled
+    ? `radial-gradient(circle at 50% 25%, ${hexToRgba(shadowColor, shadowOpacity)}, transparent 42%)`
+    : "linear-gradient(transparent, transparent)";
+  overlay.style.background = `${shadowLayer}, ${hexToRgba(palette.backgroundColor, opacity)}`;
+  overlay.style.setProperty("--admin-welcome-card-bg", hexToRgba(palette.cardColor, Math.max(0, Math.min(1, Number(settings.cardOpacity ?? defaultWelcomeOverlay.cardOpacity) / 100))));
+  overlay.style.setProperty("--admin-welcome-text", palette.textColor);
+  overlay.style.setProperty("--admin-welcome-size", `${Number(settings.textSize) || 30}px`);
+  overlay.style.setProperty("--admin-welcome-border", `${Number(settings.borderWidth ?? defaultWelcomeOverlay.borderWidth) || 0}px solid ${palette.borderColor}`);
+  overlay.style.setProperty("--admin-welcome-radius", `${Number(settings.borderRadius ?? defaultWelcomeOverlay.borderRadius) || 0}px`);
+  overlay.style.setProperty("--admin-welcome-shadow", shadowEnabled
+    ? `0 28px 80px ${hexToRgba(shadowColor, shadowOpacity)}`
+    : "none");
+  document.body.classList.add("admin-welcome-locked");
+  document.body.append(overlay);
+  const target = overlay.querySelector("[data-admin-welcome-text]");
+  const text = settings.text || defaultWelcomeOverlay.text;
+  let index = 0;
+  const typeNext = () => {
+    target.textContent = text.slice(0, index);
+    index += 1;
+    if (index <= text.length) {
+      window.setTimeout(typeNext, text[index - 2] === "\n" ? 170 : 52);
+      return;
+    }
+    window.setTimeout(() => {
+      overlay.classList.add("is-leaving");
+      window.setTimeout(() => {
+        overlay.remove();
+        document.body.classList.remove("admin-welcome-locked");
+      }, 420);
+    }, 900);
+  };
+  window.setTimeout(typeNext, 240);
+}
+
+function hexToRgba(color = "#eff7fa", alpha = 0.94) {
+  const value = String(color || "").trim();
+  const match = /^#?([0-9a-f]{6})$/i.exec(value);
+  if (!match) return value;
+  const number = Number.parseInt(match[1], 16);
+  return `rgba(${(number >> 16) & 255}, ${(number >> 8) & 255}, ${number & 255}, ${alpha})`;
+}
+
+async function login(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const email = String(form.get("email") || "").trim();
+  if (form.get("rememberEmail") === "on") localStorage.setItem(SAVED_LOGIN_EMAIL_KEY, email);
+  else localStorage.removeItem(SAVED_LOGIN_EMAIL_KEY);
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: form.get("password"),
+  });
+  if (error) return renderLogin("가입되지 않은 이메일이거나 이메일/비밀번호가 일치하지 않습니다. 가입은 회원가입, 카카오로 시작, 네이버로 시작 버튼을 이용해 주세요.");
+  try {
+    currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
+    if (!currentInvitationSite?.slug) return renderLogin("가입이 완료되지 않은 계정입니다. 회원가입, 카카오로 시작, 네이버로 시작 버튼으로 다시 진행해 주세요.");
+    if (currentInvitationSite.disabled) return renderLogin("비활성화된 일반관리자입니다. 사이트 관리자에게 문의해 주세요.");
+  } catch (siteError) {
+    return renderLogin(`계정 전용 청첩장을 준비하지 못했습니다. ${siteError.message || "Supabase 설정을 확인해 주세요."}`);
+  }
+  await loadInvitationData();
+  renderAdminView(localStorage.getItem(GENERAL_ADMIN_VIEW_KEY) || "editor");
+  showAdminWelcomeOverlay();
+}
+
+async function signup(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const status = event.currentTarget.querySelector("[data-signup-status]") || document.createElement("p");
+  if (!status.dataset.signupStatus) {
+    status.dataset.signupStatus = "1";
+    status.className = "admin-message signup-status";
+    event.currentTarget.append(status);
+  }
+  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  const defaultLabel = submitButton?.textContent || "";
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "만드는 중...";
+  }
+  status.textContent = "계정을 만들고 전용 청첩장을 준비하고 있습니다.";
+  try {
+    const result = await window.RSVP_STORAGE.signUpInvitationAdmin({
+      email: String(form.get("email") || "").trim(),
+      password: form.get("password"),
+      agreeTerms: form.get("agreeTerms") === "on",
+      agreePrivacy: form.get("agreePrivacy") === "on",
+      agreeMarketing: form.get("agreeMarketing") === "on",
+    });
+    if (result.needsConfirmation) {
+      const message = "가입 확인 메일을 보냈습니다. Supabase 이메일 인증이 켜져 있어서 메일 인증 전에는 자동 로그인할 수 없습니다.";
+      alert(message);
+      renderLogin(message);
+      return;
+    }
+    localStorage.setItem(SAVED_LOGIN_EMAIL_KEY, String(form.get("email") || "").trim());
+    renderBasicInfoOnboarding("회원가입이 완료되었습니다. 기본정보를 입력하면 전용 청첩장과 일반관리자 페이지가 생성됩니다.");
+  } catch (error) {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = defaultLabel;
+    }
+    const message = `가입을 완료하지 못했습니다. ${error.message || "입력값과 Supabase Auth 설정을 확인해 주세요."}`;
+    status.textContent = message;
+    alert(message);
+  }
+}
+
+async function loadInvitationData() {
+  if (supabaseClient) {
+    currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
+  }
+  invitationData = await window.RSVP_STORAGE.loadInvitationData(window.INVITATION_DATA);
+  applyAppearance(invitationData.appearance);
+}
+
+async function renderResponses() {
+  rememberAdminView("responses");
+  if (!supabaseClient) {
+    adminApp.innerHTML = `${adminHeader("responses")}${contentBackBar("참석 현황")}${responsesView(window.RSVP_STORAGE.readLocalResponses(), true)}`;
+    bindAdminNavigation();
+    return;
+  }
+  let query = supabaseClient
+    .from("attendance_responses")
+    .select("*")
+    .order("created_at", { ascending: false });
+  query = query.eq("invitation_id", window.RSVP_STORAGE.getActiveInvitationSlug());
+  const { data, error } = await query;
+  if (error) return renderLogin("응답을 불러오지 못했습니다. 관리자 권한 설정을 확인해 주세요.");
+  adminApp.innerHTML = `${adminHeader("responses")}${contentBackBar("참석 현황")}${responsesView(data)}`;
+  bindAdminNavigation();
+}
+
+const ADMIN_SAVED_GUEST_PHOTOS_KEY = "wedding-admin-saved-guest-photos";
+const isGuestVideo = (photo = {}) => /\.(mp4|webm|mov)(?:$|[?#])/i.test(photo.name || photo.path || "");
+const guestPhotoPreviewUrl = (photo = {}) => photo.thumbSignedUrl || "";
+const savedGuestPhotosKey = () => `${ADMIN_SAVED_GUEST_PHOTOS_KEY}:${window.RSVP_STORAGE.getActiveInvitationSlug()}`;
+
+function savedGuestPhotoPaths() {
+  try { return new Set(JSON.parse(localStorage.getItem(savedGuestPhotosKey()) || "[]")); }
+  catch { return new Set(); }
+}
+
+function rememberSavedGuestPhotos(photos) {
+  const saved = savedGuestPhotoPaths();
+  photos.forEach((photo) => saved.add(photo.path));
+  localStorage.setItem(savedGuestPhotosKey(), JSON.stringify([...saved]));
+}
+
+function guestPhotoCards(photos, saved = false) {
+  return photos.length ? photos.map((photo) => `
+    <article class="private-photo ${saved ? "is-saved" : "is-new"}">
+      <a href="${escapeAdminHtml(photo.signedUrl)}" target="_blank" rel="noopener" download>
+      ${isGuestVideo(photo)
+        ? '<span class="private-video-file"><strong>VIDEO</strong><small>저장해서 확인하기</small></span>'
+        : guestPhotoPreviewUrl(photo)
+          ? `<img src="${escapeAdminHtml(guestPhotoPreviewUrl(photo))}" alt="하객이 업로드한 사진" loading="lazy" decoding="async">`
+          : '<span class="private-video-file"><strong>IMAGE</strong><small>원본으로 확인하기</small></span>'}
+      <span>${escapeAdminHtml(formatDate(photo.created_at))}</span>
+      </a>
+      <div class="private-photo-actions">
+        <a class="icon-btn" href="${escapeAdminHtml(photo.signedUrl)}" download aria-label="파일 하나 저장" title="저장"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4m-7 11h6v5H9z"/></svg></a>
+        <button class="icon-btn" type="button" data-admin-remove-photo="${escapeAdminHtml(photo.path)}" aria-label="파일 삭제" title="삭제">×</button>
+      </div>
+    </article>`).join("") : `<p class="admin-message">${saved ? "아직 저장 처리한 파일이 없습니다." : "새로 저장할 파일이 없습니다."}</p>`;
+}
+
+const zipCrcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+    table[index] = value >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let value = 0xffffffff;
+  bytes.forEach((byte) => { value = zipCrcTable[(value ^ byte) & 0xff] ^ (value >>> 8); });
+  return (value ^ 0xffffffff) >>> 0;
+}
+
+function dosDateTime(date = new Date()) {
+  return {
+    time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+    date: ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate(),
+  };
+}
+
+function writeZipNumber(view, offset, value, bytes) {
+  for (let index = 0; index < bytes; index += 1) view.setUint8(offset + index, (value >>> (index * 8)) & 0xff);
+}
+
+function safeZipName(photo, index) {
+  const fallback = `guest-file-${String(index + 1).padStart(3, "0")}`;
+  return String(photo.name || photo.path?.split("/").pop() || fallback).replace(/[\\/:*?"<>|]+/g, "_") || fallback;
+}
+
+async function createZipBlob(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  files.forEach((file) => {
+    const nameBytes = encoder.encode(file.name);
+    const { time, date } = dosDateTime(file.date);
+    const crc = crc32(file.bytes);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const localView = new DataView(local.buffer);
+    writeZipNumber(localView, 0, 0x04034b50, 4);
+    writeZipNumber(localView, 4, 20, 2);
+    writeZipNumber(localView, 10, time, 2);
+    writeZipNumber(localView, 12, date, 2);
+    writeZipNumber(localView, 14, crc, 4);
+    writeZipNumber(localView, 18, file.bytes.length, 4);
+    writeZipNumber(localView, 22, file.bytes.length, 4);
+    writeZipNumber(localView, 26, nameBytes.length, 2);
+    local.set(nameBytes, 30);
+    localParts.push(local, file.bytes);
+    const central = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(central.buffer);
+    writeZipNumber(centralView, 0, 0x02014b50, 4);
+    writeZipNumber(centralView, 4, 20, 2);
+    writeZipNumber(centralView, 6, 20, 2);
+    writeZipNumber(centralView, 12, time, 2);
+    writeZipNumber(centralView, 14, date, 2);
+    writeZipNumber(centralView, 16, crc, 4);
+    writeZipNumber(centralView, 20, file.bytes.length, 4);
+    writeZipNumber(centralView, 24, file.bytes.length, 4);
+    writeZipNumber(centralView, 28, nameBytes.length, 2);
+    writeZipNumber(centralView, 42, offset, 4);
+    central.set(nameBytes, 46);
+    centralParts.push(central);
+    offset += local.length + file.bytes.length;
+  });
+  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  writeZipNumber(endView, 0, 0x06054b50, 4);
+  writeZipNumber(endView, 8, files.length, 2);
+  writeZipNumber(endView, 10, files.length, 2);
+  writeZipNumber(endView, 12, centralSize, 4);
+  writeZipNumber(endView, 16, offset, 4);
+  return new Blob([...localParts, ...centralParts, end], { type: "application/zip" });
+}
+
+async function downloadGuestPhotos(photos, button) {
+  if (!photos.length) return alert("저장할 파일이 없습니다.");
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = `${photos.length}개 묶는 중...`;
+  try {
+    const files = [];
+    for (let index = 0; index < photos.length; index += 1) {
+      button.textContent = `${photos.length}개 중 ${index + 1}개 준비 중...`;
+      const response = await fetch(photos[index].signedUrl);
+      if (!response.ok) throw new Error("파일을 불러오지 못했습니다.");
+      files.push({ name: safeZipName(photos[index], index), bytes: new Uint8Array(await response.arrayBuffer()), date: new Date(photos[index].created_at || Date.now()) });
+    }
+    const zipBlob = await createZipBlob(files);
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `guest-files-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    rememberSavedGuestPhotos(photos);
+    await renderGuestPhotos();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = original;
+    alert(`파일을 묶어서 저장하지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
+  }
+}
+
+async function renderGuestPhotos() {
+  rememberAdminView("photos");
+  adminApp.innerHTML = `
+    ${adminHeader("photos")}
+    ${contentBackBar("하객 사진·영상")}
+    <section class="admin-card">
+      <h2>하객 사진·영상</h2>
+      <p class="admin-message">하객이 보내준 파일을 불러오고 있습니다.</p>
+    </section>`;
+  bindAdminNavigation();
+  try {
+    const photos = await window.RSVP_STORAGE.listGuestPhotos();
+    const savedPaths = savedGuestPhotoPaths();
+    const newPhotos = photos.filter((photo) => !savedPaths.has(photo.path));
+    const savedPhotos = photos.filter((photo) => savedPaths.has(photo.path));
+    adminApp.innerHTML = `
+      ${adminHeader("photos")}
+      ${contentBackBar("하객 사진·영상")}
+      <section class="admin-card">
+        <div class="admin-toolbar"><h2>하객 사진·영상</h2><span class="badge">${photos.length}개</span></div>
+        <p class="admin-message">저장 여부는 이 관리자 브라우저에 기록됩니다. 다른 기기에서는 새 파일로 표시될 수 있습니다.</p>
+        <div class="guest-photo-admin-actions">
+          <button class="btn btn-primary" type="button" data-download-new-guest-photos>새 파일만 전체 저장 (${newPhotos.length})</button>
+          <button class="btn" type="button" data-download-all-guest-photos>모든 파일 전체 저장 (${photos.length})</button>
+        </div>
+        <section class="guest-photo-admin-group"><h3>새로 업로드된 파일 <span class="badge">${newPhotos.length}개</span></h3><div class="private-photo-grid">${guestPhotoCards(newPhotos)}</div></section>
+        <section class="guest-photo-admin-group"><h3>이미 저장한 파일 <span class="badge">${savedPhotos.length}개</span></h3><div class="private-photo-grid">${guestPhotoCards(savedPhotos, true)}</div></section>
+      </section>`;
+    bindAdminNavigation();
+    document.querySelector("[data-download-new-guest-photos]")?.addEventListener("click", (event) => downloadGuestPhotos(newPhotos, event.currentTarget));
+    document.querySelector("[data-download-all-guest-photos]")?.addEventListener("click", (event) => downloadGuestPhotos(photos, event.currentTarget));
+    document.querySelectorAll("[data-admin-remove-photo]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (!confirm("이 파일을 삭제할까요?")) return;
+        button.disabled = true;
+        button.textContent = "…";
+        try {
+          await window.RSVP_STORAGE.removeGuestPhoto(button.dataset.adminRemovePhoto);
+          await renderGuestPhotos();
+        } catch {
+          button.disabled = false;
+          button.textContent = "×";
+          alert("파일을 삭제하지 못했습니다.");
+        }
+      });
+    });
+  } catch (error) {
+    console.error("[renderGuestPhotos]", error);
+    adminApp.innerHTML = `
+      ${adminHeader("photos")}
+      ${contentBackBar("하객 사진·영상")}
+      <section class="admin-card"><p class="admin-message">파일을 불러오지 못했습니다. Storage 정책을 확인해 주세요.</p><p class="admin-message micro-help">${escapeAdminHtml(error.message || "")}</p></section>`;
+    bindAdminNavigation();
+  }
+}
+
+async function renderGuestbookEntries() {
+  rememberAdminView("guestbook");
+  adminApp.innerHTML = `${adminHeader("guestbook")}${contentBackBar("방명록")}<section class="admin-card"><h2>방명록</h2><p class="admin-message">방명록을 불러오고 있습니다.</p></section>`;
+  bindAdminNavigation();
+  try {
+    const entries = await window.RSVP_STORAGE.loadAdminGuestbookEntries();
+    adminApp.innerHTML = `${adminHeader("guestbook")}${contentBackBar("방명록")}<section class="admin-card">
+      <div class="admin-toolbar"><h2>방명록</h2><span class="badge">${entries.length}개</span></div>
+      <p class="admin-message micro-help">부적절한 메시지는 숨길 수 있습니다. 숨긴 메시지는 공개 청첩장에서 보이지 않습니다.</p>
+      <div class="response-list">${entries.length ? entries.map((entry) => `
+        <article class="response-card ${entry.hidden ? "is-muted" : ""}">
+          <h3>${escapeAdminHtml(entry.guest_name)} ${entry.hidden ? '<span class="badge">숨김</span>' : ""}</h3>
+          <p>${escapeAdminHtml(entry.message)}</p>
+          <p class="response-meta">${escapeAdminHtml(formatDate(entry.created_at))}</p>
+          <button class="btn" type="button" data-toggle-guestbook="${escapeAdminHtml(entry.id)}" data-hidden="${entry.hidden ? "true" : "false"}">${entry.hidden ? "다시 보이기" : "숨기기"}</button>
+        </article>`).join("") : '<p class="admin-message">등록된 방명록이 없습니다.</p>'}</div>
+    </section>`;
+    bindAdminNavigation();
+    document.querySelectorAll("[data-toggle-guestbook]").forEach((button) => button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        await window.RSVP_STORAGE.setGuestbookEntryHidden(button.dataset.toggleGuestbook, button.dataset.hidden !== "true");
+        await renderGuestbookEntries();
+      } catch (error) {
+        button.disabled = false;
+        alert(error.message || "방명록 상태를 변경하지 못했습니다.");
+      }
+    }));
+  } catch (error) {
+    adminApp.innerHTML = `${adminHeader("guestbook")}${contentBackBar("방명록")}<section class="admin-card"><p class="admin-message">방명록을 불러오지 못했습니다. 최신 supabase-setup.sql을 다시 실행해 주세요.</p><p class="admin-message micro-help">${escapeAdminHtml(error.message || "방명록 조회 권한을 확인해 주세요.")}</p></section>`;
+    bindAdminNavigation();
+  }
+}
+
+async function start() {
+  applyAppearance(invitationData.appearance);
+  if (!supabaseClient) return renderSetupNotice();
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) return renderLogin();
+  currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
+  if (!currentInvitationSite?.slug) return renderBasicInfoOnboarding();
+  if (currentInvitationSite.disabled) return renderLogin("비활성화된 일반관리자입니다. 사이트 관리자에게 문의해 주세요.");
+  await loadInvitationData();
+  renderAdminView(localStorage.getItem(GENERAL_ADMIN_VIEW_KEY) || "editor");
+}
+
+start();

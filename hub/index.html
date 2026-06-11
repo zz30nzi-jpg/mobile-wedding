@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>모바일 청첩장 통합 이동</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Wedding Invitation</p>
+      <h1>청첩장 사이트 통합 이동</h1>
+      <p class="guide">공개 청첩장과 관리자 페이지를 한 곳에서 확인할 수 있습니다.</p>
+      <section class="group">
+        <h2>기본형</h2>
+        <div class="links">
+          <a data-site="basic" href="#">기본형 청첩장</a>
+          <a data-site="basic-admin" href="#">기본형 관리자</a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>확장형</h2>
+        <div class="links">
+          <a data-site="extended" href="#">확장형 청첩장</a>
+          <a data-site="extended-admin" href="#">확장형 일반관리자</a>
+        </div>
+      </section>
+    </main>
+    <script src="./site-links.js"></script>
+    <script>
+      const links = window.WEDDING_SITE_LINKS;
+      const withPage = (base, page = "") => `${base.replace(/\/?$/, "/")}${page}`;
+      const urls = {
+        basic: withPage(links.basic),
+        "basic-admin": withPage(links.basic, "admin.html"),
+        extended: withPage(links.extended),
+        "extended-admin": withPage(links.extended, "admin.html"),
+      };
+      document.querySelectorAll("[data-site]").forEach((link) => {
+        link.href = urls[link.dataset.site];
+      });
+    </script>
+  </body>
+</html>

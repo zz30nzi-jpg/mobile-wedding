@@ -1,0 +1,20 @@
+:root {
+  color-scheme: light;
+  font-family: "Noto Serif KR", Georgia, serif;
+  color: #433d3a;
+  background: #f7f2ed;
+}
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 22px; }
+main { width: min(100%, 720px); }
+.eyebrow { margin: 0; color: #a67c73; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; }
+h1 { margin: 10px 0 8px; font-size: clamp(28px, 7vw, 42px); font-weight: 500; }
+.guide { margin: 0 0 26px; color: #837570; font-size: 14px; line-height: 1.8; }
+.group { margin-top: 14px; border: 1px solid #e8d9d2; border-radius: 16px; padding: 16px; background: rgba(255,255,255,.72); }
+h2 { margin: 0 0 11px; color: #755f58; font-size: 17px; }
+.links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+a { border: 1px solid #eadbd5; border-radius: 10px; padding: 13px 12px; background: #fff; color: #594943; font-size: 13px; text-align: center; text-decoration: none; }
+a:hover { border-color: #c7988d; background: #fff9f6; }
+@media (max-width: 520px) {
+  .links { grid-template-columns: 1fr; }
+}

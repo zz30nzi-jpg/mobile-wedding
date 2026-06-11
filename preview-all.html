@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레이아웃 미리보기 (전체)</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #2b2b30; color: #f3f3f5; font-family: "Noto Sans KR", system-ui, sans-serif; }
+      header { position: sticky; top: 0; z-index: 10; background: #1f1f23; padding: 14px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+      header h1 { margin: 0 0 4px; font-size: 16px; }
+      header p { margin: 0; font-size: 12px; color: #aaa; }
+      .controls { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+      .controls button { background: #3a3a42; color: #eee; border: 1px solid #55555f; border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+      .controls button.active { background: #6b7cc4; border-color: #6b7cc4; }
+      .grid { display: flex; flex-wrap: wrap; gap: 22px; padding: 22px; justify-content: center; }
+      .card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.45); width: 390px; max-width: 100%; }
+      .card .label { background: #1f1f23; color: #fff; padding: 9px 14px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+      .card .label .dot { width: 9px; height: 9px; border-radius: 50%; }
+      .card iframe { display: block; width: 390px; max-width: 100%; height: 760px; border: 0; background: #fff; }
+      .card .open { margin-left: auto; font-size: 11px; color: #9fb0ee; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>레이아웃 템플릿 미리보기</h1>
+      <p>각 카드가 하나의 레이아웃입니다. 스크롤해서 보고, 라벨의 "새 탭"으로 전체 확인 가능. 컬러테마는 기본(화이트) 기준.</p>
+      <div class="controls" id="controls"></div>
+    </header>
+    <div class="grid" id="grid"></div>
+    <script>
+      const layouts = [
+        { id: "classic",       name: "클래식",      color: "#8d3440" },
+        { id: "navy_arch",     name: "달빛 서약",   color: "#3f5a8a" },
+        { id: "cream_organic", name: "봄날 연가",   color: "#9a8aa8" },
+        { id: "crimson_silk",  name: "벨벳 나이트", color: "#9b2335" },
+        { id: "editorial_red", name: "스칼렛 데이", color: "#c0392b" },
+        { id: "garden_doodle", name: "러브 두들",   color: "#4a7c3a" },
+      ];
+      const grid = document.getElementById("grid");
+      const controls = document.getElementById("controls");
+      function buildCard(l) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.id = "card-" + l.id;
+        card.innerHTML = `
+          <div class="label"><span class="dot" style="background:${l.color}"></span>${l.name} <span style="color:#888;font-weight:400">(${l.id})</span>
+            <a class="open" href="./index.html?__layout=${l.id}" target="_blank" rel="noopener">새 탭 ↗</a></div>
+          <iframe loading="lazy" src="./index.html?__layout=${l.id}"></iframe>`;
+        return card;
+      }
+      layouts.forEach((l) => {
+        grid.appendChild(buildCard(l));
+        const b = document.createElement("button");
+        b.textContent = l.name;
+        b.onclick = () => document.getElementById("card-" + l.id).scrollIntoView({ behavior: "smooth", block: "start" });
+        controls.appendChild(b);
+      });
+    </script>
+  </body>
+</html>
