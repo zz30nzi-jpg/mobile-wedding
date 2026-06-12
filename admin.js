@@ -1798,7 +1798,7 @@ function renderEditor(message = "", focus = "") {
             <div class="copy-editor-toolbar"><div><strong>편집 기능</strong><small>점선 영역을 누르면 아래 도구가 해당 영역에 맞게 바뀝니다.</small></div></div>
             ${editorDesignPanel()}
             <p class="admin-message copy-editor-guide">공개 청첩장에서 수정 가능한 영역만 점선으로 표시됩니다.</p>
-            <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260609-v13" title="공개 청첩장 문구 수정 미리보기" data-copy-editor-frame></iframe>
+            <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260612-v14" title="공개 청첩장 문구 수정 미리보기" data-copy-editor-frame></iframe>
             <aside class="copy-editor-drawer" data-copy-editor-drawer>
             <section class="copy-editor-section copy-editor-intro-settings">
               <p class="section-label">Intro Overlay</p><h2>진입 화면</h2>
@@ -2615,8 +2615,8 @@ function bindEditor() {
       field.addEventListener("blur", commit, { once: true });
       field.focus();
       field.select();
-      requestAnimationFrame(() => {
-        if (!field.isConnected) return;
+      setTimeout(() => {
+        if (!field.isConnected || frameDocument.activeElement !== field) return;
         const frameWin = frameDocument.defaultView;
         if (!frameWin) return;
         let visibleHeight = frameWin.innerHeight;
@@ -2631,7 +2631,7 @@ function bindEditor() {
         } else if (rect.top < 0) {
           frameWin.scrollBy({ top: Math.floor(rect.top - 16), behavior: "smooth" });
         }
-      });
+      }, 350);
     };
     frameDocument.addEventListener("click", (clickEvent) => {
       const detailButton = clickEvent.target.closest("[data-preview-detail-edit]");

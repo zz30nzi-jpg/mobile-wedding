@@ -785,6 +785,7 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 
 .admin-page { min-height: 100vh; max-width: 100%; overflow-x: hidden; padding: 24px; background: linear-gradient(180deg, var(--admin-bg), var(--paper) 42%, var(--body-bg)); }
 .admin-shell { width: min(100%, 1040px); margin: 0 auto; }
+body[data-admin-area="general"] { touch-action: pan-x pan-y; }
 body[data-admin-area="general"] .admin-page { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
 body[data-admin-area="general"] .admin-shell { width: min(100%, 480px); }
 /* bottom tab bar */
