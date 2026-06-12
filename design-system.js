@@ -88,7 +88,11 @@
     if (hexToRgb(button) && luminance(button) > 0.93) button = mixColor(button, accent, 0.16);
     const buttonText = contrastColor(button, ink, "#ffffff");
     const primaryText = contrastColor(accent, ink, "#ffffff");
-    return { ...palette, background, card, ink, accent, side, button, buttonText, primaryText };
+    const introBackground = side || background;
+    const introName = contrastColor(introBackground, ink, "#ffffff");
+    const introSubText = introName === "#ffffff" ? "rgba(255,255,255,0.78)" : mixColor(introName, background, 0.34);
+    const introShadow = introName === "#ffffff" ? "0 1px 10px rgba(0,0,0,0.32)" : `0 1px 0 ${mixColor(card, background, 0.28)}`;
+    return { ...palette, background, card, ink, accent, side, button, buttonText, primaryText, introName, introSubText, introShadow };
   };
 
   function ensureFontFace(font = {}) {
@@ -291,6 +295,9 @@
       button: ["--accent", "--nav-button", "--nav-hover", "--media-end", "--button-hover"],
       buttonText: ["--button-text", "--nav-button-text"],
       primaryText: ["--primary-button-text"],
+      introName: ["--intro-name-color"],
+      introSubText: ["--intro-sub-color"],
+      introShadow: ["--intro-text-shadow"],
       label: ["--label", "--nav-text", "--location-chip-text"],
       line: ["--line", "--nav-border"],
     };

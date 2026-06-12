@@ -405,11 +405,11 @@ img { max-width: 100%; }
 }
 .invitation-intro { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--body-bg) 88%, transparent); backdrop-filter: blur(12px); transition: visibility 0s linear 0.7s, opacity 0.7s ease; }
 .invitation-intro.is-finished { visibility: hidden; opacity: 0; pointer-events: none; }
-.invitation-intro-copy { display: grid; padding: 28px; color: var(--accent-dark); text-align: var(--intro-align, center); text-shadow: 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent); transform: translateY(var(--intro-offset-y, 0)); }
-.invitation-intro-copy p, .invitation-intro-copy span { margin: 0; color: var(--muted); letter-spacing: 0.14em; text-transform: uppercase; }
+.invitation-intro-copy { display: grid; padding: 28px; color: var(--intro-name-color, var(--accent-dark)); text-align: var(--intro-align, center); text-shadow: var(--intro-text-shadow, 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent)); transform: translateY(var(--intro-offset-y, 0)); }
+.invitation-intro-copy p, .invitation-intro-copy span { margin: 0; color: var(--intro-sub-color, var(--muted)); letter-spacing: 0.14em; text-transform: uppercase; }
 .invitation-intro-copy p { margin-bottom: var(--intro-eyebrow-name-gap, 10px); font-size: var(--intro-eyebrow-size, 11px); }
 .invitation-intro-copy span { margin-top: var(--intro-name-date-gap, 10px); font-size: var(--intro-date-size, 11px); }
-.invitation-intro-copy strong { min-height: 38px; font-family: "Cormorant Garamond", "Noto Serif KR", serif; font-size: var(--intro-name-size, 30px); font-weight: 600; letter-spacing: 0.1em; color: color-mix(in srgb, var(--accent-dark) 75%, var(--ink)); }
+.invitation-intro-copy strong { min-height: 38px; font-family: "Cormorant Garamond", "Noto Serif KR", serif; font-size: var(--intro-name-size, 30px); font-weight: 600; letter-spacing: 0.1em; color: var(--intro-name-color, color-mix(in srgb, var(--accent-dark) 75%, var(--ink))); }
 /* 진입화면 날짜는 항상 한 줄 */
 .invitation-intro-copy span { white-space: nowrap; }
 /* 어두운 인트로 배경 레이아웃 — 이름·날짜를 밝게 (배경과 같은 색으로 묻히지 않게) */
