@@ -73,11 +73,17 @@ window.AI_DESIGN_SERVICE = (() => {
     } catch (error) {
       return fallback(`AI 서버에 연결하지 못해 임시 초안을 사용했습니다. (${error.message || "Failed to fetch"})`);
     }
-    const payload = await response.json().catch(() => ({}));
+    const rawText = await response.text().catch(() => "");
+    let payload = {};
+    try { payload = rawText ? JSON.parse(rawText) : {}; } catch {}
     if (!response.ok && /혼잡|high demand|overloaded|temporarily|일시/i.test(payload.error || "")) {
       return { ...mock(), fallbackReason: payload.error || "AI 서버가 일시적으로 혼잡해 임시 결과를 사용했습니다." };
     }
-    if (!response.ok) return fallback(payload.error || `AI 서버 호출에 실패했습니다. (${response.status})`);
+    if (!response.ok) {
+      console.error("AI 요청 실패", { endpoint, status: response.status, vercelId: response.headers.get("x-vercel-id"), body: rawText.slice(0, 500) });
+      const detail = payload.error || (rawText && !rawText.trim().startsWith("<") ? rawText.slice(0, 200) : "") || response.statusText || "";
+      return fallback(detail ? `AI 서버 호출에 실패했습니다. (${response.status}) ${detail}` : `AI 서버 호출에 실패했습니다. (${response.status})`);
+    }
     return { ...payload, id: payload.id || `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, type, createdAt: payload.createdAt || new Date().toISOString() };
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
@@ -2006,6 +2012,14 @@ function bindEditor() {
   copyEditor.querySelector('[name="hero.introDesign.align"]')?.addEventListener("change", updateIntroDesignPreview);
   updateIntroDesignPreview();
   const toolPanel = copyEditor.querySelector("[data-editor-tool-panel]");
+  if (window.visualViewport) {
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - window.visualViewport.height);
+      document.documentElement.style.setProperty("--keyboard-offset", `${offset}px`);
+    };
+    window.visualViewport.addEventListener("resize", updateKeyboardOffset);
+    updateKeyboardOffset();
+  }
   let activeProfileTarget = "";
   let activeTextTarget = null;
   let activeInlineEditor = null;
@@ -2601,6 +2615,23 @@ function bindEditor() {
       field.addEventListener("blur", commit, { once: true });
       field.focus();
       field.select();
+      requestAnimationFrame(() => {
+        if (!field.isConnected) return;
+        const frameWin = frameDocument.defaultView;
+        if (!frameWin) return;
+        let visibleHeight = frameWin.innerHeight;
+        if (toolPanel && !toolPanel.hidden) {
+          const dockRect = toolPanel.getBoundingClientRect();
+          const frameRect = frameElement.getBoundingClientRect();
+          visibleHeight -= Math.max(0, frameRect.bottom - dockRect.top);
+        }
+        const rect = field.getBoundingClientRect();
+        if (rect.bottom > visibleHeight) {
+          frameWin.scrollBy({ top: Math.ceil(rect.bottom - visibleHeight + 16), behavior: "smooth" });
+        } else if (rect.top < 0) {
+          frameWin.scrollBy({ top: Math.floor(rect.top - 16), behavior: "smooth" });
+        }
+      });
     };
     frameDocument.addEventListener("click", (clickEvent) => {
       const detailButton = clickEvent.target.closest("[data-preview-detail-edit]");

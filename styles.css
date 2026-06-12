@@ -790,7 +790,7 @@ body[data-admin-area="general"] .admin-shell { width: min(100%, 480px); }
 /* bottom tab bar */
 .admin-bottom-tabs { position: fixed; z-index: 90; right: 0; bottom: 0; left: 0; display: flex; align-items: stretch; justify-content: space-around; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--nav-bg) 96%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); padding-bottom: env(safe-area-inset-bottom); transition: opacity 0.18s ease, transform 0.18s ease; }
 /* 일반관리자: 편집 tooldock을 하단 탭바 위에 위치시킴 */
-body[data-admin-area="general"] .editor-tooldock { bottom: calc(56px + env(safe-area-inset-bottom)); padding-bottom: 8px; }
+body[data-admin-area="general"] .editor-tooldock { bottom: calc(56px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px)); padding-bottom: 8px; }
 body[data-admin-area="general"]:has(.editor-tooldock:not([hidden]):not(.is-collapsed)) .admin-floating-save { opacity: 0; pointer-events: none; }
 .admin-tab-item { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 56px; border: 0; background: transparent; color: var(--muted); font-size: 9.5px; font-weight: 500; line-height: 1; cursor: pointer; transition: color 0.15s ease; padding: 6px 2px; }
 .admin-tab-item .tab-icon { width: 22px; height: 22px; flex-shrink: 0; transition: color 0.15s ease, transform 0.15s ease; }
@@ -2011,7 +2011,7 @@ body.copy-editor-public-preview .bottom-tabbar { display: none; }
 .copy-editor-intro-preview strong { font-family: "Cormorant Garamond", "Noto Serif KR", serif; font-size: var(--intro-name-size, 30px); letter-spacing: 0.1em; }
 .copy-editor-intro-preview span { margin-top: var(--intro-name-date-gap, 10px); color: var(--muted); font-size: var(--intro-date-size, 11px); letter-spacing: 0.14em; text-transform: uppercase; }
 .view-copy > .editor-form > #editor-save { display: none; }
-body.copy-editor-public-preview .copy-inline-editor { display: block; width: 100%; min-height: 42px; border: 1px solid var(--accent-dark); border-radius: 8px; padding: 8px 10px; background: color-mix(in srgb, var(--card) 94%, transparent); color: var(--ink); font: inherit; line-height: inherit; text-align: inherit; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 26%, transparent); resize: vertical; }
+body.copy-editor-public-preview .copy-inline-editor { display: block; width: 100%; min-height: 42px; border: 1px solid var(--accent-dark); border-radius: 8px; padding: 8px 10px; background: color-mix(in srgb, var(--card) 94%, transparent); color: var(--ink); font: inherit; font-size: max(16px, 1em); line-height: inherit; text-align: inherit; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 26%, transparent); resize: vertical; }
 .editor-bottom-tools { display: flex; gap: 8px; overflow-x: auto; padding: 3px 0 2px; scrollbar-width: none; }
 .editor-bottom-tools::-webkit-scrollbar { display: none; }
 .editor-bottom-tools .btn { flex: 0 0 auto; min-height: 42px; border-radius: 999px; padding: 10px 14px; font-size: 12px; white-space: nowrap; }
@@ -2071,7 +2071,7 @@ body.copy-editor-public-preview .gallery-preview { pointer-events: none; }
 .editor-start-card.is-selected .editor-start-preview,
 .editor-start-card.is-selected .editor-start-text-preview { border-color: #19c7e6; box-shadow: 0 0 0 3px rgba(25,199,230,0.22); }
 .editor-start-apply { min-height: 52px; border: 0; border-radius: 999px; background: var(--accent-dark); color: var(--card); font-size: 15px; font-weight: 800; }
-.editor-tooldock { position: fixed; z-index: 70; right: 0; bottom: 0; left: 0; display: grid; width: min(calc(100vw - 12px), 430px); max-height: min(44vh, 260px); margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 6px 10px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--card) 96%, transparent); color: var(--ink); box-shadow: 0 -8px 20px rgba(70,85,93,0.12); backdrop-filter: blur(18px); transition: transform 0.24s ease; }
+.editor-tooldock { position: fixed; z-index: 70; right: 0; bottom: var(--keyboard-offset, 0px); left: 0; display: grid; width: min(calc(100vw - 12px), 430px); max-height: min(44vh, 260px); margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 6px 10px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--card) 96%, transparent); color: var(--ink); box-shadow: 0 -8px 20px rgba(70,85,93,0.12); backdrop-filter: blur(18px); transition: transform 0.24s ease, bottom 0.18s ease; }
 .editor-tooldock[hidden] { display: none; }
 .editor-tooldock.is-collapsed { transform: translateY(calc(100% - 44px)); }
 .editor-tooldock-head { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
@@ -2166,6 +2166,8 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .editor-tooldock.is-profile { max-height: min(38vh, 230px); }
 .editor-tooldock.is-hero.is-manager { max-height: min(64vh, 460px); }
 .editor-tooldock.is-copy { max-height: min(58vh, 390px); }
+.editor-tooldock[data-context="text-copy"] { max-height: min(30vh, 200px); }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-pane { max-height: min(22vh, 150px); }
 .editor-tooldock-manager { max-height: 142px; overflow-y: auto; }
 .editor-tooldock.is-manager .editor-tooldock-manager { max-height: min(48vh, 360px); }
 .editor-tooldock-manager .editor-subsection { min-width: 360px; border: 0; padding: 0; background: transparent; }
