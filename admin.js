@@ -1057,9 +1057,17 @@ function editorDesignPanel() {
         </div>
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="style">
-        <div class="text-layout-editor">
-          <label class="text-layout-control"><span>선택 문구 크기</span><input type="range" min="10" max="44" value="16" data-preview-text-size><output data-preview-text-size-output>현재 16 · 원래 16</output></label>
-          <label class="text-layout-control"><span>선택 문구 위아래</span><input type="range" min="-40" max="40" value="0" data-preview-text-y><output data-preview-text-y-output>현재 0 · 원래 0</output></label>
+        <div class="text-layout-editor text-style-compact">
+          <label class="text-layout-control text-step-control">
+            <span>크기</span>
+            <input type="range" min="10" max="44" value="16" data-preview-text-size>
+            <div class="text-stepper"><button type="button" data-preview-text-step="size:-1">−</button><output data-preview-text-size-output>16</output><button type="button" data-preview-text-step="size:1">＋</button></div>
+          </label>
+          <label class="text-layout-control text-step-control">
+            <span>위아래</span>
+            <input type="range" min="-40" max="40" value="0" data-preview-text-y>
+            <div class="text-stepper"><button type="button" data-preview-text-step="y:-2">−</button><output data-preview-text-y-output>0</output><button type="button" data-preview-text-step="y:2">＋</button></div>
+          </label>
         </div>
         <button class="editor-tool-button editor-tool-reset" type="button" data-preview-text-reset><span>↺</span>원래값</button>
       </div>
@@ -2160,8 +2168,8 @@ function bindEditor() {
         invitationData.textStyles[name] = { fontSize: Number(size) || undefined, offsetY: Number(offset) || 0 };
       }
     }
-    copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(`현재 ${size} · 원래 ${activeTextTarget.dataset.originalTextSize || size}`);
-    copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(`현재 ${offset} · 원래 ${activeTextTarget.dataset.originalTextOffsetY || 0}`);
+    copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(String(size || activeTextTarget.dataset.originalTextSize || 16));
+    copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(String(offset || 0));
   };
   const prepareTextSliders = (target) => {
     const name = inlineTarget(target)?.name;
@@ -2181,8 +2189,8 @@ function bindEditor() {
     const yField = copyEditor.querySelector("[data-preview-text-y]");
     if (sizeField) sizeField.value = String(Math.max(Number(sizeField.min), Math.min(Number(sizeField.max), currentSize)));
     if (yField) yField.value = String(Math.max(Number(yField.min), Math.min(Number(yField.max), currentOffset)));
-    copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(`현재 ${sizeField?.value || currentSize} · 원래 ${target.dataset.originalTextSize}`);
-    copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(`현재 ${yField?.value || currentOffset} · 원래 ${target.dataset.originalTextOffsetY}`);
+    copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(String(sizeField?.value || currentSize));
+    copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(String(yField?.value || currentOffset));
   };
   const resetSelectedTextStyle = () => {
     if (!activeTextTarget) return;
@@ -2364,6 +2372,16 @@ function bindEditor() {
           field.nextElementSibling.textContent = field.value;
           refreshFrameAppearance();
         }
+      });
+    });
+    copyEditor.querySelectorAll("[data-preview-text-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [type, amount] = button.dataset.previewTextStep.split(":");
+        const field = type === "size" ? copyEditor.querySelector("[data-preview-text-size]") : copyEditor.querySelector("[data-preview-text-y]");
+        if (!field) return;
+        const next = Math.max(Number(field.min), Math.min(Number(field.max), Number(field.value || 0) + Number(amount || 0)));
+        field.value = String(next);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
       });
     });
     copyEditor.querySelector("[data-preview-text-reset]")?.addEventListener("click", resetSelectedTextStyle);

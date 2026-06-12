@@ -2146,6 +2146,39 @@ body.copy-editor-public-preview .gallery-preview { pointer-events: none; }
 .editor-tooldock .text-layout-editor { background: transparent; padding: 0; }
 .editor-tooldock .text-layout-control { color: var(--muted); }
 .editor-tooldock .text-layout-control output { color: var(--accent-dark); }
+.editor-tooldock .text-style-compact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.editor-tooldock .text-step-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  border-radius: 14px;
+  padding: 6px 8px;
+  background: var(--soft-bg);
+}
+.editor-tooldock .text-step-control > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.editor-tooldock .text-step-control > span { color: var(--muted); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.editor-tooldock .text-stepper { display: grid; grid-template-columns: 28px minmax(28px, 1fr) 28px; align-items: center; gap: 4px; }
+.editor-tooldock .text-stepper button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--card);
+  color: var(--accent-dark);
+  font-size: 16px;
+  font-weight: 900;
+}
+.editor-tooldock .text-stepper output {
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
 .editor-color-strip .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 12px; padding: 8px 10px; background: var(--soft-bg); }
 .editor-color-strip .field > span { display: block; font-size: 12px; font-weight: 800; }
 .editor-color-strip input[type="color"] { width: 44px; min-height: 44px; border: 2px solid var(--line); border-radius: 12px; background: transparent; }
@@ -2184,8 +2217,14 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .editor-tooldock.is-profile { max-height: min(38vh, 230px); }
 .editor-tooldock.is-hero.is-manager { max-height: min(64vh, 460px); }
 .editor-tooldock.is-copy { max-height: min(58vh, 390px); }
-.editor-tooldock[data-context="text-copy"] { max-height: min(30vh, 200px); }
-.editor-tooldock[data-context="text-copy"] .editor-tooldock-pane { max-height: min(22vh, 150px); }
+.editor-tooldock[data-context="text-copy"] { width: min(calc(100vw - 20px), 360px); max-height: 148px; padding: 5px 8px calc(7px + env(safe-area-inset-bottom)); }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-head { min-height: 30px; grid-template-columns: 30px minmax(0, 1fr); }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-head strong { font-size: 13px; }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-head span { display: none; }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-tabs { display: none; }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-close { width: 28px; height: 28px; }
+.editor-tooldock[data-context="text-copy"] .editor-tooldock-pane { max-height: 82px; overflow: visible; }
+.editor-tooldock[data-context="text-copy"] .editor-tool-reset { min-height: 28px; border-radius: 999px; padding: 5px 8px; font-size: 11px; }
 .editor-tooldock-manager { max-height: 142px; overflow-y: auto; }
 .editor-tooldock.is-manager .editor-tooldock-manager { max-height: min(48vh, 360px); }
 .editor-tooldock-manager .editor-subsection { min-width: 360px; border: 0; padding: 0; background: transparent; }
@@ -2992,5 +3031,19 @@ body[data-admin-area="general"] .editor-tooldock .text-layout-control output {
   body[data-admin-area="general"] .editor-tooldock-manager .notice-editor {
     width: auto;
     min-width: 0;
+  }
+  body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] {
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: 360px;
+    max-height: 148px;
+    border-radius: 16px;
+  }
+  body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] .editor-tooldock-pane {
+    max-height: 82px;
+  }
+  body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] .text-style-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
