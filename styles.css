@@ -536,6 +536,7 @@ body[data-hero-decoration="poster_card"][data-hero-text-theme="editorial_left"] 
 .invitation-copy + .invitation-copy { margin-top: 22px; }
 .parents { display: grid; gap: 1px; width: min(100%, 320px); margin: 36px auto 0; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 10px; padding: 11px 16px; background: color-mix(in srgb, var(--card) 72%, var(--soft-bg)); color: color-mix(in srgb, var(--accent-dark) 76%, var(--ink)); font-size: 13px; line-height: 1.55; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card) 62%, transparent); }
 .parents strong { color: var(--accent-dark); font-weight: 800; }
+.parents-heart { color: color-mix(in srgb, var(--accent-dark) 70%, var(--accent)); font-size: 11px; line-height: 1.2; }
 .contact-row, .map-links, .share-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
 .map-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; width: 100%; }
 .map-links .btn { min-width: 0; padding: 8px 3px; font-size: 10px; white-space: nowrap; }
