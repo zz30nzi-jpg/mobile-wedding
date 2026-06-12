@@ -1729,7 +1729,7 @@ function renderEditor(message = "", focus = "") {
           <input type="hidden" name="couple.groom.name" value="${escapeAdminHtml(groom.name)}">
           <input type="hidden" name="couple.groom.parents" value="${escapeAdminHtml(groom.parents)}">
           <input type="hidden" name="couple.groom.birthday" value="${escapeAdminHtml(birthdayInputValue(groom.birthday))}">
-          <div class="auto-filled-fields"><strong>${escapeAdminHtml(groom.name)}</strong><span><b>부모님</b>${escapeAdminHtml(displayParentNames(groom.parents) || "미입력")}</span><span><b>생일</b>${escapeAdminHtml(groom.birthday || "미입력")}</span></div>
+          <div class="auto-filled-fields" data-auto-summary="groom"><strong data-auto-value="groom.name">${escapeAdminHtml(groom.name)}</strong><span><b>부모님</b><i data-auto-value="groom.parents">${escapeAdminHtml(displayParentNames(groom.parents) || "미입력")}</i></span><span><b>생일</b><i data-auto-value="groom.birthday">${escapeAdminHtml(groom.birthday || "미입력")}</i></span></div>
           ${input("couple.groom.relation", "부모님 성함 뒤 관계 문구 · 직접 수정", groom.relation)}
           ${input("couple.groom.phone", "연락처", groom.phone)}
           ${input("couple.groom.mbti", "별칭·MBTI 등", groom.mbti)}
@@ -1740,7 +1740,7 @@ function renderEditor(message = "", focus = "") {
           <input type="hidden" name="couple.bride.name" value="${escapeAdminHtml(bride.name)}">
           <input type="hidden" name="couple.bride.parents" value="${escapeAdminHtml(bride.parents)}">
           <input type="hidden" name="couple.bride.birthday" value="${escapeAdminHtml(birthdayInputValue(bride.birthday))}">
-          <div class="auto-filled-fields"><strong>${escapeAdminHtml(bride.name)}</strong><span><b>부모님</b>${escapeAdminHtml(displayParentNames(bride.parents) || "미입력")}</span><span><b>생일</b>${escapeAdminHtml(bride.birthday || "미입력")}</span></div>
+          <div class="auto-filled-fields" data-auto-summary="bride"><strong data-auto-value="bride.name">${escapeAdminHtml(bride.name)}</strong><span><b>부모님</b><i data-auto-value="bride.parents">${escapeAdminHtml(displayParentNames(bride.parents) || "미입력")}</i></span><span><b>생일</b><i data-auto-value="bride.birthday">${escapeAdminHtml(bride.birthday || "미입력")}</i></span></div>
           ${input("couple.bride.relation", "부모님 성함 뒤 관계 문구 · 직접 수정", bride.relation)}
           ${input("couple.bride.phone", "연락처", bride.phone)}
           ${input("couple.bride.mbti", "별칭·MBTI 등", bride.mbti)}
@@ -1752,7 +1752,7 @@ function renderEditor(message = "", focus = "") {
           <input type="hidden" name="wedding.date" value="${escapeAdminHtml(weddingDateInputValue(invitationData.wedding.date))}">
           <input type="hidden" name="wedding.venue" value="${escapeAdminHtml(invitationData.wedding.venue)}">
           <input type="hidden" name="wedding.hall" value="${escapeAdminHtml(invitationData.wedding.hall || "")}">
-          <div class="auto-filled-fields"><strong>${escapeAdminHtml(invitationData.wedding.venue)}</strong><span>${escapeAdminHtml(invitationData.wedding.hall || "홀 정보 없음")} · ${escapeAdminHtml(invitationData.wedding.displayDate)}</span></div>
+          <div class="auto-filled-fields" data-auto-summary="wedding"><strong data-auto-value="wedding.venue">${escapeAdminHtml(invitationData.wedding.venue)}</strong><span><i data-auto-value="wedding.hallDate">${escapeAdminHtml(invitationData.wedding.hall || "홀 정보 없음")} · ${escapeAdminHtml(invitationData.wedding.displayDate)}</i></span></div>
           ${select("wedding.displayDateFormat", "화면 표시 일시 형식", invitationData.wedding.displayDateFormat || "long_ko", [["long_ko", "2026. 10. 04. 일요일 오후 12시 20분"], ["short_ko", "26-10-04 (일) 12시 20분"], ["dot_numeric", "2026.10.04 (일) 12:20"], ["english", "2026. 10. 04. 일요일 · 12:20"], ["custom", "직접 입력"]])}
           ${input("wedding.displayDateCustom", "화면 표시 일시 · 선택 후 수정 가능", invitationData.wedding.displayDateCustom || invitationData.wedding.displayDate)}
           ${input("wedding.address", "주소", invitationData.wedding.address)}
@@ -2677,11 +2677,29 @@ function bindEditor() {
     });
     if (changed) renderAccountItems(synced);
   };
+  const refreshAutoSummaries = () => {
+    const setText = (selector, value) => {
+      const target = form.querySelector(selector);
+      if (target) target.textContent = value || "미입력";
+    };
+    setText('[data-auto-value="groom.name"]', form.elements["couple.groom.name"]?.value.trim());
+    setText('[data-auto-value="groom.parents"]', displayParentNames(form.elements["couple.groom.parents"]?.value || ""));
+    setText('[data-auto-value="groom.birthday"]', form.elements["couple.groom.birthday"]?.value.trim());
+    setText('[data-auto-value="bride.name"]', form.elements["couple.bride.name"]?.value.trim());
+    setText('[data-auto-value="bride.parents"]', displayParentNames(form.elements["couple.bride.parents"]?.value || ""));
+    setText('[data-auto-value="bride.birthday"]', form.elements["couple.bride.birthday"]?.value.trim());
+    const venue = form.elements["wedding.venue"]?.value.trim();
+    const hall = form.elements["wedding.hall"]?.value.trim() || "홀 정보 없음";
+    const displayDate = form.elements["wedding.displayDateCustom"]?.value.trim() || weddingDisplayDate(form.elements["wedding.date"]?.value, form.elements["wedding.displayDateFormat"]?.value || "long_ko");
+    setText('[data-auto-value="wedding.venue"]', venue);
+    setText('[data-auto-value="wedding.hallDate"]', `${hall} · ${displayDate || "예식 일시 없음"}`);
+  };
   form.querySelectorAll("[data-quick]").forEach((quickField) => {
     quickField.addEventListener("input", () => {
       if (["groomFather", "groomMother", "brideFather", "brideMother"].includes(quickField.dataset.quick)) {
         syncParentNames();
         syncAccountParentNames();
+        refreshAutoSummaries();
         return;
       }
       const target = form.elements[quickField.dataset.quick];
@@ -2689,6 +2707,7 @@ function bindEditor() {
       target.value = quickField.value;
       target.dispatchEvent(new Event("change", { bubbles: true }));
       if (["couple.groom.name", "couple.bride.name"].includes(quickField.dataset.quick)) syncAccountParentNames();
+      refreshAutoSummaries();
     });
   });
   form.querySelectorAll("[data-visibility-toggle]").forEach((toggle) => {
@@ -2709,6 +2728,7 @@ function bindEditor() {
       }
     });
     syncAccountParentNames();
+    refreshAutoSummaries();
     form.dispatchEvent(new Event("change", { bubbles: true }));
     alert("1번 기본정보를 아래 항목에 반영했습니다. 최종 저장은 변경사항 저장 버튼을 눌러 주세요.");
   });

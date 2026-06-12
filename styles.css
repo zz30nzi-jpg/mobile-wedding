@@ -908,6 +908,7 @@ body[data-admin-area="general"]:has(.editor-tooldock:not([hidden]):not(.is-colla
 .auto-filled-fields .field input { background: rgba(130,140,147,0.09); color: var(--muted); }
 .auto-filled-fields strong { color: var(--ink); font-size: 14px; }
 .auto-filled-fields span { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.auto-filled-fields i { font-style: normal; }
 .auto-filled-fields b { flex: 0 0 auto; border-radius: 999px; padding: 2px 7px; background: var(--soft-bg); color: var(--accent-dark); font-size: 10px; }
 .tag-field-group { display: grid; gap: 8px; }
 .tag-field-group > strong { color: var(--accent-dark); font-size: 13px; }
@@ -2168,6 +2169,7 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .guided-progress { position: sticky; z-index: 7; top: 64px; }
 .is-guided-ready .guided-step { display: none; opacity: 0; transform: translateY(10px); }
 .is-guided-ready .guided-step.is-visible { display: grid; animation: guidedStepIn 0.28s ease forwards; }
+.is-guided-ready details.guided-step.is-visible { display: block; }
 .guided-step { border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line)) !important; box-shadow: 0 10px 28px rgba(70,85,93,0.07) !important; }
 .guided-step.is-complete { border-color: color-mix(in srgb, var(--save) 28%, var(--line)) !important; }
 .guided-next { display: none; }
