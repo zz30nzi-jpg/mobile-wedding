@@ -2234,7 +2234,7 @@ function bindEditor() {
             ? tab === "media"
           : context === "information" || context === "location" || context === "wedding-snap-detail" || context === "rsvp-detail"
             ? tab === "items"
-            : tab === "text-copy"
+            : context === "text-copy"
               ? tab === "style"
               : false;
       button.hidden = !visible;
