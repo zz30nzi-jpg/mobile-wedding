@@ -1673,7 +1673,9 @@ function renderEditor(message = "", focus = "") {
   rememberAdminView(viewByFocus[focus] || "editor");
   window.WEDDING_DESIGN?.normalize(invitationData);
   if (focus !== "copy") document.documentElement.style.removeProperty("--floating-save-bottom");
-  invitationData.accounts = ensureAccountRows(invitationData.accounts);
+  if (!Array.isArray(invitationData.accounts)) {
+    invitationData.accounts = ensureAccountRows([]);
+  }
   const { groom, bride } = invitationData.couple;
   const [groomFather = "", groomMother = ""] = parentNames(groom.parents);
   const [brideFather = "", brideMother = ""] = parentNames(bride.parents);
