@@ -1724,7 +1724,7 @@ function renderEditor(message = "", focus = "") {
           ${textarea("meta.description", "공유 설명", invitationData.meta.description)}
           <p class="admin-message micro-help">카카오톡으로 링크를 보낼 때 대표 이미지 아래에 함께 표시되는 소개 문구입니다. 청첩장 본문에는 표시되지 않습니다.</p>
         </fieldset>
-        <div class="couple-editor-grid basic-pane guided-step" id="people-detail-settings" data-guided-step="people" data-step-requires="media">
+        <div class="couple-editor-grid basic-pane guided-step" id="people-detail-settings" data-guided-step="people" data-step-requires="core">
         <fieldset class="couple-editor-card"><legend>신랑 정보</legend>
           <input type="hidden" name="couple.groom.name" value="${escapeAdminHtml(groom.name)}">
           <input type="hidden" name="couple.groom.parents" value="${escapeAdminHtml(groom.parents)}">
@@ -1748,7 +1748,7 @@ function renderEditor(message = "", focus = "") {
           ${imageField("couple.bride.photo", "신부 사진", bride.photo)}
         </fieldset>
         </div>
-        <fieldset class="basic-pane guided-step" id="wedding-detail-settings" data-guided-step="wedding" data-step-requires="media"><legend>3. 예식 장소와 표시 정보</legend>
+        <fieldset class="basic-pane guided-step" id="wedding-detail-settings" data-guided-step="wedding" data-step-requires="core"><legend>4. 예식 장소와 표시 정보</legend>
           <input type="hidden" name="wedding.date" value="${escapeAdminHtml(weddingDateInputValue(invitationData.wedding.date))}">
           <input type="hidden" name="wedding.venue" value="${escapeAdminHtml(invitationData.wedding.venue)}">
           <input type="hidden" name="wedding.hall" value="${escapeAdminHtml(invitationData.wedding.hall || "")}">
