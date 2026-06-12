@@ -350,7 +350,7 @@ function render() {
   const introDesign = data.hero.introDesign || {};
   const introAlign = ["left", "center", "right"].includes(introDesign.align) ? introDesign.align : "center";
   const introNumber = (value, fallback, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
-  const introStyle = `--intro-align:${introAlign};--intro-eyebrow-size:${introNumber(introDesign.eyebrowSize, 11, 8, 24)}px;--intro-name-size:${introNumber(introDesign.nameSize, 30, 20, 54)}px;--intro-date-size:${introNumber(introDesign.dateSize, 11, 8, 20)}px;--intro-eyebrow-name-gap:${introNumber(introDesign.eyebrowNameGap, 10, 0, 40)}px;--intro-name-date-gap:${introNumber(introDesign.nameDateGap, 10, 0, 40)}px;--intro-offset-y:${introNumber(introDesign.offsetY, 0, -160, 160)}px`;
+  const introStyle = `--intro-align:${introAlign};--intro-eyebrow-size:${introNumber(introDesign.eyebrowSize, 11, 8, 24)}px;--intro-name-size:${introNumber(introDesign.nameSize, 30, 20, 54)}px;--intro-date-size:${introNumber(introDesign.dateSize, 11, 8, 20)}px;--intro-eyebrow-name-gap:${introNumber(introDesign.eyebrowNameGap, 10, 0, 40)}px;--intro-name-date-gap:${introNumber(introDesign.nameDateGap, 10, -24, 40)}px;--intro-offset-y:${introNumber(introDesign.offsetY, 0, -160, 160)}px`;
   const guestPhotos = guestPhotoStatus();
   const gallery = galleryImages();
   const location = venueParts();

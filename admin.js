@@ -60,6 +60,10 @@ window.AI_DESIGN_SERVICE = (() => {
     if (current.mockMode !== false) return mock();
     const endpoint = normalizeEndpoint(current.endpoint);
     let response;
+    const fallback = (message) => ({
+      ...mock(),
+      fallbackReason: message || "AI 서버 호출에 실패해 임시 초안을 사용했습니다.",
+    });
     try {
       response = await fetch(endpoint, {
         method: "POST",
@@ -67,13 +71,13 @@ window.AI_DESIGN_SERVICE = (() => {
         body: JSON.stringify({ type, provider: current.provider || "Gemini", context }),
       });
     } catch (error) {
-      throw new Error(`AI 서버에 연결하지 못했습니다. 현재 요청 주소: ${endpoint}. (${error.message || "Failed to fetch"})`);
+      return fallback(`AI 서버에 연결하지 못해 임시 초안을 사용했습니다. (${error.message || "Failed to fetch"})`);
     }
     const payload = await response.json().catch(() => ({}));
     if (!response.ok && /혼잡|high demand|overloaded|temporarily|일시/i.test(payload.error || "")) {
       return { ...mock(), fallbackReason: payload.error || "AI 서버가 일시적으로 혼잡해 임시 결과를 사용했습니다." };
     }
-    if (!response.ok) throw new Error(payload.error || "AI 서버 호출에 실패했습니다.");
+    if (!response.ok) return fallback(payload.error || `AI 서버 호출에 실패했습니다. (${response.status})`);
     return { ...payload, id: payload.id || `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, type, createdAt: payload.createdAt || new Date().toISOString() };
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
@@ -755,7 +759,7 @@ function introDesignEditor(groom, bride) {
       ${introRange("nameSize", "이름 크기", design.nameSize ?? 30, 20, 54)}
       ${introRange("dateSize", "날짜 크기", design.dateSize ?? 11, 8, 20)}
       ${introRange("eyebrowNameGap", "영문 ↔ 이름 간격", design.eyebrowNameGap ?? 10, 0, 40)}
-      ${introRange("nameDateGap", "이름 ↔ 날짜 간격", design.nameDateGap ?? 10, 0, 40)}
+      ${introRange("nameDateGap", "이름 ↔ 날짜 간격", design.nameDateGap ?? 10, -24, 40)}
       ${introRange("offsetY", "전체 위아래 위치", design.offsetY ?? 0, -160, 160)}
     </div>`;
 }
@@ -2279,7 +2283,7 @@ function bindEditor() {
     });
     copyEditor.querySelectorAll('.editor-tooldock input[type="range"]').forEach((field) => {
       field.addEventListener("input", () => {
-        if (field.dataset.previewTextSize || field.dataset.previewTextY) {
+        if (field.hasAttribute("data-preview-text-size") || field.hasAttribute("data-preview-text-y")) {
           refreshSelectedTextStyle();
         } else {
           field.nextElementSibling.textContent = field.value;
@@ -2905,7 +2909,7 @@ function bindEditor() {
       const notices = (result.notices || []).slice(0, 3).map((notice) => ({ title: notice.title || "", text: notice.text || "", hidden: false }));
       if (!notices.length) throw new Error("생성된 식장 안내가 없습니다.");
       renderNoticeItems(notices);
-      alert(result.caution ? `식장 안내 초안을 생성했습니다.\n${result.caution}` : "식장 안내 초안을 생성했습니다. 확인 후 저장해 주세요.");
+      alert([result.fallbackReason || "", result.caution || "", "식장 안내 초안을 생성했습니다. 확인 후 저장해 주세요."].filter(Boolean).join("\n"));
     } catch (error) {
       alert(`식장 안내를 생성하지 못했습니다.\n${error.message || "AI 설정을 확인해 주세요."}`);
     } finally {
@@ -2923,7 +2927,7 @@ function bindEditor() {
       const items = (result.items || []).map((item) => ({ title: item.title || "", text: item.text || "", hidden: false }));
       if (!items.length) throw new Error("생성된 교통 안내가 없습니다.");
       renderTransportItems(items);
-      alert(result.caution ? `교통 안내 초안을 생성했습니다.\n${result.caution}` : "교통 안내 초안을 생성했습니다. 확인 후 저장해 주세요.");
+      alert([result.fallbackReason || "", result.caution || "", "교통 안내 초안을 생성했습니다. 확인 후 저장해 주세요."].filter(Boolean).join("\n"));
     } catch (error) {
       alert(`교통 안내를 생성하지 못했습니다.\n${error.message || "AI 설정을 확인해 주세요."}`);
     } finally {
