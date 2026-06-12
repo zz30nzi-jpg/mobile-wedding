@@ -2622,6 +2622,7 @@ function bindEditor() {
     const openInlineEditor = (target, config) => {
       if (activeInlineEditor?.field?.isConnected) activeInlineEditor.commit();
       else frameDocument.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
+      activeTextTarget = target;
       const storedText = config.name ? form.elements[config.name]?.value || "" : "";
       const originalText = (config.wholeParagraphs || (config.multiline && storedText)) ? storedText : [...target.childNodes]
         .filter((node) => !(node.nodeType === Node.ELEMENT_NODE && node.matches("[data-copy-edit-handle]")))
@@ -2694,7 +2695,7 @@ function bindEditor() {
       const handle = clickEvent.target.closest("[data-copy-edit-handle]");
       const target = handle ? handle.closest(editableSelector) : clickEvent.target.closest(editableSelector);
       if (!target || target.matches("[data-copy-inline-editor]")) {
-        if (!target && toolPanel && !toolPanel.hidden) {
+        if (!target && toolPanel && !toolPanel.hidden && toolPanel.dataset.context !== "text-copy") {
           toolPanel.classList.add("is-collapsed");
           updateFloatingSaveForToolDock();
         }
@@ -2734,13 +2735,8 @@ function bindEditor() {
         activeProfileTarget = "";
         activeTextTarget = target;
         setToolDock("문구 글자/위치", "문구는 그 자리에서 수정하고, 크기와 위치는 아래에서 미리 조정합니다.", "style", "text-copy");
-        try {
-          prepareTextSliders(target);
-          openInlineEditor(target, config);
-        } catch (error) {
-          console.error("인라인 편집기 열기 실패", error);
-          alert(`문구 편집창을 여는 중 오류가 발생했습니다: ${error?.message || error}`);
-        }
+        prepareTextSliders(target);
+        openInlineEditor(target, config);
         return;
       }
       if (target.closest("#gallery")) {
