@@ -1,5 +1,5 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://cimyjsqjpenljpywhgso.supabase.co";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_jxY5QiiuKHV-5VSBO1F8Ow_wWeYjcDV";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://djjspxgkdinimcpkdxme.supabase.co";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
 
 function escapeAttribute(value = "") {
   return String(value).replace(/[&<>"']/g, (character) => ({
