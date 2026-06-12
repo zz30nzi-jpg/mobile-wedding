@@ -441,7 +441,7 @@ body.intro-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
   letter-spacing: 0.08em;
 }
 .section-label::before, .section-label::after { display: inline-block; margin: 0 7px; color: var(--accent-dark); content: "✦"; font-family: Georgia, serif; font-size: 9px; vertical-align: middle; }
-.subtle { color: var(--muted); }
+.subtle { color: var(--muted); white-space: pre-line; }
 .preserve { white-space: pre-line; }
 
 .hero { position: relative; min-height: 710px; background: var(--hero-bg); }

@@ -742,7 +742,7 @@ function bindInformationSlider() {
     slider.querySelector("[data-information-slide]").innerHTML = `
       <article class="information-slide">
         <h3>${escapeHtml(notice.title)}</h3>
-        <p>${escapeHtml(notice.text)}</p>
+        <p>${escapeLineHtml(notice.text)}</p>
       </article>`;
     slider.querySelectorAll(".information-dots i").forEach((dot, dotIndex) => dot.classList.toggle("is-active", dotIndex === index));
   };

@@ -2044,7 +2044,7 @@ function bindEditor() {
     const informationSlide = frameDocument.querySelector("[data-information-slide]");
     if (informationSlide) {
       informationSlide.innerHTML = notices.length
-        ? `<article class="information-slide"><h3>${escapeAdminHtml(notices[0].title)}</h3><p>${escapeAdminHtml(notices[0].text)}</p></article>`
+        ? `<article class="information-slide"><h3>${escapeAdminHtml(notices[0].title)}</h3><p>${escapeAdminHtml(notices[0].text).replace(/\n/g, "<br>")}</p></article>`
         : '<article class="information-slide"><p>표시할 식장 안내가 없습니다.</p></article>';
     }
     frameDocument.querySelectorAll(".information-dots i").forEach((dot, index) => {
@@ -2519,7 +2519,8 @@ function bindEditor() {
     const openInlineEditor = (target, config) => {
       if (activeInlineEditor?.field?.isConnected) activeInlineEditor.commit();
       else frameDocument.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
-      const originalText = config.wholeParagraphs ? (form.elements[config.name]?.value || "") : [...target.childNodes]
+      const storedText = config.name ? form.elements[config.name]?.value || "" : "";
+      const originalText = (config.wholeParagraphs || (config.multiline && storedText)) ? storedText : [...target.childNodes]
         .filter((node) => !(node.nodeType === Node.ELEMENT_NODE && node.matches("[data-copy-edit-handle]")))
         .map((node) => node.textContent)
         .join("")
@@ -2610,14 +2611,6 @@ function bindEditor() {
         }
         return;
       }
-      if (target.closest("#gallery")) {
-        clickEvent.preventDefault();
-        clickEvent.stopImmediatePropagation();
-        activeProfileTarget = "";
-        activeTextTarget = null;
-        openGalleryModal();
-        return;
-      }
       if (target.matches(".hero-names")) {
         clickEvent.preventDefault();
         clickEvent.stopImmediatePropagation();
@@ -2626,9 +2619,29 @@ function bindEditor() {
         setToolDock("메인 문구 테마", "이름 문구의 테마와 위치를 조정합니다.", "text", "hero-copy");
         return;
       }
+      const config = inlineTarget(target);
+      if (config) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeProfileTarget = "";
+        activeTextTarget = target;
+        setToolDock("문구 글자/위치", "문구는 그 자리에서 수정하고, 크기와 위치는 아래에서 미리 조정합니다.", "style", "text-copy");
+        prepareTextSliders(target);
+        openInlineEditor(target, config);
+        return;
+      }
+      if (target.closest("#gallery")) {
+        clickEvent.preventDefault();
+        clickEvent.stopImmediatePropagation();
+        activeProfileTarget = "";
+        activeTextTarget = null;
+        openGalleryModal();
+        return;
+      }
       if (target.closest("#information")) {
         clickEvent.preventDefault();
         clickEvent.stopImmediatePropagation();
+        activeProfileTarget = "";
         activeTextTarget = null;
         setToolDock("식장 안내", "항목을 추가, 삭제하거나 내용을 수정합니다.", "items", "information");
         return;
@@ -2638,17 +2651,7 @@ function bindEditor() {
         clickEvent.stopImmediatePropagation();
         activeTextTarget = null;
         setToolDock("교통 안내", "오시는 길의 교통 항목을 추가, 삭제하거나 수정합니다.", "items", "location");
-        return;
       }
-      const config = inlineTarget(target);
-      if (!config) return;
-      clickEvent.preventDefault();
-      clickEvent.stopImmediatePropagation();
-      activeProfileTarget = "";
-      activeTextTarget = target;
-      setToolDock("문구 글자/위치", "문구는 그 자리에서 수정하고, 크기와 위치는 아래에서 미리 조정합니다.", "style", "text-copy");
-      prepareTextSliders(target);
-      openInlineEditor(target, config);
     }, true);
   });
   document.querySelectorAll("[data-editor-jump]").forEach((button) => button.addEventListener("click", () => {
