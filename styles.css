@@ -519,6 +519,8 @@ body[data-hero-decoration="poster_card"][data-hero-text-theme="editorial_left"] 
 body[data-hero-decoration="poster_card"][data-hero-text-theme="editorial_left"] .hero .hero-content-middle { top: 50%; bottom: auto; }
 body[data-hero-decoration="poster_card"][data-hero-text-theme="editorial_left"] .hero .hero-content-bottom { top: auto; bottom: 172px; }
 .hero::after { position: absolute; inset: 0; content: ""; background: linear-gradient(180deg, var(--hero-overlay-top), var(--hero-overlay-bottom)); }
+/* 클래식 레이아웃 기본값: 메인이미지 하단이 아래 섹션 배경(--paper)과 자연스럽게 이어지도록 페이드 처리 */
+body[data-layout="classic"] .hero::after { background: linear-gradient(180deg, var(--hero-overlay-top) 0%, var(--hero-overlay-bottom) 88%, var(--paper) 100%); }
 .hero-content { position: absolute; z-index: 1; right: 24px; left: 24px; color: white; text-align: center; text-shadow: 0 2px 12px rgba(0,0,0,0.2); }
 .hero-content-top { top: 72px; }
 .hero-content-middle { top: 50%; transform: translateY(-50%); }
@@ -1485,6 +1487,7 @@ body[data-layout="crimson_silk"] .section-title { font-size: clamp(18px, 5vw, 24
 /* ═══ editorial_red: 가로 지그재그 프로필 · 매거진 갤러리 ═══ */
 body[data-layout="editorial_red"] .profile-grid { grid-template-columns: 1fr; gap: 28px; }
 body[data-layout="editorial_red"] .profile-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 18px; align-items: start; }
+body[data-layout="editorial_red"] .profile-card:nth-child(odd) .profile-body { text-align: left; }
 body[data-layout="editorial_red"] .profile-card:nth-child(even) { grid-template-columns: minmax(0, 1fr) 96px; }
 body[data-layout="editorial_red"] .profile-card:nth-child(even) .profile-photo { order: 2; }
 body[data-layout="editorial_red"] .profile-card:nth-child(even) .profile-body { order: 1; text-align: right; }
@@ -1494,8 +1497,7 @@ body[data-layout="editorial_red"] .profile-name { font-size: 18px; font-weight: 
 /* 매거진 갤러리: 1번·6번 풀행 */
 body[data-layout="editorial_red"] .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 body[data-layout="editorial_red"] .gallery-item { border-radius: 2px; transform: none !important; border-color: var(--card); }
-body[data-layout="editorial_red"] .gallery-item:first-child,
-body[data-layout="editorial_red"] .gallery-item:nth-child(6) { grid-column: 1 / -1; aspect-ratio: 16/9; }
+body[data-layout="editorial_red"] .gallery-item.is-wide { grid-column: 1 / -1; aspect-ratio: 16/9; }
 body[data-layout="editorial_red"] .section { border-top: none; padding: 36px 80px; }
 body[data-layout="editorial_red"] .section-label { font-weight: 900; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent-dark); }
 body[data-layout="editorial_red"] .btn { border-radius: 4px; font-weight: 700; letter-spacing: 0.04em; }
@@ -2761,6 +2763,151 @@ body[data-admin-area="general"] .field input,
 body[data-admin-area="general"] .field select,
 body[data-admin-area="general"] .field textarea {
   width: 100%;
+}
+
+/* Public layout consistency pass: keep shared section UI aligned across every theme. */
+body:not([data-admin-area="general"]) .section-label {
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: 10px !important;
+  line-height: 1.35;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+body:not([data-admin-area="general"]) .section-title {
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: clamp(20px, 5.7vw, 24px) !important;
+  line-height: 1.32;
+  letter-spacing: -0.025em;
+  white-space: nowrap !important;
+}
+
+body:not([data-admin-area="general"]) .btn {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+body:not([data-admin-area="general"]) .contact-row .btn,
+body:not([data-admin-area="general"]) .guest-photo-actions .btn,
+body:not([data-admin-area="general"]) .modal-actions .btn,
+body:not([data-admin-area="general"]) .share-row .btn {
+  flex: 1 1 0;
+  max-width: 100%;
+  padding-right: 12px;
+  padding-left: 12px;
+  letter-spacing: -0.035em;
+}
+
+body:not([data-admin-area="general"]) .guest-photo-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+body:not([data-admin-area="general"]) .guest-photo-actions .btn {
+  width: 100%;
+  font-size: clamp(10px, 3vw, 12px);
+}
+
+body:not([data-admin-area="general"]) .profile-name {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+body:not([data-admin-area="general"]) .profile-role {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--accent-dark) 68%, var(--muted));
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.58em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+body:not([data-admin-area="general"]) .profile-person-name {
+  min-width: 0;
+  color: color-mix(in srgb, var(--ink) 86%, var(--accent-dark));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body:not([data-admin-area="general"]) .profile-birthday {
+  max-width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+body:not([data-admin-area="general"]) .location-venue {
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: clamp(15px, 4.5vw, 18px) !important;
+  line-height: 1.28;
+  white-space: nowrap !important;
+  text-overflow: clip;
+}
+
+body:not([data-admin-area="general"]) .location-hall,
+body:not([data-admin-area="general"]) .location-address {
+  max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 430px) {
+  body:not([data-admin-area="general"]) .section-title {
+    font-size: clamp(19px, 6vw, 23px) !important;
+  }
+  body:not([data-admin-area="general"]) .section-label {
+    font-size: 9px !important;
+    letter-spacing: 0.14em;
+  }
+  body:not([data-admin-area="general"]) .profile-grid {
+    min-width: 0;
+  }
+  body:not([data-admin-area="general"]) .profile-card {
+    min-width: 0;
+  }
+  body:not([data-admin-area="general"]) .profile-body {
+    width: 100%;
+  }
+  body:not([data-admin-area="general"]) .profile-name {
+    width: 100%;
+    font-size: clamp(14px, 4.4vw, 17px) !important;
+  }
+  body:not([data-admin-area="general"]) .profile-birthday {
+    max-width: min(100%, 144px);
+    font-size: clamp(10px, 3.15vw, 12px);
+  }
+  body:not([data-admin-area="general"]) .contact-row,
+  body:not([data-admin-area="general"]) .share-row {
+    flex-wrap: nowrap;
+  }
+  body:not([data-admin-area="general"]) .contact-row .btn,
+  body:not([data-admin-area="general"]) .guest-photo-actions .btn,
+  body:not([data-admin-area="general"]) .share-row .btn {
+    font-size: clamp(10px, 3vw, 12px);
+    padding-right: 8px;
+    padding-left: 8px;
+  }
 }
 
 body[data-admin-area="general"] .editor-tooldock,

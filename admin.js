@@ -2080,28 +2080,57 @@ function bindEditor() {
     const offsetField = copyEditor.querySelector("[data-preview-text-y]");
     const size = sizeField?.value;
     const offset = offsetField?.value || "0";
+    const originalSize = activeTextTarget.dataset.originalTextSize;
+    const originalOffset = activeTextTarget.dataset.originalTextOffsetY || "0";
+    const isDefault = String(size) === String(originalSize) && String(offset) === String(originalOffset);
     const targets = [activeTextTarget, activeInlineEditor?.field].filter((target) => target?.isConnected);
     targets.forEach((target) => {
-      if (size) target.style.fontSize = `${size}px`;
-      target.style.transform = `translateY(${offset}px)`;
-      target.style.position = "relative";
-      target.style.zIndex = "18";
+      if (isDefault) {
+        target.style.removeProperty("font-size");
+        target.style.removeProperty("transform");
+        target.style.removeProperty("position");
+        target.style.removeProperty("z-index");
+        return;
+      }
+      if (size) target.style.setProperty("font-size", `${size}px`, "important");
+      if (Number(offset)) {
+        target.style.setProperty("transform", `translateY(${offset}px)`, "important");
+        target.style.setProperty("position", "relative", "important");
+        target.style.setProperty("z-index", "18", "important");
+      } else {
+        target.style.removeProperty("transform");
+        target.style.removeProperty("position");
+        target.style.removeProperty("z-index");
+      }
     });
     activeTextTarget.dataset.textSize = size || "";
     activeTextTarget.dataset.textOffsetY = offset;
+    const name = inlineTarget(activeTextTarget)?.name;
+    if (name) {
+      invitationData.textStyles ||= {};
+      if (isDefault) {
+        delete invitationData.textStyles[name];
+      } else {
+        invitationData.textStyles[name] = { fontSize: Number(size) || undefined, offsetY: Number(offset) || 0 };
+      }
+    }
     copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(`현재 ${size} · 원래 ${activeTextTarget.dataset.originalTextSize || size}`);
     copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(`현재 ${offset} · 원래 ${activeTextTarget.dataset.originalTextOffsetY || 0}`);
   };
-  const selectedTranslateY = (target) => {
-    const match = /translateY\((-?\d+(?:\.\d+)?)px\)/.exec(target.style.transform || "");
-    return match ? Number(match[1]) : 0;
-  };
   const prepareTextSliders = (target) => {
-    const computed = frameDocumentRef?.defaultView?.getComputedStyle(target);
-    const currentSize = Math.round(Number.parseFloat(target.style.fontSize || computed?.fontSize || "16"));
-    const currentOffset = Math.round(Number(target.dataset.textOffsetY || selectedTranslateY(target) || 0));
-    target.dataset.originalTextSize ||= String(currentSize);
-    target.dataset.originalTextOffsetY ||= String(currentOffset);
+    const name = inlineTarget(target)?.name;
+    const saved = (name && invitationData.textStyles?.[name]) || null;
+    const prevFontSize = target.style.getPropertyValue("font-size");
+    const prevTransform = target.style.getPropertyValue("transform");
+    target.style.removeProperty("font-size");
+    target.style.removeProperty("transform");
+    const defaultSize = Math.round(Number.parseFloat(frameDocumentRef?.defaultView?.getComputedStyle(target)?.fontSize || "16"));
+    if (prevFontSize) target.style.setProperty("font-size", prevFontSize, "important");
+    if (prevTransform) target.style.setProperty("transform", prevTransform, "important");
+    target.dataset.originalTextSize = String(defaultSize);
+    target.dataset.originalTextOffsetY = "0";
+    const currentSize = saved?.fontSize ? Math.round(saved.fontSize) : defaultSize;
+    const currentOffset = saved?.offsetY ? Math.round(saved.offsetY) : 0;
     const sizeField = copyEditor.querySelector("[data-preview-text-size]");
     const yField = copyEditor.querySelector("[data-preview-text-y]");
     if (sizeField) sizeField.value = String(Math.max(Number(sizeField.min), Math.min(Number(sizeField.max), currentSize)));
@@ -2443,6 +2472,7 @@ function bindEditor() {
       frameDocument.querySelectorAll(".hero-media, .profile-card, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, #gallery, .information-slider, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve").forEach((item) => {
         item.classList.add("copy-editable-target");
       });
+      window.WEDDING_DESIGN?.applyTextStyles?.(invitationData, frameDocument);
       frameDocument.querySelector(".hero-media")?.setAttribute("data-edit-label", "메인 이미지·영상");
       frameDocument.querySelector(".hero-eyebrow")?.setAttribute("data-edit-label", "메인 영문문구");
       frameDocument.querySelector(".hero-date")?.setAttribute("data-edit-label", "메인 날짜");
@@ -2526,7 +2556,7 @@ function bindEditor() {
       const storedText = config.name ? form.elements[config.name]?.value || "" : "";
       const originalText = (config.wholeParagraphs || (config.multiline && storedText)) ? storedText : [...target.childNodes]
         .filter((node) => !(node.nodeType === Node.ELEMENT_NODE && node.matches("[data-copy-edit-handle]")))
-        .map((node) => node.textContent)
+        .map((node) => (node.nodeName === "BR" ? " " : node.textContent))
         .join("")
         .trim();
       const field = frameDocument.createElement(config.multiline ? "textarea" : "input");

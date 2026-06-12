@@ -121,6 +121,29 @@ function sectionCopy(key, label, title) {
   return sectionHeader(configured.en || label, configured.ko || title);
 }
 
+// 예식 일시 타이틀(예: "2026. 10. 04. 일요일 오후 12시 20분")은 한 줄에 다 들어가지 않으면
+// 시간 항목("오전/오후 N시 M분" 또는 "N:MM")을 통째로 둘째 줄로 내려 가독성을 높인다.
+function weddingDayTitleLines(value) {
+  const text = String(value || "").trim();
+  const timePattern = /\s(?:오전|오후)\s+\d{1,2}시(?:\s*\d{1,2}분)?$|\s\d{1,2}:\d{2}$|\s\d{1,2}시(?:\s*\d{1,2}분)?$/;
+  const match = text.match(timePattern);
+  if (!match) return [text];
+  const firstLine = text.slice(0, match.index).replace(/[·ㆍ\-,]\s*$/, "").trim();
+  const secondLine = text.slice(match.index).trim();
+  if (!firstLine || !secondLine) return [text];
+  return [firstLine, secondLine];
+}
+
+function weddingDayTitleMarkup() {
+  const configured = data.sectionTitles?.weddingDay || {};
+  const label = configured.en || "Wedding Day";
+  const title = configured.ko || data.wedding.displayDate;
+  const lines = weddingDayTitleLines(title);
+  if (lines.length < 2) return sectionHeader(label, title);
+  const titleHtml = lines.map((line) => escapeHtml(line)).join("<br>");
+  return `<p class="section-label">${escapeHtml(label)}</p><h2 class="section-title">${titleHtml}</h2>`;
+}
+
 function venueParts() {
   const venue = String(data.wedding.venue || "").trim();
   const configuredHall = String(data.wedding.hall || "").trim();
@@ -138,7 +161,7 @@ function fitSingleLineText() {
     let size = parseFloat(getComputedStyle(element).fontSize);
     while (element.scrollWidth > element.clientWidth && size > 7) {
       size -= 0.5;
-      element.style.fontSize = `${size}px`;
+      element.style.setProperty("font-size", `${size}px`, "important");
     }
   });
 }
@@ -254,7 +277,46 @@ function shuffledGalleryPreview(images) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
-  return shuffled.slice(0, 6);
+  // 벨벳나이트(crimson_silk)는 큰 미리보기 1장 + 3열 그리드 2줄(6장)로 정렬되도록 7장을 사용한다.
+  const count = document.body.dataset.layout === "crimson_silk" ? 7 : 6;
+  return shuffled.slice(0, count);
+}
+
+function probeImageOrientation(url) {
+  return new Promise((resolve) => {
+    if (!url) return resolve(null);
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth > img.naturalHeight ? "landscape" : "portrait");
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+// 스칼렛데이(editorial_red) 매거진 갤러리: 1·6번 프레임은 가로형(16:9)이라
+// 가로형 사진만 배치하고, 가로형 사진이 없으면 해당 프레임을 세로형으로 대체한다.
+async function arrangeEditorialGallery() {
+  if (document.body.dataset.layout !== "editorial_red") return;
+  const grid = document.querySelector("#gallery .gallery-grid");
+  const items = grid ? [...grid.querySelectorAll(".gallery-item")] : [];
+  if (!items.length) return;
+  const gallery = galleryImages();
+  const sources = galleryPreviewImages.slice(0, items.length).map((image) => mediaUrl(galleryThumbAt(gallery.indexOf(image))));
+  const orientations = await Promise.all(sources.map(probeImageOrientation));
+  const landscapeIndexes = orientations.flatMap((orientation, index) => (orientation === "landscape" ? [index] : []));
+  const wideSlots = [...new Set([0, items.length - 1])];
+  const order = items.map((_, index) => index);
+  wideSlots.forEach((slot, slotIndex) => {
+    const landscapeIndex = landscapeIndexes[slotIndex];
+    if (landscapeIndex === undefined || landscapeIndex === slot) return;
+    const slotPos = order.indexOf(slot);
+    const landscapePos = order.indexOf(landscapeIndex);
+    [order[slotPos], order[landscapePos]] = [order[landscapePos], order[slotPos]];
+  });
+  order.forEach((originalIndex, position) => {
+    const item = items[originalIndex];
+    grid.appendChild(item);
+    item.classList.toggle("is-wide", wideSlots.includes(position) && orientations[originalIndex] === "landscape");
+  });
 }
 
 function loadLazyBackgrounds() {
@@ -394,7 +456,7 @@ function render() {
             <article class="profile-card">
               <div class="media profile-photo" ${mediaStyle(person.photo)}></div>
               <div class="profile-body">
-                <h3 class="profile-name single-line-fit">${role} ${escapeHtml(person.name)}</h3>
+                <h3 class="profile-name single-line-fit"><span class="profile-role">${role}</span><span class="profile-person-name">${escapeHtml(person.name)}</span></h3>
                 ${displaySettings.showProfileParents !== false && parentDisplay(person) ? `<div class="profile-parents single-line-fit">${escapeHtml(parentDisplay(person))}</div>` : ""}
                 ${displaySettings.showProfileBirthdays !== false && person.birthday ? `<div class="profile-birthday">${escapeHtml(person.birthday)}</div>` : ""}
                 <div class="profile-mbti">${escapeHtml(person.mbti)}</div>
@@ -405,7 +467,7 @@ function render() {
       </section>
 
       <section class="section" id="wedding-day">
-        ${sectionCopy("weddingDay", "Wedding Day", data.wedding.displayDate)}
+        ${weddingDayTitleMarkup()}
         ${renderCalendar()}
         ${renderDayStrip()}
         <div class="countdown" id="countdown"></div>
@@ -1161,13 +1223,19 @@ async function start() {
   } else {
     playInvitationIntro();
   }
-  fitSingleLineText();
+  applyResponsiveText();
   loadLazyBackgrounds();
+  arrangeEditorialGallery();
   updateCountdown();
   bindEvents();
   setInterval(updateCountdown, 1000);
 }
 
+function applyResponsiveText() {
+  fitSingleLineText();
+  window.WEDDING_DESIGN?.applyTextStyles?.(data, document);
+}
+
 start();
-window.addEventListener("resize", fitSingleLineText);
-document.fonts?.ready.then(fitSingleLineText);
+window.addEventListener("resize", applyResponsiveText);
+document.fonts?.ready.then(applyResponsiveText);

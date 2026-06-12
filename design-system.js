@@ -145,7 +145,7 @@
       transport: "예식장 기준 가장 가까운 기차역/지하철역과 버스정류장을 중심으로 안내한다. 차량 몇 분, 버스 번호와 소요시간, 지하철/기차 이용, 도보 몇 분을 가능한 범위에서 적는다. 도보는 20분 이하일 때만 적고, 불확실한 정보는 확인 필요라고 표시한다.",
       venue: "식장 공식홈페이지나 공식 안내 정보를 우선한다고 가정하고, 모르는 사실은 지어내지 않는다. 기본 안내사항은 주차와 식사다. 식사 안내에는 식권 받는 곳과 연회장 위치를 포함하고, 주차 안내에는 주차권 받는 곳, 주차권 필요 여부, 여러 주차장이 있으면 가능한 주차장을 정리한다.",
     };
-    system.aiSettings = { enabled: true, mockMode: true, provider: "Gemini", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: defaultPrompts, referenceImages: "", ...(catalog.aiSettings || {}) };
+    system.aiSettings = { enabled: true, provider: "Gemini", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: defaultPrompts, referenceImages: "", ...(catalog.aiSettings || {}), mockMode: false };
     system.aiSettings.prompts = { ...defaultPrompts, ...(system.aiSettings.prompts || {}) };
     const builtInLayouts = [
       { id: "classic", name: "클래식", description: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.", previewBg: "#f7f0e7", previewAccent: "#8d3440", builtIn: true },
@@ -240,7 +240,12 @@
     const base = theme.type === "movie"
       ? { heroDecoration: theme.heroDecoration || "none", heroTextTheme: migrateTextThemeId(theme.heroTextTheme || "default_center") }
       : { heroDecoration: data.designSystem.colorDefaults.heroDecoration || "none", heroTextTheme: migrateTextThemeId(data.designSystem.colorDefaults.heroTextTheme || "default_center") };
-    const heroDecoration = design.heroDecoration && design.heroDecoration !== "inherit" ? design.heroDecoration : base.heroDecoration;
+    // navy_arch(달빛서약)·cream_organic(봄날연가)는 자체 메인이미지 장식(진주 웨이브/크림 가장자리)을 갖고 있어
+    // 영화 테마의 하트 프레임 등을 그대로 물려받으면(inherit) 의도하지 않은 하트 모양이 겹쳐 보인다.
+    const ownsHeroDecoration = ["navy_arch", "cream_organic"].includes(data.designSystem?.activeLayoutId);
+    const heroDecoration = design.heroDecoration && design.heroDecoration !== "inherit"
+      ? design.heroDecoration
+      : (ownsHeroDecoration ? "none" : base.heroDecoration);
     const heroTextTheme = design.heroTextTheme && design.heroTextTheme !== "inherit" ? design.heroTextTheme : base.heroTextTheme;
     return {
       theme,
@@ -344,5 +349,45 @@
     return resolved;
   }
 
-  window.WEDDING_DESIGN = { builtInThemes, builtInAssets, normalize, resolve, apply };
+  const TEXT_STYLE_SECTION_ID = { invitation: "invitation", aboutUs: "about-us", weddingDay: "wedding-day", location: "location", gallery: "gallery", weddingSnap: "wedding-snap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" };
+
+  function textStyleSelector(name) {
+    if (name === "hero.eyebrow") return ".hero-eyebrow";
+    if (name === "coupleNames") return ".hero-names";
+    if (name === "wedding.displayDateCustom") return ".hero-date";
+    if (name === "wedding.venue") return ".location-venue";
+    if (name === "wedding.hall") return ".location-hall";
+    if (name === "wedding.address") return ".location-address";
+    if (name === "sectionDescriptions.weddingSnap") return "#wedding-snap .subtle";
+    if (name === "sectionDescriptions.attendance") return "#attendance .subtle";
+    if (name === "sectionDescriptions.account") return "#account .subtle";
+    if (name === "sectionDescriptions.guestbook") return "#guestbook .subtle";
+    if (name === "ending.text") return ".ending-content .preserve";
+    if (name === "invitation.paragraphs") return ".invitation-copy-group";
+    const titleMatch = /^sectionTitles\.(.+)\.(en|ko)$/.exec(name);
+    if (titleMatch) {
+      const sectionId = TEXT_STYLE_SECTION_ID[titleMatch[1]];
+      if (!sectionId) return null;
+      return `#${sectionId} .${titleMatch[2] === "en" ? "section-label" : "section-title"}`;
+    }
+    return null;
+  }
+
+  function applyTextStyles(data, root = document) {
+    const styles = data?.textStyles || {};
+    Object.entries(styles).forEach(([name, style]) => {
+      const selector = textStyleSelector(name);
+      if (!selector || !style) return;
+      root.querySelectorAll(selector).forEach((element) => {
+        if (style.fontSize) element.style.setProperty("font-size", `${style.fontSize}px`, "important");
+        if (style.offsetY) {
+          element.style.setProperty("transform", `translateY(${style.offsetY}px)`, "important");
+          element.style.setProperty("position", "relative", "important");
+          element.style.setProperty("z-index", "18", "important");
+        }
+      });
+    });
+  }
+
+  window.WEDDING_DESIGN = { builtInThemes, builtInAssets, normalize, resolve, apply, applyTextStyles };
 })();
