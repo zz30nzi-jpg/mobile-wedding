@@ -3247,6 +3247,8 @@ function bindEditor() {
           : document.querySelector(".admin-editor-view")?.classList.contains("view-gallery") ? "gallery"
             : document.querySelector(".admin-editor-view")?.classList.contains("view-sections") ? "sections"
             : "";
+      if (activeInlineEditor?.field?.isConnected) activeInlineEditor.commit();
+      else copyEditor.querySelector("[data-copy-editor-frame]")?.contentDocument?.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
       syncEditorPublicPeriod();
       invitationData = editorData(form);
       applyAppearance(invitationData.appearance);

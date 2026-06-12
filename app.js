@@ -396,8 +396,8 @@ function render() {
               <div class="profile-body">
                 <h3 class="profile-name single-line-fit">${role} ${escapeHtml(person.name)}</h3>
                 ${displaySettings.showProfileParents !== false && parentDisplay(person) ? `<div class="profile-parents single-line-fit">${escapeHtml(parentDisplay(person))}</div>` : ""}
-                ${displaySettings.showProfileBirthdays !== false && person.birthday ? `<div>${escapeHtml(person.birthday)}</div>` : ""}
-                <div>${escapeHtml(person.mbti)}</div>
+                ${displaySettings.showProfileBirthdays !== false && person.birthday ? `<div class="profile-birthday">${escapeHtml(person.birthday)}</div>` : ""}
+                <div class="profile-mbti">${escapeHtml(person.mbti)}</div>
                 <div class="profile-tags">${(person.tags || []).slice(0, 3).map((tag) => `<span class="tag">#${escapeHtml(String(tag).replace(/^#+/, ""))}</span>`).join(" ")}</div>
               </div>
             </article>`).join("")}
