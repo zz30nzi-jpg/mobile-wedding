@@ -200,6 +200,10 @@ function parentDisplay(person = {}) {
   return [parents, relation].filter(Boolean).join(" ");
 }
 
+function hasCompleteParents(person = {}) {
+  return String(person.parents || "").split("·").map((item) => item.trim()).filter(Boolean).length >= 2;
+}
+
 function invitationParentLine(role, person = {}) {
   const parentText = parentDisplay(person);
   const name = String(person.name || "").trim();
@@ -348,8 +352,8 @@ function render() {
   const guestPhotos = guestPhotoStatus();
   const gallery = galleryImages();
   const location = venueParts();
-  const hasAnyParents = displaySettings.showInvitationParents !== false && Boolean(parentDisplay(groom) || parentDisplay(bride));
-  const parentsMarkup = hasAnyParents
+  const showCompleteParentLines = displaySettings.showInvitationParents !== false && hasCompleteParents(groom) && hasCompleteParents(bride);
+  const parentsMarkup = showCompleteParentLines
     ? [invitationParentLine("신랑", groom), invitationParentLine("신부", bride)].filter(Boolean).join("<br>")
     : `<span><strong>${escapeHtml(groom.name)}</strong> ♥ <strong>${escapeHtml(bride.name)}</strong></span>`;
   galleryPreviewImages = shuffledGalleryPreview(gallery);
