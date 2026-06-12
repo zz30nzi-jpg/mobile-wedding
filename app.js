@@ -14,6 +14,21 @@ function redirectOAuthCallbackToAdmin() {
 
 redirectOAuthCallbackToAdmin();
 
+async function redirectSignedInAdminFromRoot() {
+  const params = new URLSearchParams(location.search);
+  const hasCardContext = params.has("card") || params.has("invitation") || params.has("__layout") || params.has("__thumb") || params.has("previewSectionMode") || params.has("copyEditorPreview");
+  const isRootInvitationPage = ["/", "/index.html"].includes(location.pathname);
+  if (!isRootInvitationPage || hasCardContext) return;
+  try {
+    const client = window.RSVP_STORAGE?.getSupabaseClient?.();
+    const { data: sessionData } = client ? await client.auth.getSession() : { data: {} };
+    const user = sessionData.session?.user;
+    if (user && !user.is_anonymous) location.replace(`${location.origin}/admin.html`);
+  } catch {}
+}
+
+redirectSignedInAdminFromRoot();
+
 const escapeHtml = (value = "") =>
   String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const escapeLineHtml = (value = "") => escapeHtml(value).replace(/\n/g, "<br>");
