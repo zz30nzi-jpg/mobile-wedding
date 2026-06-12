@@ -566,7 +566,9 @@ async function signInWithProvider(provider) {
   });
   if (error) throw error;
   if (!data?.url) throw new Error("소셜 로그인 이동 URL을 받지 못했습니다.");
-  location.assign(data.url);
+  const authUrl = new URL(data.url);
+  authUrl.searchParams.set("redirect_to", redirectTo);
+  location.assign(authUrl.toString());
 }
 
 async function optimizeInvitationImage(file) {
