@@ -1883,6 +1883,9 @@ function editorData(form) {
   })).filter((item) => item.title || item.text);
   next.couple.groom.tags = fields.getAll("couple.groom.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
   next.couple.bride.tags = fields.getAll("couple.bride.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
+  const quickValue = (key) => form.querySelector(`[data-quick="${key}"]`)?.value?.trim?.() || "";
+  next.couple.groom.parents = joinParentNames(quickValue("groomFather"), quickValue("groomMother"));
+  next.couple.bride.parents = joinParentNames(quickValue("brideFather"), quickValue("brideMother"));
   next.accounts = ensureAccountRows([...form.querySelectorAll("[data-account-editor]")].map((editor) => {
     const relationSelect = editor.querySelector('select[name*=".relation"]')?.value || "";
     const relationCustom = editor.querySelector('input[name*=".relationCustom"]')?.value.trim() || "";
