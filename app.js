@@ -631,9 +631,7 @@ function playInvitationIntro() {
 }
 
 function sharePageUrl() {
-  const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
-  const query = slug && slug !== "main" ? `?card=${encodeURIComponent(slug)}` : "";
-  return `${location.origin}/api/share${query}`;
+  return publicInvitationUrl();
 }
 
 function publicInvitationUrl(section = "") {

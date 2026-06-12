@@ -18,7 +18,13 @@ function mediaPublicUrl(value = "") {
 }
 
 function normalizeSlug(value = "") {
-  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48);
 }
 
 module.exports = async function sharePage(request, response) {
