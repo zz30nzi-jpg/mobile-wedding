@@ -2406,7 +2406,15 @@ function bindEditor() {
     }
     const sectionIdMap = { invitation: "invitation", "about-us": "aboutUs", "wedding-day": "weddingDay", location: "location", gallery: "gallery", "wedding-snap": "weddingSnap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" };
     const syncField = (name, value) => {
-      form.querySelectorAll(`[name="${name}"]`).forEach((field) => { field.value = value; });
+      const fields = [...form.querySelectorAll(`[name="${name}"]`)];
+      if (!fields.length) {
+        const field = document.createElement("input");
+        field.type = "hidden";
+        field.name = name;
+        form.appendChild(field);
+        fields.push(field);
+      }
+      fields.forEach((field) => { field.value = value; });
     };
     const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-slider, .information-slide, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve";
     let isMarkingEditableAreas = false;
