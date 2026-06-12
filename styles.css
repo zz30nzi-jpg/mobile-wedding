@@ -791,7 +791,7 @@ body[data-admin-area="general"] .admin-shell { width: min(100%, 480px); }
 /* bottom tab bar */
 .admin-bottom-tabs { position: fixed; z-index: 90; right: 0; bottom: 0; left: 0; display: flex; align-items: stretch; justify-content: space-around; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--nav-bg) 96%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); padding-bottom: env(safe-area-inset-bottom); transition: opacity 0.18s ease, transform 0.18s ease; }
 /* 일반관리자: 편집 tooldock을 하단 탭바 위에 위치시킴 */
-body[data-admin-area="general"] .editor-tooldock { bottom: calc(56px + env(safe-area-inset-bottom) + var(--keyboard-offset, 0px)); padding-bottom: 8px; }
+body[data-admin-area="general"] .editor-tooldock:not([data-context="text-copy"]) { bottom: calc(56px + env(safe-area-inset-bottom)); padding-bottom: 8px; }
 body[data-admin-area="general"]:has(.editor-tooldock:not([hidden]):not(.is-collapsed)) .admin-floating-save { opacity: 0; pointer-events: none; }
 .admin-tab-item { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 56px; border: 0; background: transparent; color: var(--muted); font-size: 9.5px; font-weight: 500; line-height: 1; cursor: pointer; transition: color 0.15s ease; padding: 6px 2px; }
 .admin-tab-item .tab-icon { width: 22px; height: 22px; flex-shrink: 0; transition: color 0.15s ease, transform 0.15s ease; }
@@ -2217,7 +2217,7 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .editor-tooldock.is-profile { max-height: min(38vh, 230px); }
 .editor-tooldock.is-hero.is-manager { max-height: min(64vh, 460px); }
 .editor-tooldock.is-copy { max-height: min(58vh, 390px); }
-.editor-tooldock[data-context="text-copy"] { top: max(12px, env(safe-area-inset-top)); bottom: auto; width: min(calc(100vw - 20px), 380px); max-height: 104px; border: 1px solid var(--line); border-radius: 16px; padding: 5px 8px 7px; }
+.editor-tooldock[data-context="text-copy"] { top: max(12px, env(safe-area-inset-top)); bottom: auto; z-index: 120; width: min(calc(100vw - 20px), 380px); max-height: 104px; border: 1px solid var(--line); border-radius: 16px; padding: 5px 8px 7px; }
 .editor-tooldock[data-context="text-copy"] .editor-tooldock-head { min-height: 30px; grid-template-columns: 30px minmax(0, 1fr); }
 .editor-tooldock[data-context="text-copy"] .editor-tooldock-head strong { font-size: 13px; }
 .editor-tooldock[data-context="text-copy"] .editor-tooldock-head span { display: none; }
@@ -3035,6 +3035,7 @@ body[data-admin-area="general"] .editor-tooldock .text-layout-control output {
   body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] {
     top: max(10px, env(safe-area-inset-top));
     bottom: auto;
+    z-index: 120;
     right: 10px;
     left: 10px;
     width: auto;

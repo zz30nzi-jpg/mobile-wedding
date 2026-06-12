@@ -2668,25 +2668,13 @@ function bindEditor() {
       };
       activeInlineEditor = { field, target, commit };
       field.addEventListener("blur", commit, { once: true });
+      const frameWin = frameDocument.defaultView;
+      const keepScroll = frameWin ? { x: frameWin.scrollX, y: frameWin.scrollY } : null;
       field.focus();
       field.select();
       setTimeout(() => {
-        if (!field.isConnected || frameDocument.activeElement !== field) return;
-        const frameWin = frameDocument.defaultView;
-        if (!frameWin) return;
-        let visibleHeight = frameWin.innerHeight;
-        if (toolPanel && !toolPanel.hidden) {
-          const dockRect = toolPanel.getBoundingClientRect();
-          const frameRect = frameElement.getBoundingClientRect();
-          visibleHeight -= Math.max(0, frameRect.bottom - dockRect.top);
-        }
-        const rect = field.getBoundingClientRect();
-        if (rect.bottom > visibleHeight) {
-          frameWin.scrollBy({ top: Math.ceil(rect.bottom - visibleHeight + 16), behavior: "smooth" });
-        } else if (rect.top < 0) {
-          frameWin.scrollBy({ top: Math.floor(rect.top - 16), behavior: "smooth" });
-        }
-      }, 350);
+        if (keepScroll && field.isConnected) frameWin?.scrollTo(keepScroll.x, keepScroll.y);
+      }, 80);
     };
     frameDocument.addEventListener("click", (clickEvent) => {
       const detailButton = clickEvent.target.closest("[data-preview-detail-edit]");
