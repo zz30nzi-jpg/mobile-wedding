@@ -1245,6 +1245,10 @@ function parseList(value, fields) {
 }
 
 const validSectionIds = ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
+const defaultSectionSettings = {
+  preWedding: [...validSectionIds],
+  weddingDay: [...validSectionIds],
+};
 const sectionLabels = {
   invitation: "초대글",
   "about-us": "두 사람 소개",
@@ -1295,9 +1299,13 @@ function parseSectionOrder(value) {
 
 function sectionOrderEditor(name, label, selected = []) {
   const ordered = [...selected.filter((id) => validSectionIds.includes(id)), ...validSectionIds.filter((id) => !selected.includes(id))];
+  const resetKey = name.split(".").pop();
   return `
     <div class="section-order-editor" data-section-order>
-      <strong>${label}</strong>
+      <div class="section-order-head">
+        <strong>${label}</strong>
+        <button class="btn btn-secondary" type="button" data-section-reset="${escapeAdminHtml(resetKey)}">기본값으로 초기화</button>
+      </div>
       <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(selected))}">
       <div class="section-order-list">
         ${ordered.map((id) => `
@@ -2984,6 +2992,21 @@ function bindEditor() {
     };
     editor.addEventListener("change", updateSectionOrder);
     editor.addEventListener("click", (event) => {
+      const reset = event.target.closest("[data-section-reset]");
+      if (reset) {
+        const defaults = defaultSectionSettings[reset.dataset.sectionReset] || validSectionIds;
+        const list = editor.querySelector(".section-order-list");
+        const items = new Map([...editor.querySelectorAll(".section-order-item")].map((item) => [item.dataset.sectionId, item]));
+        [...defaults, ...validSectionIds.filter((id) => !defaults.includes(id))].forEach((id) => {
+          const item = items.get(id);
+          if (!item) return;
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          if (checkbox) checkbox.checked = defaults.includes(id);
+          list.appendChild(item);
+        });
+        updateSectionOrder();
+        return;
+      }
       const button = event.target.closest("[data-section-move]");
       if (!button) return;
       const item = button.closest(".section-order-item");
