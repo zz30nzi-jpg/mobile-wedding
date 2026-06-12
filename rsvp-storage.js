@@ -86,10 +86,14 @@ function normalizeInvitationData(fallback, saved, library = null) {
     const keyword = item.title.includes("버스") ? "버스" : item.title.includes("자가용") ? "자가용" : "지하철";
     return fallback.transport.find((fallbackItem) => fallbackItem.title.includes(keyword)) || item;
   });
+  const savedHasAccounts = saved && Array.isArray(saved.accounts);
   const accounts = Array.isArray(merged.accounts) ? merged.accounts : [];
   const defaultAccounts = Array.isArray(fallback.accounts) ? fallback.accounts : [];
   const sameAccountRole = (account, defaultAccount) =>
     account.side === defaultAccount.side && accountRelationKey(account.relation) === accountRelationKey(defaultAccount.relation);
+  if (savedHasAccounts) {
+    return window.WEDDING_DESIGN.normalize({ ...merged, accounts }, library);
+  }
   const orderedAccounts = defaultAccounts.map((defaultAccount) => ({
     ...defaultAccount,
     ...(accounts.find((account) => sameAccountRole(account, defaultAccount)) || {}),

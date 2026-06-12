@@ -1603,6 +1603,8 @@ function ensureAccountRows(accounts = [], sourceData = invitationData, options =
     { side: "신부측", relation: "아버님", name: brideFather, bank: "", number: "" },
     { side: "신부측", relation: "어머님", name: brideMother, bank: "", number: "" },
   ].filter((account) => ["신랑", "신부"].includes(account.relation) || account.name);
+  const autoKey = (account = {}) => [account.side || "", account.relation || "", account.name || account.personName || ""].join(":");
+  const suppressed = new Set(sourceData.accountSuppressedKeys || []);
   const normalizeRelation = (relation = "") => {
     if (relation.includes("아버")) return "아버님";
     if (relation.includes("어머")) return "어머님";
@@ -1625,8 +1627,13 @@ function ensureAccountRows(accounts = [], sourceData = invitationData, options =
     };
   }).filter(Boolean);
   const missingDefaults = appendMissing ? defaults.filter((fallback) =>
+    !suppressed.has(autoKey(fallback)) &&
     !normalized.some((account) => account.side === fallback.side && account.relation === fallback.relation)) : [];
   return [...normalized, ...missingDefaults];
+}
+
+function autoAccountKey(account = {}) {
+  return [account.side || "", account.relation || "", account.personName || account.name || ""].join(":");
 }
 
 function formatAccountNumber(value = "") {
@@ -2906,6 +2913,10 @@ function bindEditor() {
       if (!remove) return;
       const items = accountItems();
       const index = [...form.querySelectorAll("[data-account-editor]")].indexOf(remove.closest("[data-account-editor]"));
+      const removed = items[index];
+      if (removed && ["신랑", "신부", "아버님", "어머님"].includes(removed.relation)) {
+        invitationData.accountSuppressedKeys = [...new Set([...(invitationData.accountSuppressedKeys || []), autoAccountKey(removed)])];
+      }
       items.splice(index, 1);
       renderAccountItems(items);
     });
