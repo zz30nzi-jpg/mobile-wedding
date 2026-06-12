@@ -2408,7 +2408,7 @@ function bindEditor() {
     const syncField = (name, value) => {
       form.querySelectorAll(`[name="${name}"]`).forEach((field) => { field.value = value; });
     };
-    const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-slider, .information-slide, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, #invitation .section-copy, .ending-content .preserve";
+    const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-slider, .information-slide, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve";
     let isMarkingEditableAreas = false;
     const markEditableAreas = () => {
       isMarkingEditableAreas = true;
@@ -2418,7 +2418,17 @@ function bindEditor() {
         item.removeAttribute("data-edit-label");
         delete item.dataset.editTargetIndex;
       });
-      frameDocument.querySelectorAll(".hero-media, .profile-card, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, #gallery, .information-slider, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, #invitation .section-copy, .ending-content .preserve").forEach((item) => {
+      const invitationSection = frameDocument.querySelector("#invitation");
+      if (invitationSection && !invitationSection.querySelector(".invitation-copy-group")) {
+        const paragraphs = [...invitationSection.querySelectorAll(":scope > .invitation-copy")];
+        if (paragraphs.length) {
+          const group = frameDocument.createElement("div");
+          group.className = "invitation-copy-group";
+          invitationSection.insertBefore(group, paragraphs[0]);
+          paragraphs.forEach((paragraph) => group.appendChild(paragraph));
+        }
+      }
+      frameDocument.querySelectorAll(".hero-media, .profile-card, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, #gallery, .information-slider, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve").forEach((item) => {
         item.classList.add("copy-editable-target");
       });
       frameDocument.querySelector(".hero-media")?.setAttribute("data-edit-label", "메인 이미지·영상");
@@ -2426,7 +2436,7 @@ function bindEditor() {
       frameDocument.querySelector(".hero-date")?.setAttribute("data-edit-label", "메인 날짜");
       frameDocument.querySelectorAll(".section-label").forEach((item) => item.setAttribute("data-edit-label", "영문 타이틀"));
       frameDocument.querySelectorAll(".section-title").forEach((item) => item.setAttribute("data-edit-label", "국문 타이틀"));
-      frameDocument.querySelector("#invitation .section-copy")?.setAttribute("data-edit-label", "초대글");
+      frameDocument.querySelector(".invitation-copy-group")?.setAttribute("data-edit-label", "초대글");
       frameDocument.querySelector(".location-venue")?.setAttribute("data-edit-label", "식장명");
       frameDocument.querySelector(".location-hall")?.setAttribute("data-edit-label", "홀 정보");
       frameDocument.querySelector(".location-address")?.setAttribute("data-edit-label", "주소");
@@ -2489,7 +2499,7 @@ function bindEditor() {
       if (target.matches("#account .subtle")) return { name: "sectionDescriptions.account", multiline: true };
       if (target.matches("#guestbook .subtle")) return { name: "sectionDescriptions.guestbook", multiline: true };
       if (target.matches(".ending-content .preserve")) return { name: "ending.text", multiline: true };
-      if (target.matches("#invitation .section-copy")) return { name: "invitation.paragraphs", multiline: true, wholeParagraphs: true };
+      if (target.matches(".invitation-copy-group")) return { name: "invitation.paragraphs", multiline: true, wholeParagraphs: true };
       return null;
     };
     const mediaTarget = (target) => {
@@ -2526,14 +2536,13 @@ function bindEditor() {
         if (!field.isConnected) return;
         update();
         if (config.wholeParagraphs) {
-          const section = field.closest("#invitation");
-          const anchor = section?.querySelector(".parents") || section?.querySelector(".contact-row");
-          section?.querySelectorAll(".invitation-copy").forEach((item) => item.remove());
+          const group = target;
+          group.replaceChildren();
           field.value.split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean).forEach((text) => {
             const paragraph = frameDocument.createElement("p");
             paragraph.className = "invitation-copy";
             paragraph.textContent = text;
-            section?.insertBefore(paragraph, anchor);
+            group.appendChild(paragraph);
           });
           field.replaceWith(target);
         } else {
