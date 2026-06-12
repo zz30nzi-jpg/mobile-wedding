@@ -553,8 +553,8 @@ function shareWithKakaoTalk() {
   if (!initializeKakaoShare()) return false;
 
   const configuredShareUrl = window.KAKAO_SHARE_CONFIG?.shareBaseUrl?.trim();
-  const shareUrl = configuredShareUrl || `${location.origin}/`;
-  const locationUrl = `${shareUrl.replace(/\/$/, "")}/#location`;
+  const shareUrl = configuredShareUrl || sharePageUrl();
+  const locationUrl = publicInvitationUrl("location");
   const imageUrl = mediaUrl(data.meta.shareImage || data.hero.image);
 
   if (!imageUrl) {
@@ -631,7 +631,16 @@ function playInvitationIntro() {
 }
 
 function sharePageUrl() {
-  return `${location.origin}/api/share`;
+  const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
+  const query = slug && slug !== "main" ? `?card=${encodeURIComponent(slug)}` : "";
+  return `${location.origin}/api/share${query}`;
+}
+
+function publicInvitationUrl(section = "") {
+  const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
+  const path = slug && slug !== "main" ? `/index.html?card=${encodeURIComponent(slug)}` : "/";
+  const hash = section ? `#${encodeURIComponent(section)}` : "";
+  return `${location.origin}${path}${hash}`;
 }
 
 async function copyInvitationLink() {

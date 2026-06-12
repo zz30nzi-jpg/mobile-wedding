@@ -17,14 +17,20 @@ function mediaPublicUrl(value = "") {
   return `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/invitation-media/${encodeURIComponent(path).replace(/%2F/g, "/")}`;
 }
 
+function normalizeSlug(value = "") {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+}
+
 module.exports = async function sharePage(request, response) {
   const protocol = request.headers["x-forwarded-proto"] || "https";
   const host = request.headers["x-forwarded-host"] || request.headers.host;
-  const mainUrl = `${protocol}://${host}/`;
+  const requestUrl = new URL(request.url || "/", `${protocol}://${host}`);
+  const slug = normalizeSlug(requestUrl.searchParams.get("card") || requestUrl.searchParams.get("invitation") || "main") || "main";
+  const mainUrl = slug !== "main" ? `${protocol}://${host}/index.html?card=${encodeURIComponent(slug)}` : `${protocol}://${host}/`;
   let invitation = {};
 
   try {
-    const result = await fetch(`${SUPABASE_URL}/rest/v1/invitation_settings?id=eq.main&select=content`, {
+    const result = await fetch(`${SUPABASE_URL}/rest/v1/invitation_settings?id=eq.${encodeURIComponent(slug)}&select=content`, {
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
