@@ -665,6 +665,7 @@ function bindShareModal() {
   document.querySelector("[data-native-share]")?.addEventListener("click", async () => {
     const shareData = { title: data.meta.title, text: data.meta.description, url: sharePageUrl() };
     try {
+      if (shareWithKakaoTalk()) return;
       if (navigator.share) await navigator.share(shareData);
       else await copyInvitationLink();
     } catch (error) {

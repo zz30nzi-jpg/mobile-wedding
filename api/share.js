@@ -52,10 +52,14 @@ module.exports = async function sharePage(request, response) {
   const image = mediaPublicUrl(invitation.meta?.shareImage || invitation.hero?.image || "");
   const imageMeta = image ? `
     <meta property="og:image" content="${escapeAttribute(image)}">
+    <meta property="og:image:secure_url" content="${escapeAttribute(image)}">
+    <meta property="og:image:type" content="image/webp">
     <meta property="og:image:width" content="600">
     <meta property="og:image:height" content="800">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="${escapeAttribute(image)}">` : "";
+    <meta name="twitter:image" content="${escapeAttribute(image)}">
+    <meta name="twitter:image:width" content="600">
+    <meta name="twitter:image:height" content="800">` : "";
 
   response.setHeader("Content-Type", "text/html; charset=utf-8");
   response.setHeader("Cache-Control", "no-store");
