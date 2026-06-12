@@ -13,6 +13,20 @@ function getSupabaseClient() {
   return supabaseClientInstance;
 }
 
+function clearStoredSupabaseAuth() {
+  try {
+    const projectRef = new URL(window.RSVP_CONFIG?.supabaseUrl || "").hostname.split(".")[0];
+    const keys = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if ((projectRef && key === `sb-${projectRef}-auth-token`) || (key?.startsWith("sb-") && key.endsWith("-auth-token"))) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => localStorage.removeItem(key));
+  } catch {}
+}
+
 function readLocalResponses() {
   return JSON.parse(localStorage.getItem(RSVP_LOCAL_KEY) || "[]");
 }
@@ -538,10 +552,17 @@ async function signUpInvitationAdmin({ email, password, groomName = "", brideNam
 async function signInWithProvider(provider) {
   const client = getSupabaseClient();
   if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const redirectTo = `${location.origin}${location.pathname}`;
+  const redirectTo = `${location.origin}/admin.html`;
+  try { await client.auth.signOut({ scope: "local" }); } catch {}
+  clearStoredSupabaseAuth();
+  const queryParams = provider === "kakao"
+    ? { prompt: "login" }
+    : provider === "custom:naver"
+      ? { auth_type: "reauthenticate" }
+      : {};
   const { data, error } = await client.auth.signInWithOAuth({
     provider,
-    options: { redirectTo, skipBrowserRedirect: true },
+    options: { redirectTo, skipBrowserRedirect: true, queryParams },
   });
   if (error) throw error;
   if (!data?.url) throw new Error("소셜 로그인 이동 URL을 받지 못했습니다.");

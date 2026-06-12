@@ -2,6 +2,18 @@ let data = window.INVITATION_DATA;
 const app = document.querySelector("#app");
 const modalRoot = document.querySelector("#modal-root");
 
+function redirectOAuthCallbackToAdmin() {
+  const params = new URLSearchParams(location.search);
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const hasAuthCallback = params.has("code") || params.has("error") || hashParams.has("access_token") || hashParams.has("refresh_token") || hashParams.has("error");
+  const hasCardContext = params.has("card") || params.has("invitation") || params.has("__layout") || params.has("__thumb") || params.has("previewSectionMode") || params.has("copyEditorPreview");
+  if (hasAuthCallback && !hasCardContext) {
+    location.replace(`${location.origin}/admin.html${location.search}${location.hash}`);
+  }
+}
+
+redirectOAuthCallbackToAdmin();
+
 const escapeHtml = (value = "") =>
   String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const escapeLineHtml = (value = "") => escapeHtml(value).replace(/\n/g, "<br>");
