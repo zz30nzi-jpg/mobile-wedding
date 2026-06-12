@@ -2691,8 +2691,13 @@ function bindEditor() {
         activeProfileTarget = "";
         activeTextTarget = target;
         setToolDock("문구 글자/위치", "문구는 그 자리에서 수정하고, 크기와 위치는 아래에서 미리 조정합니다.", "style", "text-copy");
-        prepareTextSliders(target);
-        openInlineEditor(target, config);
+        try {
+          prepareTextSliders(target);
+          openInlineEditor(target, config);
+        } catch (error) {
+          console.error("인라인 편집기 열기 실패", error);
+          alert(`문구 편집창을 여는 중 오류가 발생했습니다: ${error?.message || error}`);
+        }
         return;
       }
       if (target.closest("#gallery")) {
