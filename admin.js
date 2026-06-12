@@ -2333,6 +2333,12 @@ function bindEditor() {
     });
     updateFloatingSaveForToolDock();
   };
+  const keepTextToolDockOpen = () => {
+    if (!toolPanel || toolPanel.dataset.context !== "text-copy") return;
+    toolPanel.hidden = false;
+    toolPanel.classList.remove("is-collapsed");
+    updateFloatingSaveForToolDock();
+  };
   const triggerFileInput = (selector) => {
     const inputElement = form.querySelector(selector);
     if (!inputElement) return alert("이 항목의 업로드 입력창을 찾지 못했습니다.");
@@ -2693,9 +2699,18 @@ function bindEditor() {
         return;
       }
       const handle = clickEvent.target.closest("[data-copy-edit-handle]");
+      const inlineField = clickEvent.target.closest("[data-copy-inline-editor]");
+      if (inlineField) {
+        keepTextToolDockOpen();
+        return;
+      }
       const target = handle ? handle.closest(editableSelector) : clickEvent.target.closest(editableSelector);
       if (!target || target.matches("[data-copy-inline-editor]")) {
-        if (!target && toolPanel && !toolPanel.hidden && toolPanel.dataset.context !== "text-copy") {
+        if (!target && toolPanel?.dataset.context === "text-copy") {
+          keepTextToolDockOpen();
+          return;
+        }
+        if (!target && toolPanel && !toolPanel.hidden) {
           toolPanel.classList.add("is-collapsed");
           updateFloatingSaveForToolDock();
         }
@@ -2737,6 +2752,7 @@ function bindEditor() {
         setToolDock("문구 글자/위치", "문구는 그 자리에서 수정하고, 크기와 위치는 아래에서 미리 조정합니다.", "style", "text-copy");
         prepareTextSliders(target);
         openInlineEditor(target, config);
+        requestAnimationFrame(keepTextToolDockOpen);
         return;
       }
       if (target.closest("#gallery")) {

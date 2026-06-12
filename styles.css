@@ -2217,7 +2217,7 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .editor-tooldock.is-profile { max-height: min(38vh, 230px); }
 .editor-tooldock.is-hero.is-manager { max-height: min(64vh, 460px); }
 .editor-tooldock.is-copy { max-height: min(58vh, 390px); }
-.editor-tooldock[data-context="text-copy"] { top: max(12px, env(safe-area-inset-top)); bottom: auto; z-index: 120; width: min(calc(100vw - 20px), 380px); max-height: 104px; border: 1px solid var(--line); border-radius: 16px; padding: 5px 8px 7px; }
+.editor-tooldock[data-context="text-copy"] { top: max(72px, calc(env(safe-area-inset-top) + 54px)); bottom: auto; z-index: 120; width: min(calc(100vw - 20px), 380px); max-height: 104px; border: 1px solid var(--line); border-radius: 16px; padding: 5px 8px 7px; }
 .editor-tooldock[data-context="text-copy"] .editor-tooldock-head { min-height: 30px; grid-template-columns: 30px minmax(0, 1fr); }
 .editor-tooldock[data-context="text-copy"] .editor-tooldock-head strong { font-size: 13px; }
 .editor-tooldock[data-context="text-copy"] .editor-tooldock-head span { display: none; }
@@ -3033,7 +3033,7 @@ body[data-admin-area="general"] .editor-tooldock .text-layout-control output {
     min-width: 0;
   }
   body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] {
-    top: max(10px, env(safe-area-inset-top));
+    top: max(72px, calc(env(safe-area-inset-top) + 54px));
     bottom: auto;
     z-index: 120;
     right: 10px;
