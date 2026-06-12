@@ -1068,6 +1068,11 @@ function editorDesignPanel() {
             <input type="range" min="-40" max="40" value="0" data-preview-text-y>
             <div class="text-stepper"><button type="button" data-preview-text-step="y:-2">−</button><output data-preview-text-y-output>0</output><button type="button" data-preview-text-step="y:2">＋</button></div>
           </label>
+          <label class="text-layout-control text-step-control">
+            <span>좌우</span>
+            <input type="range" min="-40" max="40" value="0" data-preview-text-x>
+            <div class="text-stepper"><button type="button" data-preview-text-step="x:-2">−</button><output data-preview-text-x-output>0</output><button type="button" data-preview-text-step="x:2">＋</button></div>
+          </label>
         </div>
         <button class="editor-tool-button editor-tool-reset" type="button" data-preview-text-reset><span>↺</span>원래값</button>
       </div>
@@ -2139,11 +2144,14 @@ function bindEditor() {
     if (!activeTextTarget) return;
     const sizeField = copyEditor.querySelector("[data-preview-text-size]");
     const offsetField = copyEditor.querySelector("[data-preview-text-y]");
+    const offsetXField = copyEditor.querySelector("[data-preview-text-x]");
     const size = sizeField?.value;
     const offset = offsetField?.value || "0";
+    const offsetX = offsetXField?.value || "0";
     const originalSize = activeTextTarget.dataset.originalTextSize;
     const originalOffset = activeTextTarget.dataset.originalTextOffsetY || "0";
-    const isDefault = String(size) === String(originalSize) && String(offset) === String(originalOffset);
+    const originalOffsetX = activeTextTarget.dataset.originalTextOffsetX || "0";
+    const isDefault = String(size) === String(originalSize) && String(offset) === String(originalOffset) && String(offsetX) === String(originalOffsetX);
     const targets = [activeTextTarget, activeInlineEditor?.field].filter((target) => target?.isConnected);
     targets.forEach((target) => {
       if (isDefault) {
@@ -2154,8 +2162,8 @@ function bindEditor() {
         return;
       }
       if (size) target.style.setProperty("font-size", `${size}px`, "important");
-      if (Number(offset)) {
-        target.style.setProperty("transform", `translateY(${offset}px)`, "important");
+      if (Number(offset) || Number(offsetX)) {
+        target.style.setProperty("transform", `translate(${offsetX}px, ${offset}px)`, "important");
         target.style.setProperty("position", "relative", "important");
         target.style.setProperty("z-index", "18", "important");
       } else {
@@ -2166,17 +2174,19 @@ function bindEditor() {
     });
     activeTextTarget.dataset.textSize = size || "";
     activeTextTarget.dataset.textOffsetY = offset;
+    activeTextTarget.dataset.textOffsetX = offsetX;
     const name = inlineTarget(activeTextTarget)?.name;
     if (name) {
       invitationData.textStyles ||= {};
       if (isDefault) {
         delete invitationData.textStyles[name];
       } else {
-        invitationData.textStyles[name] = { fontSize: Number(size) || undefined, offsetY: Number(offset) || 0 };
+        invitationData.textStyles[name] = { fontSize: Number(size) || undefined, offsetY: Number(offset) || 0, offsetX: Number(offsetX) || 0 };
       }
     }
     copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(String(size || activeTextTarget.dataset.originalTextSize || 16));
     copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(String(offset || 0));
+    copyEditor.querySelector("[data-preview-text-x-output]")?.replaceChildren(String(offsetX || 0));
   };
   const prepareTextSliders = (target) => {
     const name = inlineTarget(target)?.name;
@@ -2190,23 +2200,31 @@ function bindEditor() {
     if (prevTransform) target.style.setProperty("transform", prevTransform, "important");
     target.dataset.originalTextSize = String(defaultSize);
     target.dataset.originalTextOffsetY = "0";
+    target.dataset.originalTextOffsetX = "0";
     const currentSize = saved?.fontSize ? Math.round(saved.fontSize) : defaultSize;
     const currentOffset = saved?.offsetY ? Math.round(saved.offsetY) : 0;
+    const currentOffsetX = saved?.offsetX ? Math.round(saved.offsetX) : 0;
     const sizeField = copyEditor.querySelector("[data-preview-text-size]");
     const yField = copyEditor.querySelector("[data-preview-text-y]");
+    const xField = copyEditor.querySelector("[data-preview-text-x]");
     if (sizeField) sizeField.value = String(Math.max(Number(sizeField.min), Math.min(Number(sizeField.max), currentSize)));
     if (yField) yField.value = String(Math.max(Number(yField.min), Math.min(Number(yField.max), currentOffset)));
+    if (xField) xField.value = String(Math.max(Number(xField.min), Math.min(Number(xField.max), currentOffsetX)));
     copyEditor.querySelector("[data-preview-text-size-output]")?.replaceChildren(String(sizeField?.value || currentSize));
     copyEditor.querySelector("[data-preview-text-y-output]")?.replaceChildren(String(yField?.value || currentOffset));
+    copyEditor.querySelector("[data-preview-text-x-output]")?.replaceChildren(String(xField?.value || currentOffsetX));
   };
   const resetSelectedTextStyle = () => {
     if (!activeTextTarget) return;
     const size = activeTextTarget.dataset.originalTextSize || "16";
     const offset = activeTextTarget.dataset.originalTextOffsetY || "0";
+    const offsetX = activeTextTarget.dataset.originalTextOffsetX || "0";
     const sizeField = copyEditor.querySelector("[data-preview-text-size]");
     const yField = copyEditor.querySelector("[data-preview-text-y]");
+    const xField = copyEditor.querySelector("[data-preview-text-x]");
     if (sizeField) sizeField.value = size;
     if (yField) yField.value = offset;
+    if (xField) xField.value = offsetX;
     refreshSelectedTextStyle();
   };
   const currentHeroActiveMedia = () => {
@@ -2373,7 +2391,7 @@ function bindEditor() {
     });
     copyEditor.querySelectorAll('.editor-tooldock input[type="range"]').forEach((field) => {
       field.addEventListener("input", () => {
-        if (field.hasAttribute("data-preview-text-size") || field.hasAttribute("data-preview-text-y")) {
+        if (field.hasAttribute("data-preview-text-size") || field.hasAttribute("data-preview-text-y") || field.hasAttribute("data-preview-text-x")) {
           refreshSelectedTextStyle();
         } else {
           field.nextElementSibling.textContent = field.value;
@@ -2384,7 +2402,7 @@ function bindEditor() {
     copyEditor.querySelectorAll("[data-preview-text-step]").forEach((button) => {
       button.addEventListener("click", () => {
         const [type, amount] = button.dataset.previewTextStep.split(":");
-        const field = type === "size" ? copyEditor.querySelector("[data-preview-text-size]") : copyEditor.querySelector("[data-preview-text-y]");
+        const field = type === "size" ? copyEditor.querySelector("[data-preview-text-size]") : type === "x" ? copyEditor.querySelector("[data-preview-text-x]") : copyEditor.querySelector("[data-preview-text-y]");
         if (!field) return;
         const next = Math.max(Number(field.min), Math.min(Number(field.max), Number(field.value || 0) + Number(amount || 0)));
         field.value = String(next);
