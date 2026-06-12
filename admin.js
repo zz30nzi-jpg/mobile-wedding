@@ -55,6 +55,24 @@ window.AI_DESIGN_SERVICE = (() => {
     instruction: context.instruction || "",
     ...extras,
   });
+  const normalizeGuideText = (value = "") => {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    if (text.includes("\n")) return text.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 3).join("\n");
+    return text
+      .replace(/\s+/g, " ")
+      .replace(/(다\.|요\.|니다\.|[.!?。])\s+/g, "$1\n")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 3)
+      .join("\n");
+  };
+  const normalizeGuideItems = (items = []) => items.map((item) => ({
+    ...item,
+    title: String(item.title || "").trim(),
+    text: normalizeGuideText(item.text),
+  })).filter((item) => item.title || item.text);
   const request = async (type, context, mock) => {
     const current = settings(context);
     if (current.mockMode !== false) return mock();
@@ -88,20 +106,28 @@ window.AI_DESIGN_SERVICE = (() => {
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
     items: [
-      { title: "대중교통", text: `가까운 역 또는 정류장 기준 경로를 확인해 주세요.\n도보 20분 이상이면 차량 이동을 권장합니다.` },
-      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n주차 가능 여부는 예식장에 확인해 주세요.` },
+      { title: "대중교통", text: `가까운 역/정류장 기준 경로를 확인해 주세요.\n하차 후 도보 20분 이상이면 차량 이동을 권장합니다.\n정확한 배차 간격은 당일 다시 확인해 주세요.` },
+      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n주차장 입구와 혼잡 시간은 식장 안내를 확인해 주세요.` },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
   const generateVenueGuide = async (context = {}) => request("venueGuide", context, () => result("venueGuide", context, {
     notices: [
-      { title: "연회장 안내", text: "연회장 위치와 이용 시간을 예식장에 확인 후 안내해 주세요." },
-      { title: "주차 안내", text: "예식장 내/외부 주차장 위치와 주차비 정산 방식을 확인해 주세요." },
-      { title: "홀 안내", text: `${context.hall || "예식홀"} 위치는 로비 안내 데스크 또는 식장 표지를 확인해 주세요.` },
+      { title: "연회장 안내", text: "연회장 위치는 예식장 안내 데스크에서 확인해 주세요.\n식사 이용 시간과 층수는 확정 후 안내해 주세요." },
+      { title: "주차 안내", text: "예식장 내/외부 주차장 위치를 확인해 주세요.\n야외 주차장이 있는 경우 동선 안내가 필요합니다." },
+      { title: "주차 정산", text: "무료 주차 시간과 정산 방식은 확인 필요합니다.\n주차권 또는 차량번호 등록 여부를 안내해 주세요." },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
-  return { generateTransportGuide, generateVenueGuide };
+  const wrap = (service, key) => async (context = {}) => {
+    const response = await service(context);
+    if (key === "items") return { ...response, items: normalizeGuideItems(response.items || []) };
+    return { ...response, notices: normalizeGuideItems(response.notices || []) };
+  };
+  return {
+    generateTransportGuide: wrap(generateTransportGuide, "items"),
+    generateVenueGuide: wrap(generateVenueGuide, "notices"),
+  };
 })();
 const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
 const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
@@ -1966,7 +1992,11 @@ function editorData(form) {
   if (fields.get("appearance.design.heroDecoration")) next.appearance.design.heroDecoration = fields.get("appearance.design.heroDecoration");
   if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
   next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
-  next.wedding.displayDate = form.elements["wedding.displayDateCustom"].value.trim();
+  const displayFormat = form.elements["wedding.displayDateFormat"]?.value || "long_ko";
+  const displayCustom = form.elements["wedding.displayDateCustom"]?.value.trim() || "";
+  next.wedding.displayDate = displayFormat === "custom"
+    ? displayCustom
+    : weddingDisplayDate(form.elements["wedding.date"]?.value, displayFormat);
   next.wedding.mapLinks = mapLinksFor(next.wedding.venue, next.wedding.address);
   return next;
 }
@@ -2087,7 +2117,7 @@ function bindEditor() {
     if (transportWrap) {
       transportWrap.innerHTML = (draft.transport || [])
         .filter((item) => !item.hidden)
-        .map((item) => `<div><strong>${escapeAdminHtml(item.title)}</strong>${escapeAdminHtml(item.text)}</div>`)
+        .map((item) => `<div><strong>${escapeAdminHtml(item.title)}</strong>${escapeAdminHtml(item.text).replace(/\n/g, "<br>")}</div>`)
         .join("");
     }
     const notices = (draft.notices || []).filter((notice) => !notice.hidden);
@@ -2281,7 +2311,7 @@ function bindEditor() {
   };
   const updateFloatingSaveForToolDock = () => {
     const save = document.querySelector('.admin-floating-save[form="invitation-editor"]');
-    if (!save || !toolPanel || toolPanel.hidden) {
+    if (!save || !toolPanel || toolPanel.hidden || toolPanel.dataset.context === "text-copy") {
       document.documentElement.style.removeProperty("--floating-save-bottom");
       return;
     }
@@ -2337,6 +2367,12 @@ function bindEditor() {
     if (!toolPanel || toolPanel.dataset.context !== "text-copy") return;
     toolPanel.hidden = false;
     toolPanel.classList.remove("is-collapsed");
+    updateFloatingSaveForToolDock();
+  };
+  const closeTextToolDock = () => {
+    if (!toolPanel || toolPanel.dataset.context !== "text-copy") return;
+    toolPanel.hidden = true;
+    activeTextTarget = null;
     updateFloatingSaveForToolDock();
   };
   const triggerFileInput = (selector) => {
@@ -2707,7 +2743,7 @@ function bindEditor() {
       const target = handle ? handle.closest(editableSelector) : clickEvent.target.closest(editableSelector);
       if (!target || target.matches("[data-copy-inline-editor]")) {
         if (!target && toolPanel?.dataset.context === "text-copy") {
-          keepTextToolDockOpen();
+          closeTextToolDock();
           return;
         }
         if (!target && toolPanel && !toolPanel.hidden) {
@@ -2755,6 +2791,7 @@ function bindEditor() {
         requestAnimationFrame(keepTextToolDockOpen);
         return;
       }
+      if (toolPanel?.dataset.context === "text-copy") closeTextToolDock();
       if (target.closest("#gallery")) {
         clickEvent.preventDefault();
         clickEvent.stopImmediatePropagation();
@@ -2779,6 +2816,11 @@ function bindEditor() {
       }
     }, true);
   });
+  copyEditor.addEventListener("pointerdown", (event) => {
+    if (toolPanel?.dataset.context !== "text-copy") return;
+    if (event.target.closest("[data-editor-tool-panel]") || event.target.closest("[data-copy-editor-frame]")) return;
+    closeTextToolDock();
+  }, true);
   document.querySelectorAll("[data-editor-jump]").forEach((button) => button.addEventListener("click", () => {
     document.querySelector(`#${button.dataset.editorJump}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
@@ -3087,6 +3129,9 @@ function bindEditor() {
     if (format === "custom") return;
     if (!force && form.elements["wedding.displayDateCustom"].value.trim()) return;
     form.elements["wedding.displayDateCustom"].value = weddingDisplayDate(form.elements["wedding.date"].value, format);
+    form.elements["wedding.displayDateCustom"].dispatchEvent(new Event("input", { bubbles: true }));
+    refreshAutoSummaries();
+    updateIntroDesignPreview();
   };
   const syncEditorPublicPeriod = (forceCloseToWedding = false) => syncPublicPeriodFields({
     weddingField: form.elements["wedding.date"],
@@ -3099,7 +3144,10 @@ function bindEditor() {
     syncEditorPublicPeriod(true);
   });
   form.elements["publicPeriod.openDate"]?.addEventListener("change", () => syncEditorPublicPeriod(false));
-  form.elements["wedding.displayDateFormat"].addEventListener("change", () => updateDisplayDate(true));
+  form.elements["wedding.displayDateFormat"].addEventListener("change", () => {
+    updateDisplayDate(true);
+    form.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   updateDisplayDate();
   syncEditorPublicPeriod();
 
