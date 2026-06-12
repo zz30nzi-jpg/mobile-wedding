@@ -2936,8 +2936,7 @@ function bindEditor() {
       venueStatus.textContent = "등록된 식장을 찾았습니다. 주소가 자동으로 입력되었습니다.";
       addressInput.dispatchEvent(new Event("input", { bubbles: true }));
     } else if (venueInput.value.trim()) {
-      venueStatus.textContent = "검색 결과에서 정확한 주소를 선택해 주세요.";
-      launchAddressSearch(venueInput.value.trim());
+      venueStatus.textContent = "주소 검색 버튼을 눌러 네이버 지도 또는 직접입력으로 정확한 주소를 반영해 주세요.";
     } else {
       venueStatus.textContent = "";
     }
