@@ -88,16 +88,16 @@ window.AI_DESIGN_SERVICE = (() => {
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
     items: [
-      { title: "가까운 역에서 오시는 길", text: `${context.venue || "예식장"} 인근 주요 역에서 택시 또는 대중교통 이용을 권장합니다. 정확한 노선은 예식 전 다시 확인해 주세요.` },
-      { title: "가까운 정류장에서 오시는 길", text: "가장 가까운 버스정류장에서 하차 후 도보 이동 시간을 확인해 안내해 주세요. 도보 20분 이상이면 차량 이동을 권장합니다." },
+      { title: "대중교통", text: `가까운 역 또는 정류장 기준 경로를 확인해 주세요.\n도보 20분 이상이면 차량 이동을 권장합니다.` },
+      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n주차 가능 여부는 예식장에 확인해 주세요.` },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
   const generateVenueGuide = async (context = {}) => request("venueGuide", context, () => result("venueGuide", context, {
     notices: [
-      { title: "주차 안내", text: "주차 가능 여부와 등록 위치를 식장에 확인 후 안내해 주세요." },
-      { title: "식사 안내", text: "연회장 위치와 식사 시간을 확인 후 하객에게 안내해 주세요." },
-      { title: "홀 안내", text: `${context.hall || "예식홀"} 위치는 식장 안내 표지 또는 로비 안내 데스크를 확인해 주세요.` },
+      { title: "연회장 안내", text: "연회장 위치와 이용 시간을 예식장에 확인 후 안내해 주세요." },
+      { title: "주차 안내", text: "예식장 내/외부 주차장 위치와 주차비 정산 방식을 확인해 주세요." },
+      { title: "홀 안내", text: `${context.hall || "예식홀"} 위치는 로비 안내 데스크 또는 식장 표지를 확인해 주세요.` },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
@@ -1222,8 +1222,8 @@ function galleryManagerPreview(images, thumbs = []) {
       <article class="gallery-manager-item">
         <img src="${escapeAdminHtml(adminMediaUrl(photo.thumb))}" alt="갤러리 ${index + 1} 미리보기">
         <div class="gallery-manager-item-actions">
-          <label class="btn image-upload">변경<input type="file" accept="image/*" data-gallery-replace="${index}"></label>
-          <button class="btn btn-danger" type="button" data-gallery-remove="${index}">삭제</button>
+          <label class="icon-btn gallery-image-action image-upload" title="사진 변경" aria-label="사진 변경">✎<input type="file" accept="image/*" data-gallery-replace="${index}"></label>
+          <button class="icon-btn gallery-image-action btn-danger" type="button" data-gallery-remove="${index}" title="사진 삭제" aria-label="사진 삭제">×</button>
         </div>
       </article>`).join("")
     : '<p class="admin-message">등록된 갤러리 사진이 없습니다.</p>';
@@ -1575,7 +1575,8 @@ function transportManager(items = []) {
     </div></section>`;
 }
 
-function ensureAccountRows(accounts = [], sourceData = invitationData) {
+function ensureAccountRows(accounts = [], sourceData = invitationData, options = {}) {
+  const appendMissing = options.appendMissing !== false;
   const [groomFather = "", groomMother = ""] = parentNames(sourceData.couple?.groom?.parents || "");
   const [brideFather = "", brideMother = ""] = parentNames(sourceData.couple?.bride?.parents || "");
   const expectedNames = {
@@ -1615,15 +1616,24 @@ function ensureAccountRows(accounts = [], sourceData = invitationData) {
       number: account.number || "",
     };
   }).filter(Boolean);
-  const missingDefaults = defaults.filter((fallback) =>
-    !normalized.some((account) => account.side === fallback.side && account.relation === fallback.relation));
+  const missingDefaults = appendMissing ? defaults.filter((fallback) =>
+    !normalized.some((account) => account.side === fallback.side && account.relation === fallback.relation)) : [];
   return [...normalized, ...missingDefaults];
 }
 
-function accountManager(accounts = []) {
+function formatAccountNumber(value = "") {
+  const raw = String(value || "").trim();
+  const digits = raw.replace(/\D/g, "");
+  if (!digits || raw.includes("-") || digits.length < 8) return raw;
+  if (digits.length <= 10) return digits.replace(/(\d{3})(\d{2,3})(\d+)/, "$1-$2-$3");
+  if (digits.length <= 12) return digits.replace(/(\d{3})(\d{3})(\d+)/, "$1-$2-$3");
+  return digits.replace(/(\d{3})(\d{4})(\d{4})(\d+)/, "$1-$2-$3-$4");
+}
+
+function accountManager(accounts = [], options = {}) {
   const groups = ["신랑측", "신부측"];
   const relationOptions = ["신랑", "신부", "아버님", "어머님", "형제", "자매", "직접입력"];
-  const normalizedAccounts = ensureAccountRows(accounts);
+  const normalizedAccounts = ensureAccountRows(accounts, invitationData, options);
   const accountEditor = (account, index) => `
     <div class="account-editor" data-account-editor>
       <button class="icon-btn account-remove" type="button" data-account-remove aria-label="계좌 삭제">×</button>
@@ -1638,7 +1648,7 @@ function accountManager(accounts = []) {
       </div>
       <div class="account-row account-row-bank">
         ${select(`account.${index}.bankSelect`, "은행", bankOptions.includes(account.bank) ? account.bank : account.bank ? "직접 입력" : "", bankOptions.map((bank) => [bank, bank || "선택"]))}
-        ${input(`account.${index}.number`, "계좌번호", account.number)}
+        ${input(`account.${index}.number`, "계좌번호", formatAccountNumber(account.number))}
       </div>
       <div class="account-row account-row-custom" data-account-bank-custom ${bankOptions.includes(account.bank) ? "hidden" : ""}>
         ${input(`account.${index}.bank`, "은행 직접 입력", account.bank)}
@@ -1917,7 +1927,7 @@ function editorData(form) {
       number: editor.querySelector('input[name*=".number"]')?.value.trim() || "",
       relation: relationSelect === "직접입력" ? relationCustom : relationSelect,
     };
-  }).filter((account) => account.name || account.bank || account.number || account.relation), next);
+  }).filter((account) => account.name || account.bank || account.number || account.relation), next, { appendMissing: false });
   const selectedPreset = next.designSystem?.themes?.find((theme) => theme.id === fields.get("editorPresetId"));
   if (selectedPreset) {
     next.appearance.theme = selectedPreset.type === "color" ? selectedPreset.id : (next.appearance.theme || "sky");
@@ -2087,6 +2097,26 @@ function bindEditor() {
     frameDocumentRef.querySelector("#gallery")?.classList.add("copy-editable-target");
     frameDocumentRef.querySelector("#gallery")?.setAttribute("data-edit-label", "갤러리 사진");
     refreshEditHandles();
+  };
+  const sectionIdMap = { invitation: "invitation", "about-us": "aboutUs", "wedding-day": "weddingDay", location: "location", gallery: "gallery", "wedding-snap": "weddingSnap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" };
+  const inlineTarget = (target) => {
+    const section = target.closest(".section");
+    const key = sectionIdMap[section?.id];
+    if (target.matches(".hero-eyebrow")) return { name: "hero.eyebrow" };
+    if (target.matches(".hero-names")) return { name: "coupleNames", names: true };
+    if (target.matches(".hero-date")) return { name: "wedding.displayDateCustom" };
+    if (target.matches(".section-label") && key) return { name: `sectionTitles.${key}.en` };
+    if (target.matches(".section-title") && key) return { name: `sectionTitles.${key}.ko` };
+    if (target.matches(".location-venue")) return { name: "wedding.venue" };
+    if (target.matches(".location-hall")) return { name: "wedding.hall" };
+    if (target.matches(".location-address")) return { name: "wedding.address" };
+    if (target.matches("#wedding-snap .subtle")) return { name: "sectionDescriptions.weddingSnap", multiline: true };
+    if (target.matches("#attendance .subtle")) return { name: "sectionDescriptions.attendance", multiline: true };
+    if (target.matches("#account .subtle")) return { name: "sectionDescriptions.account", multiline: true };
+    if (target.matches("#guestbook .subtle")) return { name: "sectionDescriptions.guestbook", multiline: true };
+    if (target.matches(".ending-content .preserve")) return { name: "ending.text", multiline: true };
+    if (target.matches(".invitation-copy-group")) return { name: "invitation.paragraphs", multiline: true, wholeParagraphs: true };
+    return null;
   };
   const refreshSelectedTextStyle = () => {
     if (!activeTextTarget) return;
@@ -2451,7 +2481,6 @@ function bindEditor() {
     } catch (error) {
       logFrameSetupError(error);
     }
-    const sectionIdMap = { invitation: "invitation", "about-us": "aboutUs", "wedding-day": "weddingDay", location: "location", gallery: "gallery", "wedding-snap": "weddingSnap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" };
     const syncField = (name, value) => {
       const fields = [...form.querySelectorAll(`[name="${name}"]`)];
       if (!fields.length) {
@@ -2539,25 +2568,6 @@ function bindEditor() {
       });
       editableObserver.observe(frameDocument.querySelector("#app") || frameDocument.body, { childList: true, subtree: true });
     }
-    const inlineTarget = (target) => {
-      const section = target.closest(".section");
-      const key = sectionIdMap[section?.id];
-      if (target.matches(".hero-eyebrow")) return { name: "hero.eyebrow" };
-      if (target.matches(".hero-names")) return { name: "coupleNames", names: true };
-      if (target.matches(".hero-date")) return { name: "wedding.displayDateCustom" };
-      if (target.matches(".section-label") && key) return { name: `sectionTitles.${key}.en` };
-      if (target.matches(".section-title") && key) return { name: `sectionTitles.${key}.ko` };
-      if (target.matches(".location-venue")) return { name: "wedding.venue" };
-      if (target.matches(".location-hall")) return { name: "wedding.hall" };
-      if (target.matches(".location-address")) return { name: "wedding.address" };
-      if (target.matches("#wedding-snap .subtle")) return { name: "sectionDescriptions.weddingSnap", multiline: true };
-      if (target.matches("#attendance .subtle")) return { name: "sectionDescriptions.attendance", multiline: true };
-      if (target.matches("#account .subtle")) return { name: "sectionDescriptions.account", multiline: true };
-      if (target.matches("#guestbook .subtle")) return { name: "sectionDescriptions.guestbook", multiline: true };
-      if (target.matches(".ending-content .preserve")) return { name: "ending.text", multiline: true };
-      if (target.matches(".invitation-copy-group")) return { name: "invitation.paragraphs", multiline: true, wholeParagraphs: true };
-      return null;
-    };
     const mediaTarget = (target) => {
       const profile = target.closest(".profile-card");
       if (profile) return [...frameDocument.querySelectorAll(".profile-card")].indexOf(profile) === 0 ? "groom" : "bride";
@@ -2747,11 +2757,11 @@ function bindEditor() {
       relation: relationSelect === "직접입력" ? relationCustom : relationSelect,
     };
   });
-  const renderAccountItems = (items) => {
-    const normalizedItems = ensureAccountRows(items);
+  const renderAccountItems = (items, options = {}) => {
+    const normalizedItems = ensureAccountRows(items, invitationData, { appendMissing: options.appendMissing === true });
     invitationData.accounts = normalizedItems;
     const current = form.querySelector("[data-account-manager]");
-    current.outerHTML = accountManager(normalizedItems);
+    current.outerHTML = accountManager(normalizedItems, { appendMissing: false });
     bindAccountManager();
   };
   const syncAccountParentNames = () => {
@@ -2784,7 +2794,7 @@ function bindEditor() {
         changed = true;
       }
     });
-    if (changed) renderAccountItems(synced);
+    if (changed) renderAccountItems(synced, { appendMissing: true });
   };
   const refreshAutoSummaries = () => {
     const setText = (selector, value) => {
@@ -2893,9 +2903,16 @@ function bindEditor() {
     });
     manager?.addEventListener("input", (event) => {
       const personName = event.target.closest('input[name*=".personName"]');
-      if (!personName) return;
-      const holder = personName.closest("[data-account-editor]")?.querySelector('input[name*=".name"]');
-      if (holder && !holder.dataset.touched) holder.value = personName.value;
+      if (personName) {
+        const holder = personName.closest("[data-account-editor]")?.querySelector('input[name*=".name"]');
+        if (holder && !holder.dataset.touched) holder.value = personName.value;
+      }
+      const accountNumber = event.target.closest('input[name*=".number"]');
+      if (accountNumber) accountNumber.dataset.rawDigits = accountNumber.value.replace(/\D/g, "");
+    });
+    manager?.addEventListener("focusout", (event) => {
+      const accountNumber = event.target.closest('input[name*=".number"]');
+      if (accountNumber) accountNumber.value = formatAccountNumber(accountNumber.value);
     });
     manager?.querySelectorAll('input[name*=".name"]').forEach((field) => {
       field.addEventListener("input", () => { field.dataset.touched = "1"; });

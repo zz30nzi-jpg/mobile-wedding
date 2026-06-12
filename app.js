@@ -121,27 +121,11 @@ function sectionCopy(key, label, title) {
   return sectionHeader(configured.en || label, configured.ko || title);
 }
 
-// 예식 일시 타이틀(예: "2026. 10. 04. 일요일 오후 12시 20분")은 한 줄에 다 들어가지 않으면
-// 시간 항목("오전/오후 N시 M분" 또는 "N:MM")을 통째로 둘째 줄로 내려 가독성을 높인다.
-function weddingDayTitleLines(value) {
-  const text = String(value || "").trim();
-  const timePattern = /\s(?:오전|오후)\s+\d{1,2}시(?:\s*\d{1,2}분)?$|\s\d{1,2}:\d{2}$|\s\d{1,2}시(?:\s*\d{1,2}분)?$/;
-  const match = text.match(timePattern);
-  if (!match) return [text];
-  const firstLine = text.slice(0, match.index).replace(/[·ㆍ\-,]\s*$/, "").trim();
-  const secondLine = text.slice(match.index).trim();
-  if (!firstLine || !secondLine) return [text];
-  return [firstLine, secondLine];
-}
-
 function weddingDayTitleMarkup() {
   const configured = data.sectionTitles?.weddingDay || {};
   const label = configured.en || "Wedding Day";
   const title = configured.ko || data.wedding.displayDate;
-  const lines = weddingDayTitleLines(title);
-  if (lines.length < 2) return sectionHeader(label, title);
-  const titleHtml = lines.map((line) => escapeHtml(line)).join("<br>");
-  return `<p class="section-label">${escapeHtml(label)}</p><h2 class="section-title">${titleHtml}</h2>`;
+  return sectionHeader(label, title);
 }
 
 function venueParts() {
@@ -207,13 +191,21 @@ function renderCalendar() {
 function renderAccounts(side) {
   const rows = data.accounts.filter((account) => account.side === side && (account.name || account.personName || account.relation || account.bank || account.number));
   if (!rows.length) return "";
+  const accountNumberText = (value = "") => {
+    const raw = String(value || "").trim();
+    const digits = raw.replace(/\D/g, "");
+    if (!digits || raw.includes("-") || digits.length < 8) return raw;
+    if (digits.length <= 10) return digits.replace(/(\d{3})(\d{2,3})(\d+)/, "$1-$2-$3");
+    if (digits.length <= 12) return digits.replace(/(\d{3})(\d{3})(\d+)/, "$1-$2-$3");
+    return digits.replace(/(\d{3})(\d{4})(\d{4})(\d+)/, "$1-$2-$3-$4");
+  };
   return `
     <details>
       <summary>${escapeHtml(side)} 계좌번호</summary>
       ${rows.map((account) => `
         <div class="account-row">
-          <p><strong>${escapeHtml(account.name || account.personName || "")}${account.relation ? ` · ${escapeHtml(account.relation)}` : ""}</strong><br>${account.bank && account.number ? `${escapeHtml(account.bank)} ${escapeHtml(account.number)}` : '<span class="account-pending">계좌번호 준비 중</span>'}</p>
-          ${account.bank && account.number ? `<button class="account-copy-btn copy-btn" type="button" data-copy="${escapeHtml(account.bank)} ${escapeHtml(account.number)}" aria-label="계좌번호 복사" title="계좌번호 복사"><span aria-hidden="true">⧉</span></button>` : ""}
+          <p><strong>${escapeHtml(account.name || account.personName || "")}${account.relation ? ` · ${escapeHtml(account.relation)}` : ""}</strong><br>${account.bank && account.number ? `${escapeHtml(account.bank)} ${escapeHtml(accountNumberText(account.number))}` : '<span class="account-pending">계좌번호 준비 중</span>'}</p>
+          ${account.bank && account.number ? `<button class="account-copy-btn copy-btn" type="button" data-copy="${escapeHtml(account.bank)} ${escapeHtml(accountNumberText(account.number))}" aria-label="계좌번호 복사" title="계좌번호 복사"><span aria-hidden="true">⧉</span></button>` : ""}
         </div>`).join("")}
     </details>`;
 }
@@ -484,7 +476,7 @@ function render() {
           ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join("")}
         </div>
         <div class="transport">
-          ${sortedTransport().filter((item) => !item.hidden).map((item) => `<div><strong>${escapeHtml(item.title)}</strong>${escapeHtml(item.text)}</div>`).join("")}
+          ${sortedTransport().filter((item) => !item.hidden).map((item) => `<div><strong>${escapeHtml(item.title)}</strong>${escapeLineHtml(item.text)}</div>`).join("")}
         </div>
       </section>
 
