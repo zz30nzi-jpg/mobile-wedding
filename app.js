@@ -41,12 +41,14 @@ const heroMediaMarkup = () => heroActiveMedia() === "video"
   : "";
 const tel = (number) => `tel:${String(number).replace(/[^0-9+]/g, "")}`;
 const isVideoMedia = (value = "") => /\.(mp4|webm|mov)(?:$|[?#])/i.test(value);
+const tmapWebUrl = (query) => `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}`;
+const tmapAppUrl = (query) => `tmap://search?name=${query}`;
 const mapLinksForAddress = (address = "") => {
   const query = encodeURIComponent(address.trim());
   return [
     { label: "네이버 지도", app: "naver", url: `https://map.naver.com/p/search/${query}` },
     { label: "카카오맵", app: "kakao", url: `https://map.kakao.com/link/search/${query}` },
-    { label: "티맵", app: "tmap", url: `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}` },
+    { label: "티맵", app: "tmap", url: tmapAppUrl(query), fallbackUrl: tmapWebUrl(query) },
   ];
 };
 let weddingDate;
@@ -417,7 +419,7 @@ function render() {
         <p class="location-address">${escapeHtml(data.wedding.address)}</p>
         <div class="map-links">
           <button class="btn copy-btn" data-map-app="copy" data-copy="${escapeHtml(data.wedding.address)}">주소 복사</button>
-          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join("")}
+          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join("")}
         </div>
         <div class="transport">
           ${sortedTransport().filter((item) => !item.hidden).map((item) => `<div><strong>${escapeHtml(item.title)}</strong>${escapeHtml(item.text)}</div>`).join("")}
@@ -872,6 +874,22 @@ async function openOwnGuestPhotos() {
 
 function bindEvents() {
   document.addEventListener("click", async (event) => {
+    const tmapLink = event.target.closest('[data-map-app="tmap"]');
+    if (tmapLink) {
+      event.preventDefault();
+      const fallbackUrl = tmapLink.dataset.mapFallback;
+      let opened = false;
+      const markOpened = () => { opened = true; };
+      document.addEventListener("visibilitychange", markOpened, { once: true });
+      location.href = tmapLink.href;
+      if (fallbackUrl) {
+        setTimeout(() => {
+          document.removeEventListener("visibilitychange", markOpened);
+          if (!opened && !document.hidden) location.href = fallbackUrl;
+        }, 900);
+      }
+      return;
+    }
     const copyButton = event.target.closest(".copy-btn");
     if (copyButton) {
       try {

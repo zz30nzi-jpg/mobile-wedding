@@ -1371,9 +1371,9 @@ function findVenuePreset(value = "") {
 function mapLinksFor(venue = "", address = "") {
   const query = encodeURIComponent(String(address || "").trim() || String(venue || "").trim());
   return [
-    { label: "네이버 지도", url: `https://map.naver.com/p/search/${query}` },
-    { label: "카카오맵", url: `https://map.kakao.com/link/search/${query}` },
-    { label: "티맵", url: `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}` },
+    { label: "네이버 지도", app: "naver", url: `https://map.naver.com/p/search/${query}` },
+    { label: "카카오맵", app: "kakao", url: `https://map.kakao.com/link/search/${query}` },
+    { label: "티맵", app: "tmap", url: `tmap://search?name=${query}`, fallbackUrl: `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}` },
   ];
 }
 
@@ -1392,7 +1392,7 @@ function openAddressSearchModal({ venue = "", address = "", onSelect }) {
           <small>이 항목 선택</small>
         </button>` : ""}
         <div class="map-links address-map-links">
-          ${links.map((link) => `<a class="btn" href="${escapeAdminHtml(link.url)}" target="_blank" rel="noopener">${escapeAdminHtml(link.label)}</a>`).join("")}
+          ${links.map((link) => `<a class="btn" data-map-app="${escapeAdminHtml(link.app || "")}" ${link.fallbackUrl ? `data-map-fallback="${escapeAdminHtml(link.fallbackUrl)}"` : ""} href="${escapeAdminHtml(link.url)}" target="_blank" rel="noopener">${escapeAdminHtml(link.label)}</a>`).join("")}
         </div>
       </div>`;
   };
@@ -2481,7 +2481,7 @@ function bindEditor() {
       if (target.matches("#account .subtle")) return { name: "sectionDescriptions.account", multiline: true };
       if (target.matches("#guestbook .subtle")) return { name: "sectionDescriptions.guestbook", multiline: true };
       if (target.matches(".ending-content .preserve")) return { name: "ending.text", multiline: true };
-      if (target.matches(".invitation-copy")) return { name: "invitation.paragraphs", multiline: true, paragraphIndex: [...section.querySelectorAll(".invitation-copy")].indexOf(target) };
+      if (target.matches(".invitation-copy")) return { name: "invitation.paragraphs", multiline: true, wholeParagraphs: true };
       return null;
     };
     const mediaTarget = (target) => {
@@ -2493,7 +2493,7 @@ function bindEditor() {
     const openInlineEditor = (target, config) => {
       if (activeInlineEditor?.field?.isConnected) activeInlineEditor.commit();
       else frameDocument.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
-      const originalText = [...target.childNodes]
+      const originalText = config.wholeParagraphs ? (form.elements[config.name]?.value || "") : [...target.childNodes]
         .filter((node) => !(node.nodeType === Node.ELEMENT_NODE && node.matches("[data-copy-edit-handle]")))
         .map((node) => node.textContent)
         .join("")
@@ -2509,11 +2509,6 @@ function bindEditor() {
           const names = field.value.split(/[·ㆍ|/]/).map((item) => item.trim()).filter(Boolean);
           if (names[0]) syncField("couple.groom.name", names[0]);
           if (names[1]) syncField("couple.bride.name", names[1]);
-        } else if (Number.isInteger(config.paragraphIndex)) {
-          const paragraphsField = form.elements["invitation.paragraphs"];
-          const paragraphs = paragraphsField.value.split(/\n\s*\n/);
-          paragraphs[config.paragraphIndex] = field.value;
-          syncField(config.name, paragraphs.join("\n\n"));
         } else {
           syncField(config.name, field.value);
         }
@@ -2522,8 +2517,21 @@ function bindEditor() {
       const commit = () => {
         if (!field.isConnected) return;
         update();
-        target.textContent = field.value;
-        field.replaceWith(target);
+        if (config.wholeParagraphs) {
+          const section = target.closest("#invitation");
+          section?.querySelectorAll(".invitation-copy").forEach((item) => item.remove());
+          const parents = section?.querySelector(".parents");
+          field.value.split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean).forEach((text) => {
+            const paragraph = frameDocument.createElement("p");
+            paragraph.className = "invitation-copy";
+            paragraph.textContent = text;
+            section?.insertBefore(paragraph, parents || section.querySelector(".contact-row"));
+          });
+          field.remove();
+        } else {
+          target.textContent = field.value;
+          field.replaceWith(target);
+        }
         activeTextTarget = target;
         refreshSelectedTextStyle();
         activeInlineEditor = null;
