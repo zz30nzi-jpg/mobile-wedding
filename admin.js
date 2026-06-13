@@ -1811,7 +1811,11 @@ function renderEditor(message = "", focus = "") {
             <div class="copy-editor-toolbar"><div><strong>편집 기능</strong><small>점선 영역을 누르면 아래 도구가 해당 영역에 맞게 바뀝니다.</small></div></div>
             ${editorDesignPanel()}
             <p class="admin-message copy-editor-guide">공개 청첩장에서 수정 가능한 영역만 점선으로 표시됩니다.</p>
-            <button class="copy-frame-interaction-toggle" type="button" data-copy-frame-toggle>미리보기 편집</button>
+            <button class="copy-frame-interaction-toggle" type="button" aria-pressed="false" data-copy-frame-toggle>
+              <span class="copy-frame-toggle-label">수정모드</span>
+              <span class="copy-frame-toggle-switch" aria-hidden="true"></span>
+              <span class="copy-frame-toggle-state" data-copy-frame-toggle-state>OFF</span>
+            </button>
             <div class="copy-editor-frame-scroll" data-copy-frame-scroll>
               <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260614-scroll1" title="공개 청첩장 문구 수정 미리보기" scrolling="no" data-copy-editor-frame></iframe>
             </div>
@@ -2030,12 +2034,6 @@ function bindEditor() {
   copyEditor.querySelector('[name="hero.introDesign.align"]')?.addEventListener("change", updateIntroDesignPreview);
   updateIntroDesignPreview();
   const toolPanel = copyEditor.querySelector("[data-editor-tool-panel]");
-  const frameToggle = copyEditor.querySelector("[data-copy-frame-toggle]");
-  frameToggle?.addEventListener("click", () => {
-    const nextEnabled = !copyEditor.classList.contains("is-frame-interaction-enabled");
-    copyEditor.classList.toggle("is-frame-interaction-enabled", nextEnabled);
-    frameToggle.textContent = nextEnabled ? "스크롤 모드" : "미리보기 편집";
-  });
   if (window.visualViewport) {
     const updateKeyboardOffset = () => {
       const offset = Math.max(0, window.innerHeight - window.visualViewport.height);
@@ -2050,6 +2048,29 @@ function bindEditor() {
   let frameDocumentRef = null;
   let refreshEditHandles = () => {};
   let syncFrameScrollHeight = () => {};
+  const resetPreviewInteractionState = () => {
+    frameDocumentRef?.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
+    activeProfileTarget = "";
+    activeTextTarget = null;
+    activeInlineEditor = null;
+    if (!toolPanel) return;
+    toolPanel.hidden = true;
+    toolPanel.classList.remove("is-collapsed");
+    toolPanel.classList.remove("is-manager", "is-hero", "is-profile", "is-copy");
+    delete toolPanel.dataset.context;
+    delete toolPanel.dataset.profileSide;
+    updateFloatingSaveForToolDock();
+  };
+  const frameToggle = copyEditor.querySelector("[data-copy-frame-toggle]");
+  const frameToggleState = copyEditor.querySelector("[data-copy-frame-toggle-state]");
+  frameToggle?.addEventListener("click", () => {
+    const nextEnabled = !copyEditor.classList.contains("is-frame-interaction-enabled");
+    copyEditor.classList.toggle("is-frame-interaction-enabled", nextEnabled);
+    frameToggle.classList.toggle("is-on", nextEnabled);
+    frameToggle.setAttribute("aria-pressed", String(nextEnabled));
+    if (frameToggleState) frameToggleState.textContent = nextEnabled ? "ON" : "OFF";
+    if (!nextEnabled) resetPreviewInteractionState();
+  });
   const previewDraft = () => {
     try {
       return editorData(form);
