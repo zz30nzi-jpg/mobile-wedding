@@ -359,7 +359,7 @@
     return resolved;
   }
 
-  const TEXT_STYLE_SECTION_ID = { invitation: "invitation", aboutUs: "about-us", weddingDay: "wedding-day", location: "location", gallery: "gallery", weddingSnap: "wedding-snap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" };
+  const TEXT_STYLE_SECTION_ID = Object.fromEntries(Object.entries(window.WEDDING_SECTIONS?.titleKeys || { invitation: "invitation", "about-us": "aboutUs", "wedding-day": "weddingDay", location: "location", gallery: "gallery", "wedding-snap": "weddingSnap", information: "information", attendance: "attendance", account: "account", guestbook: "guestbook" }).map(([id, key]) => [key, id]));
 
   function textStyleSelector(name) {
     if (name === "hero.eyebrow") return ".hero-eyebrow";

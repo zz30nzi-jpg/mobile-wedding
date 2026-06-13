@@ -14,18 +14,106 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20260613-v76">
+    <link rel="stylesheet" href="./styles.css?v=20260614-scroll1">
+    <link rel="stylesheet" href="./public.css?v=20260614-refactor1">
   </head>
   <body>
     <main id="app"></main>
     <div id="modal-root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./invitation-data.js?v=20260610-v45"></script>
-    <script src="./design-system.js?v=20260612-v57"></script>
-    <script src="./supabase-config.js"></script>
-    <script src="./rsvp-storage.js?v=20260613-v52"></script>
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js"></script>
-    <script src="./kakao-config.js?v=20260602-ux8"></script>
-    <script src="./app.js?v=20260613-v69"></script>
+    <script>
+      (function () {
+        var app = document.getElementById("app");
+        var delayedMessageTimer = setTimeout(function () {
+          if (!app || app.childElementCount) return;
+          app.innerHTML = '<section class="invitation-closed"><h1>청첩장을 불러오는 중입니다</h1><p>네트워크 응답이 지연되고 있습니다. 잠시만 기다려 주세요.</p></section>';
+        }, 9000);
+
+        function showBootError(message) {
+          clearTimeout(delayedMessageTimer);
+          if (!app) return;
+          app.innerHTML = '<section class="invitation-closed"><h1>청첩장을 불러오지 못했습니다</h1><p>' + message + '</p><button type="button" class="btn" onclick="location.reload()">새로고침</button></section>';
+        }
+
+        function loadScript(src, timeout) {
+          return new Promise(function (resolve, reject) {
+            var script = document.createElement("script");
+            var done = false;
+            var timer = setTimeout(function () {
+              if (done) return;
+              done = true;
+              script.remove();
+              reject(new Error(src + " loading timed out"));
+            }, timeout || 9000);
+            script.src = src;
+            script.async = false;
+            script.onload = function () {
+              if (done) return;
+              done = true;
+              clearTimeout(timer);
+              resolve();
+            };
+            script.onerror = function () {
+              if (done) return;
+              done = true;
+              clearTimeout(timer);
+              reject(new Error(src + " loading failed"));
+            };
+            document.body.appendChild(script);
+          });
+        }
+
+        function loadWithRetry(src, fallbackSrc, timeout) {
+          return loadScript(src, timeout)
+            .catch(function () {
+              return loadScript(src + (src.indexOf("?") === -1 ? "?retry=1" : "&retry=1"), timeout);
+            })
+            .catch(function () {
+              if (fallbackSrc) return loadScript(fallbackSrc, timeout);
+              throw new Error(src + " fallback unavailable");
+            });
+        }
+
+        window.PUBLIC_KAKAO_READY = loadWithRetry("https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js", "", 9000).catch(function () {
+          window.PUBLIC_KAKAO_UNAVAILABLE = true;
+          return null;
+        });
+
+        loadWithRetry("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "https://unpkg.com/@supabase/supabase-js@2", 9000)
+          .catch(function () {
+            window.PUBLIC_SUPABASE_UNAVAILABLE = true;
+            return null;
+          })
+          .then(function () {
+            return loadScript("./invitation-data.js?v=20260610-v45", 9000);
+          })
+          .then(function () {
+            return loadScript("./shared-utils.js?v=20260614-refactor1", 9000);
+          })
+          .then(function () {
+            return loadScript("./section-registry.js?v=20260614-refactor1", 9000);
+          })
+          .then(function () {
+            return loadScript("./design-system.js?v=20260612-v57", 9000);
+          })
+          .then(function () {
+            return loadScript("./supabase-config.js", 9000);
+          })
+          .then(function () {
+            return loadScript("./rsvp-storage.js?v=20260613-v52", 9000);
+          })
+          .then(function () {
+            return loadScript("./kakao-config.js?v=20260602-ux8", 9000);
+          })
+          .then(function () {
+            return loadScript("./app.js?v=20260614-scroll1", 9000);
+          })
+          .then(function () {
+            clearTimeout(delayedMessageTimer);
+          })
+          .catch(function () {
+            showBootError("네트워크를 확인한 뒤 새로고침해 주세요.");
+          });
+      })();
+    </script>
   </body>
 </html>

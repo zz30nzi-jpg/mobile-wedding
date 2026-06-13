@@ -193,11 +193,11 @@ with check (
 );
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('invitation-media', 'invitation-media', true, 52428800, array['image/svg+xml', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime', 'font/woff', 'font/woff2', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-woff', 'application/x-font-woff2', 'application/x-font-ttf', 'application/x-font-otf'])
+values ('invitation-media', 'invitation-media', true, 52428800, array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime', 'font/woff', 'font/woff2', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-woff', 'application/x-font-woff2', 'application/x-font-ttf', 'application/x-font-otf'])
 on conflict (id) do update set
   public = true,
   file_size_limit = 52428800,
-  allowed_mime_types = array['image/svg+xml', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime', 'font/woff', 'font/woff2', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-woff', 'application/x-font-woff2', 'application/x-font-ttf', 'application/x-font-otf'];
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime', 'font/woff', 'font/woff2', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-woff', 'application/x-font-woff2', 'application/x-font-ttf', 'application/x-font-otf'];
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('guest-photos', 'guest-photos', false, 52428800, array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'video/mp4', 'video/webm', 'video/quicktime'])

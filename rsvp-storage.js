@@ -689,11 +689,14 @@ async function uploadDesignAsset(file, slot = "asset") {
   const fontTypes = ["font/woff", "font/woff2", "application/font-woff", "application/font-woff2", "application/x-font-woff", "application/x-font-woff2", "font/ttf", "font/otf", "application/x-font-ttf", "application/x-font-otf"];
   const inferredFontType = /\.(woff2?)$/i.test(file.name || "") ? `font/${file.name.split(".").pop().toLowerCase()}` : /\.(ttf|otf)$/i.test(file.name || "") ? `font/${file.name.split(".").pop().toLowerCase()}` : "";
   const contentType = file.type || inferredFontType;
-  const allowed = ["image/svg+xml", "image/png", "image/webp", "image/jpeg", ...fontTypes];
+  if (contentType === "image/svg+xml" || /\.svg$/i.test(file.name || "")) {
+    throw new Error("보안을 위해 SVG 파일은 업로드할 수 없습니다. PNG, JPG 또는 WebP 파일로 변환해 주세요.");
+  }
+  const allowed = ["image/png", "image/webp", "image/jpeg", ...fontTypes];
   const isFont = fontTypes.includes(file.type) || /\.(woff2?|ttf|otf)$/i.test(file.name || "");
-  const limit = isFont ? 4 * 1024 * 1024 : file.type === "image/svg+xml" ? 300 * 1024 : 2 * 1024 * 1024;
+  const limit = isFont ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
   if (!allowed.includes(contentType) || file.size > limit) {
-    throw new Error("SVG는 300KB 이하, PNG/WebP/JPG는 2MB 이하, 폰트는 4MB 이하만 등록할 수 있습니다.");
+    throw new Error("PNG/WebP/JPG는 2MB 이하, 폰트는 4MB 이하만 등록할 수 있습니다. SVG는 업로드할 수 없습니다.");
   }
   const extension = file.name.split(".").pop()?.toLowerCase() || "png";
   const filename = `${slot}-${Date.now()}-${crypto.randomUUID?.() || "asset"}.${extension}`.replace(/[^a-z0-9가-힣._-]/gi, "-");
@@ -752,6 +755,9 @@ async function uploadGuestPhotos(files, onProgress = () => {}) {
   const uploaded = [];
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
+    if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name || "")) {
+      throw new Error("보안을 위해 SVG 파일은 업로드할 수 없습니다. PNG, JPG, WebP 또는 지원되는 영상 파일을 선택해 주세요.");
+    }
     const isSupported = file.type.startsWith("image/") || ["video/mp4", "video/webm", "video/quicktime"].includes(file.type);
     if (!isSupported || file.size > 50 * 1024 * 1024) {
       throw new Error("사진 또는 영상은 파일당 50MB 이하 이미지, MP4, WebM, MOV만 업로드할 수 있습니다.");

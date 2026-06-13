@@ -29,9 +29,11 @@ async function redirectSignedInAdminFromRoot() {
 
 redirectSignedInAdminFromRoot();
 
-const escapeHtml = (value = "") =>
-  String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-const escapeLineHtml = (value = "") => escapeHtml(value).replace(/\n/g, "<br>");
+const sharedUtils = window.WEDDING_UTILS || {};
+const sectionRegistry = window.WEDDING_SECTIONS || {};
+const escapeHtml = sharedUtils.escapeHtml || ((value = "") =>
+  String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]));
+const escapeLineHtml = sharedUtils.escapeLineHtml || ((value = "") => escapeHtml(value).replace(/\n/g, "<br>"));
 const mediaUrl = (src = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(src) || src || "";
 const mediaStyle = (src) => mediaUrl(src) ? `style="background-image:url('${escapeHtml(mediaUrl(src))}')"` : "";
 const lazyMediaStyle = (src) => mediaUrl(src) ? `data-lazy-background="${escapeHtml(mediaUrl(src))}"` : "";
@@ -88,7 +90,7 @@ const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
 const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
 const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
-const defaultSectionSettings = {
+const defaultSectionSettings = sectionRegistry.defaultSettings || {
   preWedding: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
   weddingDay: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
 };
@@ -1227,8 +1229,12 @@ async function start() {
   updateSocialMeta();
   render();
   if (isCopyEditorPreview) {
+    document.documentElement.classList.add("copy-editor-public-preview-root");
     document.body.classList.add("copy-editor-public-preview");
     document.documentElement.style.overscrollBehaviorY = "contain";
+    document.documentElement.style.overflowY = "auto";
+    document.body.style.overflowY = "auto";
+    document.body.style.touchAction = "pan-y";
     document.querySelector("[data-invitation-intro]")?.remove();
   } else {
     playInvitationIntro();

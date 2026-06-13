@@ -1,0 +1,460 @@
+/* General admin overrides split from styles.css. Load after styles.css. */
+
+/* Mobile scroll and shell */
+body[data-admin-area="general"] {
+  position: static !important;
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+body[data-admin-area="general"].modal-open,
+body[data-admin-area="general"].intro-open,
+body[data-admin-area="general"].admin-welcome-locked {
+  position: static !important;
+  overflow-y: auto !important;
+  touch-action: auto !important;
+}
+
+body[data-admin-area="general"] .admin-page {
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: visible;
+  padding-top: calc(70px + env(safe-area-inset-top));
+}
+
+body[data-admin-area="general"] .admin-card { padding: 14px; }
+body[data-admin-area="general"] .admin-editor-view.view-basic { padding-top: 14px; }
+
+/* Form density and overflow guards */
+body[data-admin-area="general"] .field { gap: 3px; }
+body[data-admin-area="general"] .field span { font-size: 11px; }
+
+body[data-admin-area="general"] .field :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+body[data-admin-area="general"] .field :is(input, select) {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+body[data-admin-area="general"] .field textarea {
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+body[data-admin-area="general"] .quick-input-grid,
+body[data-admin-area="general"] .quick-field-row,
+body[data-admin-area="general"] .account-row,
+body[data-admin-area="general"] .account-name-relation {
+  min-width: 0;
+}
+
+body[data-admin-area="general"] .quick-side-card {
+  gap: 7px;
+  padding: 10px;
+}
+
+body[data-admin-area="general"] .quick-field-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-admin-area="general"] .quick-field-row .field {
+  min-width: 0;
+  overflow: hidden;
+}
+
+body[data-admin-area="general"] .quick-field-row input[type="date"],
+body[data-admin-area="general"] .quick-input-grid input[type="datetime-local"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  letter-spacing: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Sticky basic-page secondary navigation */
+body[data-admin-area="general"] .admin-editor-view.view-basic .admin-quick-actions.guided-progress {
+  position: sticky !important;
+  top: calc(72px + env(safe-area-inset-top)) !important;
+  right: auto !important;
+  left: auto !important;
+  z-index: 91;
+  display: grid !important;
+  width: calc(100% - 16px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 8px auto 18px !important;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 13%, var(--line));
+  border-radius: 22px;
+  padding: 18px 10px 16px;
+  background: color-mix(in srgb, var(--card) 98%, transparent);
+  box-shadow: 0 10px 24px rgba(70,85,93,0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body[data-admin-area="general"] .admin-quick-actions.guided-progress button {
+  gap: 6px;
+  min-height: 72px;
+  border-radius: 16px;
+  color: color-mix(in srgb, var(--accent-dark) 70%, var(--muted));
+  font-size: 13px;
+}
+
+body[data-admin-area="general"] .admin-quick-actions.guided-progress button .tab-icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.7;
+}
+
+body[data-admin-area="general"] .admin-quick-actions.guided-progress button span {
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+/* Account cards */
+body[data-admin-area="general"] .account-row-main,
+body[data-admin-area="general"] .account-row-bank {
+  grid-template-columns: 1fr !important;
+}
+
+body[data-admin-area="general"] .account-name-relation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 7px;
+  min-width: 0;
+}
+
+body[data-admin-area="general"] .account-editor {
+  padding-right: 62px;
+}
+
+body[data-admin-area="general"] .account-remove {
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
+/* Editor tool dock and frame controls */
+body[data-admin-area="general"] .editor-tooldock,
+body[data-admin-area="general"] .editor-tooldock *,
+body[data-admin-area="general"] .editor-tooldock *::before,
+body[data-admin-area="general"] .editor-tooldock *::after {
+  box-sizing: border-box;
+}
+
+body[data-admin-area="general"] .editor-tooldock-manager .editor-subsection {
+  width: 100%;
+  min-width: 0;
+}
+
+body[data-admin-area="general"] .editor-tooldock .text-layout-control {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-admin-area="general"] .editor-tooldock .text-layout-control span,
+body[data-admin-area="general"] .editor-tooldock .text-layout-control output {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.editor-frame-compact {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  align-items: stretch;
+}
+
+.editor-frame-compact .editor-color-strip { display: grid; }
+
+.editor-frame-compact .field,
+.editor-frame-compact .text-layout-control {
+  min-width: 0;
+  border-radius: 10px;
+  padding: 7px;
+  background: var(--soft-bg);
+}
+
+.editor-frame-compact .field span,
+.editor-frame-compact .text-layout-control span { font-size: 10px; }
+.editor-frame-compact input[type="range"] { min-height: 24px; padding: 0; }
+.editor-tooldock .hero-decoration-list { max-height: 42px; padding-bottom: 4px !important; }
+
+body[data-admin-area="general"] .editor-frame-compact {
+  grid-template-columns: 74px minmax(0, 1fr) !important;
+  align-items: start;
+}
+
+body[data-admin-area="general"] .editor-frame-compact .editor-color-strip {
+  grid-row: 1 / span 3;
+}
+
+body[data-admin-area="general"] .editor-frame-compact .field,
+body[data-admin-area="general"] .editor-frame-compact .text-layout-control {
+  min-height: 0;
+  padding: 5px 7px;
+}
+
+body[data-admin-area="general"] .editor-frame-compact input[type="range"] {
+  min-height: 18px;
+}
+
+body[data-admin-area="general"] .editor-frame-compact .field:has(input[type="color"]) {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  min-height: 86px;
+}
+
+body[data-admin-area="general"] .editor-frame-compact input[type="color"] {
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+}
+
+/* Touch target policy */
+body[data-admin-area="general"] .btn-icon-only,
+body[data-admin-area="general"] .icon-btn,
+body[data-admin-area="general"] .section-icon-action,
+body[data-admin-area="general"] .section-drag-handle,
+body[data-admin-area="general"] .gallery-image-action,
+body[data-admin-area="general"] .gallery-manager-item .btn,
+body[data-admin-area="general"] .gallery-modal-close,
+body[data-admin-area="general"] .image-actions .btn,
+body[data-admin-area="general"] .private-photo-actions .icon-btn,
+body[data-admin-area="general"] .copy-frame-interaction-toggle {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* Section order controls */
+.section-order-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+body[data-admin-area="general"] .section-order-head {
+  gap: 12px;
+}
+
+body[data-admin-area="general"] .section-order-list {
+  gap: 9px;
+}
+
+body[data-admin-area="general"] .section-order-item {
+  min-height: 52px;
+  cursor: grab;
+  user-select: none;
+}
+
+body[data-admin-area="general"] .section-order-item.is-dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+body[data-admin-area="general"] .section-drag-handle {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--soft-bg);
+  color: var(--accent-dark);
+  font-size: 16px;
+  line-height: 1;
+}
+
+body[data-admin-area="general"] .section-icon-action {
+  display: inline-grid !important;
+  width: 44px !important;
+  height: 44px !important;
+  place-items: center;
+  padding: 0 !important;
+  border-radius: 12px !important;
+}
+
+body[data-admin-area="general"] .section-icon-action .tab-icon {
+  width: 17px;
+  height: 17px;
+}
+
+body[data-admin-area="general"] .section-preview-actions {
+  display: none !important;
+}
+
+/* Gallery and image manager tap safety */
+body[data-admin-area="general"] .gallery-manager-item {
+  gap: 8px;
+}
+
+body[data-admin-area="general"] .gallery-manager-item-actions {
+  top: 8px;
+  right: 8px;
+  gap: 8px;
+}
+
+body[data-admin-area="general"] .gallery-image-action {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+body[data-admin-area="general"] .gallery-manager-item .btn,
+body[data-admin-area="general"] .image-actions .btn {
+  min-height: 44px;
+}
+
+.interlude-upload-admin {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.interlude-upload-admin > strong {
+  color: var(--accent-dark);
+  font-size: 13px;
+}
+
+.copy-frame-interaction-toggle { display: none; }
+
+body[data-admin-area="general"] .copy-editor-frame-scroll {
+  order: 3;
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+
+@media (max-width: 430px) {
+  body[data-admin-area="general"] .admin-page {
+    padding-right: max(8px, env(safe-area-inset-right));
+    padding-left: max(8px, env(safe-area-inset-left));
+  }
+
+  body[data-admin-area="general"] .admin-card,
+  body[data-admin-area="general"] .editor-form fieldset,
+  body[data-admin-area="general"] .editor-details-body {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  body[data-admin-area="general"] .field :is(input, select, textarea) {
+    font-size: 15px;
+  }
+
+  body[data-admin-area="general"] .copy-editor-public-frame {
+    width: 100%;
+    border-radius: 18px;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 14px 14px 0 0;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock-pane {
+    overscroll-behavior: contain;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock-manager .notice-manager-list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 82vw);
+    overflow-x: auto;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock-manager .notice-editor {
+    width: auto;
+    min-width: 0;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] {
+    top: max(72px, calc(env(safe-area-inset-top) + 54px));
+    right: 10px;
+    bottom: auto;
+    left: 10px;
+    z-index: 120;
+    width: auto;
+    max-width: 380px;
+    max-height: 104px;
+    border-radius: 16px;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] .editor-tooldock-pane {
+    max-height: 52px;
+  }
+
+  body[data-admin-area="general"] .editor-tooldock[data-context="text-copy"] .text-style-compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  body[data-admin-area="general"] .copy-pane {
+    overflow: visible;
+  }
+
+  body[data-admin-area="general"] .copy-editor-page {
+    min-height: auto;
+  }
+
+  body[data-admin-area="general"] .copy-editor-frame-scroll {
+    order: 3;
+    display: block;
+    width: 100%;
+    height: min(58svh, 430px);
+    min-height: 360px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 18px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  body[data-admin-area="general"] .copy-editor-public-frame {
+    display: block;
+    width: 100%;
+    height: var(--copy-frame-document-height, 2200px);
+    min-height: 100%;
+    border-radius: 18px;
+    pointer-events: none;
+    touch-action: auto;
+  }
+
+  body[data-admin-area="general"] .copy-pane.is-frame-interaction-enabled .copy-editor-public-frame {
+    pointer-events: auto;
+    touch-action: auto;
+  }
+
+  body[data-admin-area="general"] .copy-frame-interaction-toggle {
+    position: sticky;
+    top: calc(64px + env(safe-area-inset-top));
+    z-index: 5;
+    display: inline-flex;
+    width: fit-content;
+    justify-self: end;
+    margin: 2px 10px 6px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: var(--card);
+    color: var(--accent-dark);
+    font-size: 11px;
+    font-weight: 800;
+    box-shadow: 0 6px 16px rgba(70,85,93,0.12);
+  }
+}

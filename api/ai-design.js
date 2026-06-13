@@ -2,6 +2,31 @@ const API_URL = "https://api.openai.com/v1/responses";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://djjspxgkdinimcpkdxme.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY;
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://mobile-wedding-ecru.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5500",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5500",
+];
+
+function allowedOrigins() {
+  return (process.env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(","))
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function applyCors(request, response) {
+  const origin = request.headers.origin || "";
+  response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  response.setHeader("Vary", "Origin");
+  if (!origin) return true;
+  if (!allowedOrigins().includes(origin)) return false;
+  response.setHeader("Access-Control-Allow-Origin", origin);
+  return true;
+}
 
 const transportSchema = {
   type: "object",
@@ -198,11 +223,9 @@ async function callGemini(prompt, responseSchema) {
 }
 
 module.exports = async function aiDesign(request, response) {
-  response.setHeader("Access-Control-Allow-Origin", request.headers.origin || "*");
-  response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  response.setHeader("Vary", "Origin");
-  if (request.method === "OPTIONS") return response.status(204).end();
+  const corsAllowed = applyCors(request, response);
+  if (request.method === "OPTIONS") return response.status(corsAllowed ? 204 : 403).end();
+  if (!corsAllowed) return response.status(403).json({ error: "허용되지 않은 Origin입니다." });
   if (!await registeredOwner(request)) return response.status(401).json({ error: "일반관리자 로그인 후 이용해 주세요." });
 
   const provider = request.method === "POST" ? request.body?.provider || "Gemini" : request.query?.provider || "Gemini";
@@ -222,7 +245,9 @@ module.exports = async function aiDesign(request, response) {
   try {
     const prompt = guidePrompt(type, context);
     const result = provider === "Gemini" ? await callGemini(prompt, responseSchema) : await callOpenAIWithRetry(prompt, responseSchema);
-    return response.status(200).json({ ...result, prompt, createdAt: new Date().toISOString() });
+    const payload = { ...result, createdAt: new Date().toISOString() };
+    if (process.env.AI_DEBUG_PROMPT === "true") payload.prompt = prompt;
+    return response.status(200).json(payload);
   } catch (error) {
     return response.status(500).json({ error: error.message || "AI 응답 처리에 실패했습니다." });
   }

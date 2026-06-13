@@ -1,0 +1,311 @@
+﻿/* Public invitation overrides split from styles.css. Load after styles.css. */
+/* Public layout consistency pass: keep shared section UI aligned across every theme. */
+body:not([data-admin-area="general"]) .section-label {
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: 10px !important;
+  line-height: 1.35;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+body:not([data-admin-area="general"]) .section-title {
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: clamp(20px, 5.7vw, 24px) !important;
+  line-height: 1.32;
+  letter-spacing: -0.025em;
+  white-space: nowrap !important;
+}
+
+body:not([data-admin-area="general"]) .btn {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+body:not([data-admin-area="general"]) .contact-row .btn,
+body:not([data-admin-area="general"]) .guest-photo-actions .btn,
+body:not([data-admin-area="general"]) .modal-actions .btn,
+body:not([data-admin-area="general"]) .share-row .btn {
+  flex: 1 1 0;
+  max-width: 100%;
+  padding-right: 12px;
+  padding-left: 12px;
+  letter-spacing: -0.035em;
+}
+
+body:not([data-admin-area="general"])[data-layout="navy_arch"] .contact-row .btn,
+body:not([data-admin-area="general"])[data-layout="garden_doodle"] .contact-row .btn {
+  flex: 0 1 148px;
+}
+
+body:not([data-admin-area="general"]) .guest-photo-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: min(100%, 280px);
+  margin: 0 auto;
+}
+
+body:not([data-admin-area="general"]) .guest-photo-actions .btn {
+  width: 100%;
+  font-size: clamp(10px, 3vw, 12px);
+}
+
+body:not([data-admin-area="general"]) .profile-name {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+body:not([data-admin-area="general"]) .profile-role {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--accent-dark) 68%, var(--muted));
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.58em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+body:not([data-admin-area="general"]) .profile-person-name {
+  min-width: 0;
+  color: color-mix(in srgb, var(--ink) 86%, var(--accent-dark));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body:not([data-admin-area="general"]) .profile-birthday {
+  max-width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+body:not([data-admin-area="general"]) .location-venue {
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: clamp(15px, 4.5vw, 18px) !important;
+  line-height: 1.28;
+  white-space: nowrap !important;
+  text-overflow: clip;
+}
+
+body:not([data-admin-area="general"]) .location-hall,
+body:not([data-admin-area="general"]) .location-address {
+  max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 430px) {
+  body:not([data-admin-area="general"]) .section-title {
+    font-size: clamp(19px, 6vw, 23px) !important;
+  }
+  body:not([data-admin-area="general"]) .section-label {
+    font-size: 9px !important;
+    letter-spacing: 0.14em;
+  }
+  body:not([data-admin-area="general"]) .profile-grid {
+    min-width: 0;
+  }
+  body:not([data-admin-area="general"]) .profile-card {
+    min-width: 0;
+  }
+  body:not([data-admin-area="general"]) .profile-body {
+    width: 100%;
+  }
+  body:not([data-admin-area="general"]) .profile-name {
+    width: 100%;
+    font-size: clamp(14px, 4.4vw, 17px) !important;
+  }
+  body:not([data-admin-area="general"]) .profile-birthday {
+    max-width: min(100%, 144px);
+    font-size: clamp(10px, 3.15vw, 12px);
+  }
+  body:not([data-admin-area="general"]) .contact-row,
+  body:not([data-admin-area="general"]) .share-row {
+    flex-wrap: nowrap;
+  }
+  body:not([data-admin-area="general"]) .contact-row .btn,
+  body:not([data-admin-area="general"]) .guest-photo-actions .btn,
+  body:not([data-admin-area="general"]) .share-row .btn {
+    font-size: clamp(10px, 3vw, 12px);
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+}
+
+/* Classic invitation refinement */
+body[data-layout="classic"] .section-label { margin-bottom: 18px; }
+body[data-layout="classic"] .section-title { margin-top: 0; margin-bottom: 30px; }
+body[data-layout="classic"] .section-title + .subtle,
+body[data-layout="classic"] .section-title + .invitation-copy,
+body[data-layout="classic"] .section-title + .calendar,
+body[data-layout="classic"] .section-title + .gallery-grid { margin-top: 0; }
+body[data-layout="classic"] .subtle { margin: 0 auto 24px; line-height: 1.9; }
+body[data-layout="classic"] .subtle + .btn,
+body[data-layout="classic"] .subtle + .guest-photo-note + .guest-photo-actions { margin-top: 22px; }
+body[data-layout="classic"] .parents { max-width: min(100%, 248px); padding: 10px 13px; }
+body[data-layout="classic"] #invitation .contact-row { max-width: min(100%, 248px); }
+body[data-layout="classic"] #invitation .contact-row .btn { flex: 0 1 118px; padding-right: 8px; padding-left: 8px; }
+body[data-layout="classic"] .calendar,
+body[data-layout="classic"] .countdown { max-width: 258px; }
+body[data-layout="classic"] .calendar td { height: 33px; font-size: 11px; }
+body[data-layout="classic"] .calendar .wedding-day span { width: 27px; height: 27px; }
+body[data-layout="classic"] #wedding-day .countdown { margin-bottom: 22px; }
+body[data-layout="classic"] #countdown-message { margin-top: 0; }
+body[data-layout="classic"] .photo-interlude { min-height: clamp(330px, 64vw, 430px); margin: -8px 0 0; background: var(--paper); }
+body[data-layout="classic"] .photo-interlude-media {
+  inset: 42px 0;
+  min-height: 260px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+body[data-layout="classic"] .photo-interlude::before,
+body[data-layout="classic"] .photo-interlude::after {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  left: 0;
+  height: 100%;
+  content: "";
+  pointer-events: none;
+}
+body[data-layout="classic"] .photo-interlude::before { content: none !important; }
+body[data-layout="classic"] .photo-interlude::after {
+  top: 0;
+  bottom: 0;
+  background:
+    linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 98%, transparent) 14%, color-mix(in srgb, var(--paper) 48%, transparent) 32%, transparent 48%),
+    linear-gradient(0deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 98%, transparent) 14%, color-mix(in srgb, var(--paper) 48%, transparent) 32%, transparent 48%);
+}
+body[data-layout="classic"] #location { text-align: center; }
+body[data-layout="classic"] .map-links {
+  display: flex;
+  justify-content: center;
+  gap: 13px;
+  width: fit-content;
+  margin: 18px auto 0;
+}
+body[data-layout="classic"] .map-links .btn {
+  position: relative;
+  display: grid;
+  width: 36px;
+  height: 30px;
+  min-height: 0;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 20%, var(--line)) !important;
+  border-radius: 8px;
+  padding: 0;
+  background: var(--card) !important;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: none;
+}
+body[data-layout="classic"] .map-links .btn::before { width: 20px; height: 20px; flex-basis: 20px; }
+body[data-layout="classic"] .transport { margin-top: 30px; }
+body[data-layout="classic"] .transport-list {
+  width: min(100%, 300px);
+  margin: 0 auto;
+  gap: 10px;
+}
+body[data-layout="classic"] .transport-tab {
+  position: relative;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 36%, var(--line));
+  border-radius: 999px;
+  padding: 9px 34px 9px 16px;
+  background: color-mix(in srgb, var(--card) 78%, var(--accent) 8%);
+  color: var(--accent-dark);
+  font-size: 13px;
+  text-align: left;
+}
+body[data-layout="classic"] .transport-tab::before { content: "+"; margin-right: 8px; font-weight: 800; }
+body[data-layout="classic"] .transport-tab::after {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 9px;
+  height: 9px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  content: "";
+  transform: translateY(-65%) rotate(45deg);
+}
+body[data-layout="classic"] .transport-tab.is-active { background: color-mix(in srgb, var(--accent-dark) 16%, var(--card)); color: var(--accent-dark); }
+body[data-layout="classic"] .transport-tab.is-active::after { transform: translateY(-35%) rotate(225deg); }
+body[data-layout="classic"] .transport-panels { max-width: 300px; margin: 14px auto 0; }
+body[data-layout="classic"] .transport-panel {
+  border: 0;
+  padding: 10px 10px 4px;
+  background: transparent;
+  color: color-mix(in srgb, var(--accent-dark) 58%, var(--copy));
+  font-size: 12px;
+  line-height: 1.8;
+  text-align: center;
+}
+body[data-layout="classic"] .transport-panel:not(.is-active) { display: none; }
+body[data-layout="classic"] .copy-toast {
+  min-height: 24px;
+  padding: 5px 10px;
+  line-height: 1.25;
+}
+body[data-layout="classic"] #guestbook .subtle { margin-bottom: 12px; }
+body[data-layout="classic"] #guestbook-open { margin-top: 0; }
+
+body[data-layout="classic"] .map-links .btn[data-map-app="copy"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='3' width='12' height='15' rx='2' fill='none' stroke='%23777' stroke-width='2'/%3E%3Crect x='4' y='7' width='12' height='15' rx='2' fill='none' stroke='%23777' stroke-width='2'/%3E%3C/svg%3E") !important;
+}
+body[data-layout="classic"] .map-links .btn[data-map-app="naver"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 19V5h4l4 7V5h4v14h-4l-4-7v7z' fill='%2303C75A'/%3E%3C/svg%3E") !important;
+}
+body[data-layout="classic"] .map-links .btn[data-map-app="kakao"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='11' rx='8' ry='6' fill='%233A1D1D'/%3E%3Cpath d='M7.5 15.2 6.4 19l4.3-2.6Z' fill='%233A1D1D'/%3E%3C/svg%3E") !important;
+}
+body[data-layout="classic"] .map-links .btn[data-map-app="tmap"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 6h14v4h-5v9h-4v-9H5z' fill='%2300AEEF'/%3E%3C/svg%3E") !important;
+}
+body[data-layout="classic"] .guest-photo-actions { max-width: 236px; }
+body[data-layout="classic"] .guest-photo-actions .btn { min-height: 38px; padding-right: 8px; padding-left: 8px; }
+body[data-layout="classic"] .gallery-footer { justify-content: flex-end; margin-top: 40px; padding-right: 8px; }
+body[data-layout="classic"] #gallery-more {
+  width: 30px;
+  height: 28px;
+  background: var(--accent-dark) !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.guest-photo-note { margin: -12px auto 20px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+
+/* RSVP modal compact summary style */
+.modal:has(#attendance-form) { width: min(100%, 370px); border-radius: 8px; padding: 24px; }
+.modal:has(#attendance-form) #attendance-form {
+  gap: 14px;
+  border-radius: 6px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--muted) 10%, var(--card));
+}
+.modal:has(#attendance-form) .field input { min-height: 38px; font-size: 14px; }
+.modal:has(#attendance-form) .rsvp-choice-list button { min-height: 36px; border-radius: 3px; background: var(--card); }
+.modal:has(#attendance-form) .rsvp-choice-list button.is-active { background: color-mix(in srgb, var(--accent-dark) 72%, var(--card)); }
+.modal:has(#attendance-form) .modal-actions { margin: 20px -16px -16px; }
+.modal:has(#attendance-form) #attendance-submit { width: 100%; border-radius: 4px; }
+
