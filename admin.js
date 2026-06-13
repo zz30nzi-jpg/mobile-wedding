@@ -3,7 +3,9 @@ const escapeAdminHtml = (value = "") =>
   String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const adminMediaUrl = (value = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(value) || value || "";
 window.adminMediaUrl = adminMediaUrl;
-const supabaseClient = window.RSVP_STORAGE.getSupabaseClient();
+window.ADMIN_APP_READY = true;
+const storageApi = window.RSVP_STORAGE || {};
+const supabaseClient = storageApi.getSupabaseClient?.() || null;
 let invitationData = window.INVITATION_DATA;
 window.WEDDING_AI_SETTINGS = () => invitationData?.designSystem?.aiSettings || {};
 window.AI_DESIGN_SERVICE = (() => {
@@ -702,8 +704,23 @@ function renderBasicInfoOnboarding(message = "") {
 }
 
 async function renderSetupNotice() {
+  if (!window.RSVP_STORAGE?.loadInvitationData) {
+    renderDependencyNotice("저장소 스크립트가 아직 준비되지 않았습니다. 모바일 Safari에서 새로고침해 주세요.");
+    return;
+  }
   await loadInvitationData();
   renderEditor("현재는 Supabase 연결 전 미리보기 모드입니다. 변경 내용은 이 브라우저에 저장되며 공개 청첩장을 새로고침하면 반영됩니다.");
+}
+
+function renderDependencyNotice(message = "") {
+  if (!adminApp) return;
+  adminApp.innerHTML = `
+    <section class="admin-card admin-login">
+      <p class="section-label">Load Error</p>
+      <h2>관리자페이지 준비가 지연되고 있습니다</h2>
+      <p class="admin-message">${escapeAdminHtml(message || "필수 스크립트가 아직 로드되지 않았습니다.")}</p>
+      <button class="btn btn-primary" type="button" onclick="location.reload()">새로고침</button>
+    </section>`;
 }
 
 function responsesView(responses, isPreview = false) {
@@ -3930,6 +3947,8 @@ async function renderGuestbookEntries() {
 }
 
 async function start() {
+  if (!window.INVITATION_DATA) return renderDependencyNotice("기본 청첩장 데이터 스크립트를 불러오지 못했습니다.");
+  if (!window.RSVP_STORAGE?.loadInvitationData) return renderDependencyNotice("저장소 스크립트를 불러오지 못했습니다.");
   applyAppearance(invitationData.appearance);
   if (!supabaseClient) return renderSetupNotice();
   const { data } = await supabaseClient.auth.getSession();

@@ -23,18 +23,59 @@
       </div>
     </main>
     <script>
+      window.ADMIN_APP_READY = false;
       window.setTimeout(function () {
         var app = document.getElementById("admin-app");
-        if (!app || !/Loading|여는 중/.test(app.textContent || "")) return;
-        app.innerHTML = '<section class="admin-card admin-login"><p class="section-label">Network</p><h2>관리자페이지를 불러오지 못했습니다</h2><p class="admin-message">모바일 Safari에서 스크립트 로딩이 지연되고 있습니다. 새로고침하거나 네트워크를 바꿔 다시 열어주세요.</p></section>';
-      }, 9000);
+        if (window.ADMIN_APP_READY || !app || !/Loading|여는 중/.test(app.textContent || "")) return;
+        app.innerHTML = '<section class="admin-card admin-login"><p class="section-label">Network</p><h2>관리자페이지를 불러오는 중입니다</h2><p class="admin-message">모바일 Safari에서 네트워크 응답이 늦어지고 있습니다. 잠시 후에도 화면이 바뀌지 않으면 새로고침해 주세요.</p><button class="btn btn-primary" type="button" onclick="location.reload()">새로고침</button></section>';
+      }, 30000);
+      function showAdminLoadError(message) {
+        var app = document.getElementById("admin-app");
+        if (!app) return;
+        app.innerHTML = '<section class="admin-card admin-login"><p class="section-label">Load Error</p><h2>관리자페이지를 불러오지 못했습니다</h2><p class="admin-message">' + message + '</p><button class="btn btn-primary" type="button" onclick="location.reload()">새로고침</button></section>';
+      }
+      function loadScript(src, timeout) {
+        return new Promise(function (resolve, reject) {
+          var done = false;
+          var script = document.createElement("script");
+          var timer = window.setTimeout(function () {
+            if (done) return;
+            done = true;
+            script.remove();
+            reject(new Error(src + " timeout"));
+          }, timeout || 15000);
+          script.src = src;
+          script.onload = function () {
+            if (done) return;
+            done = true;
+            window.clearTimeout(timer);
+            resolve();
+          };
+          script.onerror = function () {
+            if (done) return;
+            done = true;
+            window.clearTimeout(timer);
+            reject(new Error(src + " failed"));
+          };
+          document.head.appendChild(script);
+        });
+      }
+      async function bootAdminScripts() {
+        try {
+          await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", 9000);
+        } catch (error) {
+          await loadScript("https://unpkg.com/@supabase/supabase-js@2", 9000);
+        }
+        loadScript("https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js", 9000).catch(function () {});
+        await loadScript("./invitation-data.js?v=20260610-v45", 12000);
+        await loadScript("./design-system.js?v=20260612-v57", 12000);
+        await loadScript("./supabase-config.js", 12000);
+        await loadScript("./rsvp-storage.js?v=20260613-v52", 12000);
+        await loadScript("./admin.js?v=20260613-v79", 12000);
+      }
+      bootAdminScripts().catch(function (error) {
+        showAdminLoadError("필수 스크립트 로딩에 실패했습니다. 네트워크를 바꾸거나 새로고침해 주세요. (" + String(error.message || error).replace(/[<>&]/g, "") + ")");
+      });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script async src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-    <script src="./invitation-data.js?v=20260610-v45"></script>
-    <script src="./design-system.js?v=20260612-v57"></script>
-    <script src="./supabase-config.js"></script>
-    <script src="./rsvp-storage.js?v=20260613-v52"></script>
-    <script src="./admin.js?v=20260613-v78"></script>
   </body>
 </html>
