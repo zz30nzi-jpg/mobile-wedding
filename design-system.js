@@ -232,6 +232,13 @@
     return data;
   }
 
+  const heartFramePath = "M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z";
+  function heartFrameIconUrl(strokeWidth) {
+    const sw = Math.max(0.5, Number(strokeWidth) || 3);
+    const svg = `%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='${heartFramePath}' fill='none' stroke='%23ffffff' stroke-width='${sw}' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E`;
+    return `url("data:image/svg+xml,${svg}")`;
+  }
+
   function resolve(data = {}) {
     normalize(data);
     const design = data.appearance.design;
@@ -315,6 +322,7 @@
     root.style.setProperty("--design-background-decoration", resolved.backgroundDecoration ? `url("${mediaUrl(resolved.backgroundDecoration)}")` : "none");
     root.style.setProperty("--design-section-icon", resolved.sectionIcon ? `url("${mediaUrl(resolved.sectionIcon)}")` : "var(--section-divider)");
     root.style.setProperty("--hero-decoration-size", String((Number(data.appearance.design?.heroDecorationSize) || 100) / 100));
+    root.style.setProperty("--heart-frame-icon", heartFrameIconUrl(data.appearance.design?.heroDecorationStrokeWidth));
     root.style.setProperty("--custom-hero-decoration", resolved.heroDecorationAsset?.url ? `url("${mediaUrl(resolved.heroDecorationAsset.url)}")` : "none");
     root.style.setProperty("--custom-decoration-opacity", String(resolved.heroDecorationAsset?.opacity ?? 1));
     root.style.setProperty("--custom-decoration-blend-mode", resolved.heroDecorationAsset?.blendMode || "normal");

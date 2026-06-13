@@ -83,6 +83,7 @@ function normalizeWeddingDisplayDate() {
 let weddingDate;
 let guestbookEntries = [];
 let galleryPreviewImages = [];
+let modalScrollY = 0;
 const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
 const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
@@ -254,7 +255,7 @@ function invitationParentLine(role, person = {}) {
   const parentText = parentDisplay(person);
   const name = String(person.name || "").trim();
   if (!name) return "";
-  return `<span>${parentText ? `${escapeHtml(parentText)} ` : ""}<strong>${escapeHtml(name)}</strong></span>`;
+  return `<span class="parents-line"><span class="parents-relation">${parentText ? escapeHtml(parentText) : ""}</span><strong>${escapeHtml(name)}</strong></span>`;
 }
 
 function todayInputDate() {
@@ -440,7 +441,7 @@ function render() {
   const showParentLines = displaySettings.showInvitationParents !== false && hasAnyParent(groom) && hasAnyParent(bride);
   const parentsMarkup = showParentLines
     ? `${invitationParentLine("신랑", groom)}<span class="parents-heart">♥</span>${invitationParentLine("신부", bride)}`
-    : `<span><strong>${escapeHtml(groom.name)}</strong> ♥ <strong>${escapeHtml(bride.name)}</strong></span>`;
+    : `<span class="parents-line parents-line-simple"><strong>${escapeHtml(groom.name)}</strong> ♥ <strong>${escapeHtml(bride.name)}</strong></span>`;
   galleryPreviewImages = shuffledGalleryPreview(gallery);
   app.innerHTML = `
     <div class="invitation-intro" data-invitation-intro>
@@ -590,13 +591,29 @@ function updateCountdown() {
 }
 
 function openModal(content) {
+  if (!document.body.classList.contains("modal-open")) {
+    modalScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.classList.add("modal-open");
+    document.body.style.top = `-${modalScrollY}px`;
+  }
   modalRoot.innerHTML = `<div class="modal-backdrop" id="modal-backdrop"><div class="modal">${content}</div></div>`;
   document.querySelector("#modal-backdrop").addEventListener("click", (event) => {
     if (event.target.id === "modal-backdrop") closeModal();
   });
   document.querySelector("[data-close]")?.addEventListener("click", closeModal);
 }
-function closeModal() { modalRoot.innerHTML = ""; }
+function closeModal() {
+  const restoreScrollY = modalScrollY;
+  const previousScrollBehavior = document.documentElement.style.scrollBehavior;
+  modalRoot.innerHTML = "";
+  document.documentElement.style.scrollBehavior = "auto";
+  document.body.classList.remove("modal-open");
+  document.body.style.top = "";
+  window.scrollTo({ top: restoreScrollY, left: 0, behavior: "instant" });
+  requestAnimationFrame(() => {
+    document.documentElement.style.scrollBehavior = previousScrollBehavior;
+  });
+}
 
 function showUploadStatus({ completed = 0, total = 1, percent = 0, state = "uploading", message = "" } = {}) {
   let status = document.querySelector("[data-upload-status]");

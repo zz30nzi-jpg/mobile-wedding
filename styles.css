@@ -32,7 +32,8 @@
   --light-panel: rgba(255,255,255,0.7);
   --hero-overlay-top: rgba(0,0,0,0.04);
   --hero-overlay-bottom: rgba(0,0,0,0.46);
-  --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 22'%3E%3Cpath d='M26 18C19 13 13 9 13 5c0-5 7-5 13 1 6-6 13-6 13-1 0 4-6 8-13 13Z' fill='none' stroke='%2383adbf' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M6 11h8m24 0h8' fill='none' stroke='%2383adbf' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E");
+  --section-divider: url("data:image/svg+xml,%3Csvg id='fi_15818582' enable-background='new 0 0 500 500' viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m308.6 364.9c-.8 0-1.7-.1-2.5-.4-23.8-8.6-44.7-18.2-62.9-28.5-23.9 10.6-45.4 16.3-62 19.4-32.9 6-54.4 3.5-55.3 3.4-4.1-.5-7-4.3-6.5-8.4s4.3-7 8.4-6.5c.2 0 20.6 2.4 51.4-3.3 13.3-2.5 29.8-6.8 48.2-14.1-66-42.6-90.3-94.2-89.3-131.9.8-28.1 15.4-49.9 38.2-56.7 15.9-4.8 30.6-3.3 43.8 4.4 18.4 10.7 29.6 31.5 35.7 46.8 3.4-6.3 8-13.6 13.8-20.6 20.6-25 46.3-34.5 74.5-27.4 19.3 4.9 31.9 17.3 35.5 35.1 3.4 16.9-1.5 37.1-14.1 58.6-13.1 22.2-34.2 44.6-60.9 64.9-15.2 11.6-30.3 20.9-44.7 28.4 15.7 8.3 32.9 15.8 51.3 22.4 3.9 1.4 5.9 5.7 4.5 9.6-1.1 2.9-4 4.8-7.1 4.8zm-114.6-214.9c-4.3 0-8.7.7-13.4 2.1-16.7 5-27 21-27.6 42.8-.7 24.9 11.3 52.5 33.7 77.9 14.9 16.9 34.3 32.5 57.4 46.3 16.3-7.8 33.8-18 51.4-31.5 25.2-19.2 44.9-40.1 57-60.6 10.6-17.9 15-34.9 12.4-47.9-2.5-12.1-10.7-20-24.5-23.5-22.3-5.7-42.1 1.8-59 22.1-13.3 16-19.7 34.3-19.7 34.5-1.1 3.2-4.2 5.2-7.5 5.1-3.4-.2-6.2-2.6-6.9-5.8-.1-.4-9.7-41.5-34.8-56.2-5.8-3.6-12-5.3-18.5-5.3z' stroke='rgb(0,0,0)' stroke-miterlimit='10'%3E%3C/path%3E%3C/svg%3E");
+  --ending-decoration: url("data:image/svg+xml,%3Csvg id='fi_3507510' enable-background='new 0 0 512 512' height='512' viewBox='0 0 512 512' width='512' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath d='m511.995 218.121c-.027-2.101-.975-4.161-2.558-5.547l-53.947-47.173v-89.359c0-4.143-3.357-7.5-7.5-7.5h-103.262l-70.582-61.719c-10.346-9.087-25.947-9.085-36.281-.011l-70.592 61.729h-103.263c-4.143 0-7.5 3.357-7.5 7.5v89.357l-53.947 47.176c-1.606 1.406-2.563 3.512-2.563 5.646v266.266c0 15.783 13.553 27.853 28.977 27.5h454.047c15.421.194 28.977-11.59 28.977-27.5v-266.266c-.001-.034-.005-.066-.006-.099zm-20.309-1.144-36.195 20.977v-52.628zm-243.934-198.884c4.701-4.129 11.793-4.13 16.508.011l57.681 50.438h-131.881zm192.738 65.449v163.105l-163.345 94.665c-13.719-11.036-28.531-11.188-42.291 0l-163.344-94.665v-163.105zm-383.98 101.784v52.628l-36.195-20.977zm-41.51 299.159v-253.25l44.927 26.037c.21.137.428.262.652.378l161.206 93.425-195.237 145.862c-6.448-.49-11.548-5.881-11.548-12.452zm470.452 12.452-84.516-63.141c-7.522-5.613-16.84 6.143-8.979 12.018l68.495 51.172h-408.906l196.972-147.157c4.406-3.291 10.56-3.291 14.964 0l96.757 72.287c7.521 5.614 16.84-6.144 8.979-12.018l-79.002-59.022 160.637-93.096c.607-.251 1.17-.583 1.685-.976l44.462-25.769v253.25c0 6.571-5.1 11.962-11.548 12.452z'%3E%3C/path%3E%3Cpath d='m209.132 264.343c21.711 16.699 43.156 25.448 44.059 25.813 1.892.734 3.783.727 5.672-.023.893-.369 22.121-9.23 43.714-25.98 29.399-22.806 45.136-49.372 45.508-76.828.212-15.576-5.726-30.65-16.288-41.357-9.642-9.773-22.207-15.156-35.38-15.156-15.977 0-30.763 8.021-40.418 21.248-11.786-16.143-32.279-24.716-51.938-19.826-9.108 2.266-5.9 16.928 3.621 14.557 17.77-4.422 34.859 7.196 41.351 23.468 2.46 6.169 11.472 6.169 13.932 0 5.925-14.851 19.055-24.446 33.452-24.446 9.128 0 17.9 3.797 24.702 10.691 7.763 7.868 12.125 19.028 11.968 30.619-.674 49.588-62.984 81.32-77.125 87.883-14.249-6.458-77.051-37.772-77.051-87.781 0-6.868 1.527-13.678 4.418-19.693 4.065-8.459-9.273-15.344-13.52-6.496-3.859 8.029-5.898 17.086-5.898 26.189-.001 27.695 15.637 54.363 45.221 77.118z'%3E%3C/path%3E%3C/g%3E%3C/svg%3E");
   --design-background-decoration: none;
   --design-section-icon: var(--section-divider);
 }
@@ -424,8 +425,8 @@ body.intro-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
   position: absolute;
   top: -11px;
   left: 50%;
-  width: 52px;
-  height: 22px;
+  width: 40px;
+  height: 40px;
   background: var(--accent-dark);
   -webkit-mask: var(--design-section-icon) center / contain no-repeat;
   mask: var(--design-section-icon) center / contain no-repeat;
@@ -536,9 +537,12 @@ body[data-layout="classic"] .hero::after { background: linear-gradient(180deg, v
 
 .invitation-copy { margin: 0; color: var(--copy); white-space: pre-line; }
 .invitation-copy + .invitation-copy { margin-top: 22px; }
-.parents { display: grid; gap: 1px; width: min(100%, 320px); margin: 36px auto 0; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 10px; padding: 11px 16px; background: color-mix(in srgb, var(--card) 72%, var(--soft-bg)); color: color-mix(in srgb, var(--accent-dark) 76%, var(--ink)); font-size: 13px; line-height: 1.55; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card) 62%, transparent); }
-.parents strong { color: var(--accent-dark); font-weight: 800; }
-.parents-heart { color: color-mix(in srgb, var(--accent-dark) 70%, var(--accent)); font-size: 11px; line-height: 1.2; }
+.parents { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: baseline; column-gap: 14px; row-gap: 6px; width: min(100%, 320px); margin: 36px auto 0; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 10px; padding: 11px 16px; background: color-mix(in srgb, var(--card) 72%, var(--soft-bg)); color: color-mix(in srgb, var(--ink) 58%, var(--muted)); font-size: 12px; font-weight: 400; line-height: 1.6; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card) 62%, transparent); }
+.parents-line { display: contents; }
+.parents-line.parents-line-simple { display: block; grid-column: 1 / -1; text-align: center; }
+.parents-relation { text-align: right; }
+.parents strong { color: var(--accent-dark); font-weight: 800; font-size: 15px; text-align: left; }
+.parents-heart { grid-column: 1 / -1; text-align: center; color: color-mix(in srgb, var(--accent-dark) 70%, var(--accent)); font-size: 11px; line-height: 1.2; }
 .contact-row, .map-links, .share-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
 .map-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; width: 100%; }
 .map-links .btn { min-width: 0; padding: 8px 3px; font-size: 10px; white-space: nowrap; }
@@ -647,23 +651,24 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 .ending::before {
   position: absolute;
   z-index: 1;
-  right: -24px;
-  bottom: -16px;
+  right: -22px;
+  bottom: -18px;
   width: 150px;
-  height: 118px;
+  height: 150px;
   background: var(--accent-dark);
-  opacity: 0.34;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 118'%3E%3Cpath d='M13 27 132 13l8 78-119 14Z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='m15 29 64 40 52-54M22 102l43-48m74 36L83 58' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M100 23c-8-12-26 1 0 19 26-18 8-31 0-19Z' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 118'%3E%3Cpath d='M13 27 132 13l8 78-119 14Z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='m15 29 64 40 52-54M22 102l43-48m74 36L83 58' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M100 23c-8-12-26 1 0 19 26-18 8-31 0-19Z' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0.32;
+  -webkit-mask: var(--ending-decoration) center / contain no-repeat;
+  mask: var(--ending-decoration) center / contain no-repeat;
   content: "";
-  transform: rotate(-7deg);
+  transform: rotate(-6deg);
 }
 .ending-content { position: relative; z-index: 2; }
 .ending-names { margin-top: 22px; letter-spacing: 0.16em; }
 .footer { padding: 18px; color: #9bb3bf; font-size: 11px; text-align: center; }
 
-.modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(63,100,116,0.56); }
-.modal { width: min(100%, 420px); max-width: 100%; max-height: 88vh; overflow: auto; overflow-x: hidden; border-radius: 14px; padding: 20px; background: var(--card); box-shadow: var(--shadow); }
+body.modal-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hidden; }
+.modal-backdrop { position: fixed; z-index: 96; inset: 0; display: grid; place-items: center; overflow: hidden; padding: 20px; background: rgba(24,32,36,0.62); }
+.modal { width: min(100%, 420px); max-width: 100%; max-height: min(88dvh, 760px); overflow: auto; overflow-x: hidden; border-radius: 14px; padding: 20px; background: var(--card); box-shadow: 0 24px 70px rgba(24,32,36,0.28); overscroll-behavior: contain; }
 .modal h2 { margin-top: 0; font-size: 18px; }
 .gallery-slider-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .gallery-slider-head h2 { margin: 0; }
@@ -730,13 +735,13 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 .information-dots { display: flex; justify-content: center; gap: 5px; margin-bottom: 14px; }
 .information-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
 .information-dots i.is-active { background: var(--accent-dark); }
-.information-slide-wrap { position: relative; }
-.information-slide {     min-height: 100px; padding: 0 40px;}
+.information-slide-wrap { position: relative; padding: 0 26px; }
+.information-slide { min-height: 100px; padding: 16px 24px; background: color-mix(in srgb, var(--accent-dark) 9%, var(--card)); border-radius: 10px; }
 .information-slide h3 { margin: 18px 0 12px; color: var(--ink); font-size: 16px; font-weight: 500; }
 .information-slide p { color: var(--copy); font-size: 13px; line-height: 2; white-space: pre-line; }
 .information-arrow { position: absolute; top: 50%; border: 0; background: transparent; color: var(--ink); font-size: 36px; line-height: 1; transform: translateY(-50%); }
-.information-prev { left: -8px; }
-.information-next { right: -8px; }
+.information-prev { left: -4px; }
+.information-next { right: -4px; }
 .snap-modal-hero { position: relative; min-height: 160px; overflow: hidden; border-radius: 12px; padding: 13px; background-position: center; background-size: cover; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 .snap-modal-hero::before { position: absolute; inset: 0; background: rgba(0,0,0,0.24); content: ""; }
 .snap-modal-hero > * { position: relative; z-index: 1; }
@@ -908,7 +913,7 @@ body[data-admin-area="general"]:has(.editor-tooldock:not([hidden]):not(.is-colla
 .hero-decoration-preview[data-decoration-preview="poster_card"]::before { top: 5px; left: 15px; color: var(--accent-dark); content: "♡ wedding"; font-family: Georgia, serif; font-size: 7px; }
 /* 새 프레임 꾸밈 썸네일 */
 .hero-decoration-preview[data-decoration-preview="text_marriage"]::after { left: 0; right: 0; bottom: 14px; text-align: center; color: white; content: "저희, 결혼합니다"; font-family: "Noto Serif KR", serif; font-size: 9px; letter-spacing: 0.05em; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
-.hero-decoration-preview[data-decoration-preview="frame_heart"]::before { inset: 6px; content: ""; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z' fill='none' stroke='%23ffffff' stroke-width='6' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+.hero-decoration-preview[data-decoration-preview="frame_heart"]::before { inset: 6px; content: ""; background: var(--heart-frame-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E")) center/contain no-repeat; }
 .hero-decoration-preview[data-decoration-preview="frame_arch"] i { top: 16px; left: 11px; right: 11px; bottom: 0; border-radius: 40px 40px 0 0; border: 2px solid rgba(255,255,255,0.95); background: rgba(255,255,255,0.16); }
 .hero-decoration-preview[data-decoration-preview="frame_inset"] i { inset: 12px 9px 14px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.95); background: rgba(255,255,255,0.16); }
 .auto-filled-fields { display: grid; gap: 8px; border-radius: 8px; padding: 9px; background: rgba(130,140,147,0.08); }
@@ -1165,18 +1170,21 @@ body.is-thumb .bottom-tabbar { display: none !important; }
 /* 흰 바디 — 컬러 히어로 밴드가 상단, 콘텐츠 섹션은 흰 배경 */
 body[data-layout="navy_arch"] .invitation { background: var(--card); }
 /* 섹션 구분 아이콘 — 진주 3알 + 양옆 라인 (포멀) */
-body[data-layout="navy_arch"] { --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 22'%3E%3Cpath d='M4 11h16m24 0h16' fill='none' stroke='%23000' stroke-width='1' stroke-linecap='round'/%3E%3Ccircle cx='26' cy='11' r='2.4' fill='%23000'/%3E%3Ccircle cx='32' cy='8' r='3.1' fill='%23000'/%3E%3Ccircle cx='38' cy='11' r='2.4' fill='%23000'/%3E%3C/svg%3E"); }
-body[data-layout="navy_arch"] .section + .section::before { width: 64px; }
+body[data-layout="navy_arch"] {
+  --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='fi_6199561' x='0px' y='0px' viewBox='0 0 511.996 511.996' style='enable-background:new 0 0 511.996 511.996;' xml:space='preserve' width='512' height='512'%3E%3Cg%3E%3Cg id='Layer_2_8_'%3E%3Cg id='Life_1_'%3E%3Cpath d='M98.05,198.883l-15.935,15.935L66.18,198.883c-15.158-15.132-39.713-15.111-54.845,0.047 C4.088,206.19,0.012,216.025,0,226.282c-0.012,10.309,4.085,20.198,11.382,27.48l15.935,15.935l54.798,54.798l54.879-54.798 l15.935-15.935c15.101-15.207,15.016-39.777-0.192-54.879C137.605,183.856,113.183,183.856,98.05,198.883z M141.466,242.217 l-15.935,16.017l-11.545,11.464l-31.87,31.87l-31.87-31.87l-11.464-11.464l-15.935-16.017c-8.753-8.849-8.675-23.118,0.174-31.87 c8.781-8.685,22.916-8.685,31.696,0l15.935,15.935l11.464,11.545l11.545-11.464l15.935-16.017 c8.849-8.752,23.118-8.674,31.87,0.175C150.15,219.302,150.15,233.437,141.466,242.217z'%3E%3C/path%3E%3Cpath d='M296.102,187.501c-10.285-0.011-20.149,4.087-27.399,11.382l-15.935,15.935l-15.935-15.935 c-15.207-15.101-39.777-15.016-54.879,0.192c-15.027,15.132-15.027,39.555,0,54.687l15.935,15.935l54.879,54.798l54.798-54.798 l15.935-15.935c15.154-15.085,15.21-39.599,0.125-54.754c-0.042-0.042-0.083-0.084-0.125-0.125 C316.26,191.575,306.391,187.475,296.102,187.501z M312.038,242.217l-15.935,16.017l-11.464,11.464l-31.87,31.87l-31.87-31.87 l-11.464-11.464l-16.017-16.017c-8.753-8.849-8.675-23.118,0.174-31.87c8.781-8.685,22.916-8.685,31.696,0l16.017,16.017 l11.464,11.464l11.464-11.545l15.935-15.935c8.941-8.455,22.929-8.455,31.87,0C320.815,219.156,320.812,233.406,312.038,242.217 L312.038,242.217z'%3E%3C/path%3E%3Cpath d='M500.658,198.883c-15.069-15.132-39.552-15.183-54.684-0.114c-0.038,0.038-0.076,0.076-0.114,0.114l-15.935,15.935 l-15.935-15.935c-15.207-15.101-39.777-15.016-54.879,0.192c-15.027,15.132-15.027,39.555,0,54.687l15.935,15.935l54.879,54.798 l54.798-54.798l15.935-15.935C515.777,238.596,515.774,214.053,500.658,198.883z M489.195,242.217l-15.935,16.017l-11.464,11.464 l-31.87,31.87l-31.87-31.87l-11.464-11.464l-16.017-16.017c-8.752-8.849-8.674-23.118,0.175-31.87 c8.78-8.684,22.915-8.684,31.695,0l16.017,16.017l11.464,11.464l11.464-11.545l15.935-15.935c8.941-8.455,22.929-8.455,31.87,0 C497.975,219.156,497.975,233.408,489.195,242.217z'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --ending-decoration: url("data:image/svg+xml,%3Csvg id='fi_17337019' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m59.24121 10.13672c-.0165-.67051-.74378-1.15754-1.37014-.89938.00003-.00003-7.84861 3.13376-7.84861 3.13376-1.21929.51447-.48095 2.32387.74124 1.85741-.00003.00001 5.34372-2.13347 5.34372-2.13347-1.73499 3.13373-5.29407 8.95599-10.57275 14.68719-3.75348 4.07379-9.32886 8.64746-15.41089 8.68707 1.8512-2.10449 3.32196-4.224 4.37085-6.32184.56814-1.18959-1.18216-2.05616-1.78908-.89449-1.1497 2.2994-2.85832 4.64419-5.0717 6.97744-8.02867-1.36145-15.63476-13.4532-13.85096-20.04983.45051-1.87003 1.5345-3.07121 3.22053-3.57121 4.17644-1.27041 5.76504 6.01465 6.09525 8.16403.07174.52737.53756.9014 1.07418.86136.53027-.04395.93311-.49707.9165-1.0293-.00195-.05762-.13232-5.80859 4.31787-8.49023 5.41679-2.81403 7.18375 5.9474 4.72503 13.42664-.35825 1.26559 1.51512 1.82616 1.91512.57625 2.08934-6.95211 1.36473-13.05367-1.8462-15.5439-4.02007-3.26871-9.28725 1.84834-10.29482 5.40153-.692-1.81656-1.74961-3.71696-3.32383-4.73746-3.44236-2.19088-7.99592.55324-8.74403 4.47362-1.26281 5.23927 1.7201 12.75587 7.09217 17.87306 2.22998 2.12408 4.60107 3.55463 7.06384 4.29382-4.05389 3.8623-8.61475 6.8479-11.36792 8.49561.38091-2.95841-3.14282-5.16137-5.79161-3.89188-2.48976 1.02628-4.22999 3.89444-4.33009 7.14053.03522 1.51819.0312 3.14129.86065 4.33992 1.73489 1.47419 4.14746 2.51066 6.44208 2.49113 1.96484 0 3.80371-.67285 5.03662-1.93652 1.97957-1.83827 1.66032-5.47869-.76525-6.67406 3.09496-1.87483 8.00549-5.17781 12.26159-9.47285 6.59425.67119 12.33915-2.55885 18.66487-9.23282 4.98796-5.41641 8.43394-10.811 10.34898-14.16262 0 0 .14606 4.92322.14606 4.92322.0523 1.31279 2.02223 1.2535 1.99901-.05864.00001.00004-.25829-8.70308-.25829-8.70308zm-43.82812 41.98437c-1.79365 1.96333-6.06907 1.63892-8.54003-.50799-1.08479-3.12055.22171-7.35901 2.72427-8.28199.6473-.26569 1.60579-.40631 2.49495.43451.83545.79199.72021 1.91309-.34326 3.33301-.25781.34473-.26611.81641-.02051 1.16992.24668.36282.69386.47748 1.10254.38964 3.07591-1.13052 4.20986 1.84245 2.58203 3.4629z'%3E%3C/path%3E%3C/svg%3E");
+}
+body[data-layout="navy_arch"] .section + .section::before { width: 64px; height: 40px; top: -48px; }
 /* 컬러 히어로 밴드 (풀블리드) — 메인이미지 아래 여백 확보 */
-body[data-layout="navy_arch"] .hero { background: var(--accent-dark); min-height: 660px; overflow: hidden; margin: 0; border-radius: 0; }
+body[data-layout="navy_arch"] .hero { background: var(--accent-dark); min-height: 900px; overflow: hidden; margin: 0; border-radius: 0; }
 body[data-layout="navy_arch"] .hero::after { background: none; }
 /* 아치 사진 프레임 — 흰 테두리, 중앙 정렬 */
-body[data-layout="navy_arch"] .hero-media { inset: 188px 58px auto; height: 300px; border-radius: 200px 200px 0 0; overflow: hidden; opacity: 1; }
+body[data-layout="navy_arch"] .hero-media { inset: 230px 70px auto; aspect-ratio: 3 / 4; height: auto; border-radius: 200px 200px 0 0; overflow: hidden; opacity: 1; }
 /* 텍스트 상단 중앙 고정 (컬러 위 흰 글씨) */
 body[data-layout="navy_arch"] .hero-content,
 body[data-layout="navy_arch"] .hero-content-top,
 body[data-layout="navy_arch"] .hero-content-middle,
-body[data-layout="navy_arch"] .hero-content-bottom { top: 44px !important; bottom: auto !important; transform: none !important; left: 28px; right: 28px; text-align: center; color: var(--card); text-shadow: none; }
+body[data-layout="navy_arch"] .hero-content-bottom { top: 72px !important; bottom: auto !important; transform: none !important; left: 28px; right: 28px; text-align: center; color: var(--card); text-shadow: none; }
 body[data-layout="navy_arch"] .hero-eyebrow { font-style: italic; text-transform: none; letter-spacing: 0.06em; color: color-mix(in srgb, var(--card) 82%, transparent) !important; font-size: 12px; }
 body[data-layout="navy_arch"] .hero-names { font-size: clamp(24px, 7vw, 36px); font-style: italic; letter-spacing: 0.02em; color: var(--card) !important; text-shadow: 0 1px 6px color-mix(in srgb, var(--accent-dark) 55%, transparent); line-height: 1.3; }
 body[data-layout="navy_arch"] .hero-date { color: color-mix(in srgb, var(--card) 82%, transparent) !important; text-shadow: none; font-size: 11px; letter-spacing: 0.14em; }
@@ -1184,6 +1192,7 @@ body[data-layout="navy_arch"] .hero-date { color: color-mix(in srgb, var(--card)
 body[data-layout="navy_arch"] .hero::before { display: block; content: ""; position: absolute; z-index: 1; bottom: 80px; left: 50%; transform: translateX(-50%); width: 160px; height: 22px; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 22'%3E%3Cpath d='M4 11Q24 5 44 11Q64 17 84 11Q104 5 124 11Q144 17 156 11' fill='none' stroke='%23b8a898' stroke-width='1.2' stroke-linecap='round'/%3E%3Ccircle cx='44' cy='7' r='4.5' fill='%23d8cab8'/%3E%3Ccircle cx='44' cy='7' r='2.5' fill='%23ede0d2'/%3E%3Ccircle cx='84' cy='15' r='4.5' fill='%23d8cab8'/%3E%3Ccircle cx='84' cy='15' r='2.5' fill='%23ede0d2'/%3E%3Ccircle cx='124' cy='7' r='4.5' fill='%23d8cab8'/%3E%3Ccircle cx='124' cy='7' r='2.5' fill='%23ede0d2'/%3E%3C/svg%3E") center/contain no-repeat; }
 /* 섹션 — 흰 배경, 기본 다크 텍스트 (별도 색 지정 없음) */
 body[data-layout="navy_arch"] .section { border-radius: 0; margin: 0; padding: 40px 80px; background: transparent; }
+body[data-layout="navy_arch"] .section + .section { margin-top: 56px; }
 /* 원형 장소 사진 + 진주/컬러 링 테두리 */
 body[data-layout="navy_arch"] #location .media,
 body[data-layout="navy_arch"] .location-map-static { display: block; width: 200px; height: 200px; margin: 18px auto; border-radius: 50%; overflow: hidden; border: 5px solid var(--card); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-dark) 38%, transparent), 0 8px 24px color-mix(in srgb, var(--accent-dark) 22%, transparent); }
@@ -1193,13 +1202,16 @@ body[data-layout="navy_arch"] .invitation-intro-copy { text-align: center; color
 /* ═══════════════════════════════════════════════════════════════
    TEMPLATE: cream_organic  —  라벤더 아치 인사 섹션 · 오가닉 카드 · 도트 타임라인
    ════════════════════════════════════════════════════════════ */
-body[data-layout="cream_organic"] .hero { min-height: 540px; }
+body[data-layout="cream_organic"] .hero { min-height: 640px; }
 body[data-layout="cream_organic"] .hero-names { letter-spacing: 0.05em; }
 /* 크림 바디 — 라벤더(accent) 포인트 패널이 그 위에 떠 있는 구조 */
 body[data-layout="cream_organic"] .invitation { background: var(--paper); }
 /* 섹션 구분 아이콘 — 꽃잎 새싹 + 양옆 곡선 줄기 (보태니컬) */
-body[data-layout="cream_organic"] { --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 24'%3E%3Cpath d='M6 13c11-6 17 1 23-1m35 1c-11-6-17 1-23-1' fill='none' stroke='%23000' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M35 5c-2.6 0-4.5 2.4-4.5 5.4S35 18 35 18s4.5-4.6 4.5-7.6S37.6 5 35 5Z' fill='%23000'/%3E%3C/svg%3E"); }
-body[data-layout="cream_organic"] .section + .section::before { width: 70px; }
+body[data-layout="cream_organic"] {
+  --section-divider: url("data:image/svg+xml,%3Csvg id='fi_5448388' enable-background='new 0 0 512 512' height='512' viewBox='0 0 512 512' width='512' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cg%3E%3Cpath d='m260.153 317.673c15.508-9.498 69.08-45.365 67.975-86.992-.496-18.7-14.641-35.069-33.082-38.213-16.008-2.73-30.473 4.143-39.046 15.655-8.573-11.512-23.038-18.385-39.046-15.655-18.441 3.144-32.586 19.513-33.082 38.213-1.105 41.627 52.467 77.494 67.975 86.992 2.574 1.576 5.732 1.576 8.306 0z' fill='%23ff9aa0'%3E%3C/path%3E%3Cpath d='m273.371 304.884c-11.108-6.658-66.485-41.846-65.452-80.729.243-9.038 6.075-18.964 14.866-25.293l8.458-6.216c-4.54-.853-9.323-1.025-14.289-.178-18.44 3.144-32.586 19.513-33.081 38.213-1.106 41.627 52.467 77.494 67.975 86.992 2.574 1.577 5.732 1.577 8.306 0 3.677-2.252 9.529-6.029 16.25-10.972z' fill='%23ff8086'%3E%3C/path%3E%3Cpath d='m436.508 317.673c15.508-9.498 69.08-45.365 67.975-86.992-.496-18.7-14.641-35.069-33.082-38.213-16.008-2.73-30.473 4.143-39.046 15.655-8.573-11.512-23.038-18.385-39.046-15.655-18.441 3.144-32.586 19.513-33.082 38.213-1.105 41.627 52.467 77.494 67.975 86.992 2.574 1.576 5.732 1.576 8.306 0z' fill='%23ffb3b8'%3E%3C/path%3E%3Cpath d='m449.726 304.884c-11.108-6.658-66.485-41.846-65.452-80.729.243-9.038 6.075-18.964 14.866-25.293l8.458-6.216c-4.54-.853-9.323-1.025-14.289-.178-18.44 3.144-32.586 19.513-33.081 38.213-1.106 41.627 52.467 77.494 67.975 86.992 2.574 1.577 5.732 1.577 8.306 0 3.677-2.252 9.529-6.029 16.25-10.972z' fill='%23ff9aa0'%3E%3C/path%3E%3Cpath d='m83.798 317.673c15.508-9.498 69.08-45.365 67.975-86.992-.496-18.7-14.641-35.069-33.082-38.213-16.008-2.73-30.473 4.143-39.046 15.655-8.573-11.512-23.038-18.385-39.046-15.655-18.441 3.144-32.586 19.513-33.082 38.213-1.105 41.627 52.467 77.494 67.975 86.992 2.574 1.576 5.732 1.576 8.306 0z' fill='%23ff8086'%3E%3C/path%3E%3Cpath d='m97.016 304.884c-11.108-6.658-66.485-41.846-65.452-80.729.243-9.038 6.075-18.964 14.866-25.293l8.458-6.216c-4.54-.853-9.323-1.025-14.289-.178-18.44 3.144-32.586 19.513-33.081 38.213-1.106 41.627 52.467 77.494 67.975 86.992 2.574 1.577 5.732 1.577 8.306 0 3.677-2.252 9.529-6.029 16.25-10.972z' fill='%23ff646f'%3E%3C/path%3E%3C/g%3E%3Cg%3E%3Cpath d='m288.064 184.371c-12.063 0-23.359 4.496-32.064 12.565-8.706-8.069-20.001-12.565-32.064-12.565-26.236 0-47.581 21.345-47.581 47.581 0 51.913 72.899 93.009 76.003 94.733 1.132.629 2.387.944 3.642.944s2.51-.314 3.642-.944c3.104-1.724 76.003-42.821 76.003-94.733 0-26.236-21.345-47.581-47.581-47.581zm-.772 103.92c-12.532 11.172-25.238 19.424-31.292 23.125-6.055-3.701-18.761-11.953-31.292-23.125-15.215-13.564-33.353-34.35-33.353-56.339 0-17.965 14.616-32.581 32.581-32.581 10.293 0 19.787 4.823 26.049 13.232 1.416 1.9 3.646 3.021 6.016 3.021s4.6-1.12 6.016-3.021c6.262-8.409 15.756-13.232 26.049-13.232 17.965 0 32.581 14.616 32.581 32.581-.002 21.989-18.139 42.774-33.355 56.339z'%3E%3C/path%3E%3Cpath d='m509.86 217.806c-1.23-3.956-5.435-6.165-9.389-4.935-3.956 1.23-6.165 5.434-4.935 9.389.971 3.123 1.463 6.383 1.463 9.692 0 21.989-18.137 42.774-33.353 56.339-12.533 11.173-25.239 19.425-31.292 23.126-6.055-3.702-18.761-11.954-31.293-23.126-15.215-13.564-33.353-34.35-33.353-56.339 0-17.965 14.616-32.581 32.581-32.581 10.293 0 19.787 4.823 26.049 13.232 1.416 1.9 3.646 3.021 6.016 3.021s4.6-1.12 6.016-3.021c6.262-8.409 15.756-13.232 26.049-13.232 4.401 0 8.667.86 12.68 2.557 3.816 1.614 8.216-.171 9.829-3.986s-.171-8.216-3.986-9.829c-5.871-2.483-12.103-3.742-18.522-3.742-12.063 0-23.359 4.496-32.064 12.565-8.706-8.069-20.001-12.565-32.064-12.565-26.236 0-47.581 21.345-47.581 47.581 0 51.913 72.9 93.009 76.003 94.733 1.132.629 2.387.944 3.642.944s2.51-.314 3.642-.944c3.104-1.724 76.003-42.821 76.003-94.733-.001-4.821-.721-9.58-2.141-14.146z'%3E%3C/path%3E%3Cpath d='m111.709 184.371c-12.063 0-23.359 4.496-32.064 12.565-8.706-8.069-20.001-12.565-32.064-12.565-26.236 0-47.581 21.345-47.581 47.581 0 51.913 72.899 93.009 76.003 94.733 1.132.629 2.387.944 3.642.944s2.51-.314 3.642-.944c.289-.16 7.185-4.007 16.748-10.722 3.39-2.38 4.208-7.058 1.828-10.448-2.38-3.389-7.058-4.208-10.448-1.828-4.86 3.413-9.004 6.044-11.767 7.731-6.054-3.701-18.761-11.953-31.295-23.127-15.216-13.565-33.353-34.35-33.353-56.339 0-17.965 14.616-32.581 32.581-32.581 10.293 0 19.787 4.823 26.049 13.232 1.416 1.9 3.646 3.021 6.016 3.021s4.6-1.12 6.016-3.021c6.262-8.409 15.756-13.232 26.049-13.232 17.965 0 32.581 14.616 32.581 32.581 0 16.045-9.384 33.292-27.89 51.261-2.972 2.885-3.042 7.634-.156 10.605 2.886 2.972 7.635 3.041 10.605.156 21.526-20.901 32.441-41.768 32.441-62.022-.001-26.236-21.346-47.581-47.583-47.581z'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --ending-decoration: url("data:image/svg+xml,%3Csvg enable-background='new 0 0 512 512' height='512' viewBox='0 0 512 512' width='512' xmlns='http://www.w3.org/2000/svg' id='fi_8447898'%3E%3Cg id='_x31_0_Letter'%3E%3Cg%3E%3Cpath d='m466.528 466.365v-243.878c0-2.171-1.416-4.779-2.745-5.907l-54.365-45.924c-3.282-2.783-8.168-2.352-10.914.915-2.761 3.267-2.352 8.153.915 10.914l47.361 40.01-149.888 126.58-16.656-14.077c-14.007-11.844-34.345-11.837-48.337-.008l-16.755 14.15-149.879-126.645 47.369-40.01c3.267-2.761 3.676-7.646.915-10.914-2.745-3.267-7.639-3.691-10.914-.915l-54.372 45.924c-.548.775-2.791 2.367-2.791 5.907v243.878c0 20.663 16.806 37.469 37.469 37.469h346.119c20.662 0 37.468-16.806 37.468-37.469zm-405.566 0v-227.226l142.181 120.139-91.295 77.106c-3.267 2.761-3.676 7.646-.915 10.914 2.745 3.267 7.639 3.691 10.914.915l120.044-101.386c8.214-6.951 20.133-6.951 28.347.008l119.961 101.378c3.233 2.745 8.133 2.372 10.914-.915 2.761-3.267 2.352-8.153-.915-10.914l-91.307-77.169 142.148-120.044v227.194c0 12.116-9.863 21.979-21.979 21.979h-346.119c-12.117 0-21.979-9.862-21.979-21.979z'%3E%3C/path%3E%3Cpath d='m251.965 294.543c1.248.764 2.655 1.15 4.061 1.15 1.407 0 2.814-.386 4.061-1.15 5.846-3.6 143.165-89.451 143.165-203.483 0-45.705-37.158-82.894-82.833-82.894-25.05 0-48.813 11.564-64.394 30.79-15.573-19.226-39.329-30.79-64.386-30.79-45.675 0-82.833 37.189-82.833 82.894.001 114.032 137.313 199.882 143.159 203.483zm-60.325-270.887c23.885 0 45.47 12.245 57.738 32.764 1.399 2.337 3.925 3.767 6.648 3.767s5.249-1.429 6.648-3.767c12.275-20.519 33.861-32.764 57.746-32.764 37.136 0 67.344 30.238 67.344 67.404 0 94.912-109.131 172.587-131.737 187.653-22.614-15.051-131.73-92.635-131.73-187.653 0-37.166 30.207-67.404 67.343-67.404z'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+body[data-layout="cream_organic"] .section + .section::before { width: 64px; height: 40px; top: -48px; }
 /* 숲 사진 히어로 하단 찢긴 종이(크림) 가장자리 — 웨이브 마스크 */
 body[data-layout="cream_organic"] .hero::before { content: ""; position: absolute; z-index: 3; left: 0; right: 0; bottom: -1px; height: 38px; background: var(--paper); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 60 L1200 60 L1200 30 C1090 8 1010 50 900 32 C800 16 720 50 600 30 C490 12 410 50 300 30 C200 14 110 44 0 26 Z' fill='black'/%3E%3C/svg%3E") bottom/100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 60 L1200 60 L1200 30 C1090 8 1010 50 900 32 C800 16 720 50 600 30 C490 12 410 50 300 30 C200 14 110 44 0 26 Z' fill='black'/%3E%3C/svg%3E") bottom/100% 100% no-repeat; }
 /* 인사 = 라벤더(accent) 둥근 아치 패널 (크림 위에 떠 있음) */
@@ -1212,12 +1224,15 @@ body[data-layout="cream_organic"] #invitation p { color: color-mix(in srgb, var(
 body[data-layout="cream_organic"] #invitation .calendar caption,
 body[data-layout="cream_organic"] #invitation .calendar th,
 body[data-layout="cream_organic"] #invitation .calendar td { color: var(--card); }
+/* .parents 카드는 자체 밝은 배경을 가지므로 인사말 배경색(흰 텍스트) 상속을 막고 원래 톤 유지 */
+body[data-layout="cream_organic"] #invitation .parents { color: color-mix(in srgb, var(--ink) 58%, var(--muted)); }
 body[data-layout="cream_organic"] .invitation-intro-copy { color: var(--card); }
 body[data-layout="cream_organic"] .invitation-intro-copy strong { color: var(--card); }
 body[data-layout="cream_organic"] .invitation-intro-copy span { color: color-mix(in srgb, var(--card) 80%, transparent); }
 body[data-layout="cream_organic"] .invitation-intro { background: color-mix(in srgb, var(--accent-dark) 60%, transparent); backdrop-filter: blur(12px); }
 /* 오가닉 섹션 — 크림 위 투명, 다크 텍스트 (카드 없음) */
 body[data-layout="cream_organic"] .section { border-radius: 0; margin: 0; padding: 40px 70px; background: transparent; box-shadow: none; }
+body[data-layout="cream_organic"] .section + .section { margin-top: 56px; }
 body[data-layout="cream_organic"] .section-title { font-size: clamp(18px, 5vw, 26px); letter-spacing: 0.06em; }
 /* 도트 타임라인 */
 body[data-layout="cream_organic"] .timetable-item { position: relative; padding-left: 22px; }
@@ -1226,15 +1241,18 @@ body[data-layout="cream_organic"] .timetable-item::before { content: ""; positio
 /* ═══════════════════════════════════════════════════════════════
    TEMPLATE: crimson_silk  —  다크 히어로 · 임베드 사진 · 웨이브 구분선
    ════════════════════════════════════════════════════════════ */
-body[data-layout="crimson_silk"] .hero { background: var(--accent-dark); min-height: 620px; }
+body[data-layout="crimson_silk"] {
+  --ending-decoration: url("data:image/svg+xml,%3Csvg id='fi_11087506' enable-background='new 0 0 512 512' viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath d='m363.355 37.476c-2.726 0-5.444-.238-8.151-.088-37.677 2.094-73.205 18.628-99.204 45.794-27.867-29.117-66.681-46.021-107.355-46.021-31.157 0-60.03 9.717-83.919 26.194-8.344 5.755-9.89 17.444-3.04 24.917 5.463 5.96 14.564 7.256 21.196 2.633 18.676-13.021 41.317-20.711 65.763-20.711 37.085 0 72.198 18.097 93.931 48.412 3.101 4.327 8.101 6.891 13.423 6.891s10.323-2.564 13.423-6.891c30.596-42.675 87.706-61.138 139.506-38.986 47.631 20.369 73.858 70.74 69.333 122.346-6.05 68.991-50.147 123.57-97.984 163.229-6.942 5.755-7.917 16.014-2.285 23.055.408.51.839.988 1.291 1.436l16.346-2.465c72.159-59.995 109.031-127.118 109.031-201.413.002-67.475-59.341-148.332-141.305-148.332z' fill='%23ff78b9'%3E%3C/path%3E%3Cpath d='m350.063 406.211-.002-.003c-5.254-6.568-14.627-8.153-21.762-3.699-32.431 20.243-60.536 32.978-72.299 37.967-35.806-15.19-222.968-101.948-222.968-254.669 0-18.326 4.357-35.621 12.005-51.015 3.051-6.141 2.116-13.491-2.518-18.546l-.045-.049c-7.78-8.487-21.759-6.648-26.907 3.651-9.936 19.879-15.567 42.258-15.567 65.959 0 79.649 43.665 154.875 126.274 217.544 43.827 33.248 87.245 54.535 109.202 64.267l25.277-2.643c1.972-.75 40.294-14.711 85.412-42.841l5.547-13.441c-.466-.86-1.015-1.691-1.649-2.482z' fill='%23ff78b9'%3E%3C/path%3E%3Cg fill='%23f555b4'%3E%3Cpath d='m363.355 37.161c-2.743 0-5.428.074-8.151.226 78.075 4.367 140.28 69.272 140.28 148.419 0 75.889-38.845 140.372-116.199 203.878 6.049 5.926 15.817 6.4 22.505.839 72.159-59.994 110.21-130.422 110.21-204.716 0-81.964-66.681-148.646-148.645-148.646z'%3E%3C/path%3E%3Cpath d='m250.141 473.766c1.887.714 3.875 1.073 5.859 1.073s3.972-.359 5.859-1.073c1.972-.751 38.973-14.968 84.091-43.099 7.547-4.706 9.843-14.436 5.762-21.975-15.04 9.161-63.295 37.564-116.236 58.925 8.563 3.793 13.954 5.879 14.665 6.149z'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+body[data-layout="crimson_silk"] .hero { background: var(--accent-dark); min-height: 730px; }
 body[data-layout="crimson_silk"] .hero::after { background: linear-gradient(180deg, color-mix(in srgb, var(--accent-dark) 82%, transparent) 0%, transparent 38%, color-mix(in srgb, var(--accent-dark) 58%, transparent) 100%); }
 /* 임베드 사진 프레임 — 텍스트 공간 확보를 위해 180px부터 시작 */
-body[data-layout="crimson_silk"] .hero-media { inset: 180px 26px 42px; border-radius: 18px; overflow: hidden; opacity: 0.88; box-shadow: 0 8px 36px rgba(0,0,0,0.35); }
+body[data-layout="crimson_silk"] .hero-media { inset: 210px 56px auto; aspect-ratio: 3 / 4; height: auto; border-radius: 18px; overflow: hidden; opacity: 0.88; box-shadow: 0 8px 36px rgba(0,0,0,0.35); }
 /* 텍스트 상단 고정 — 아주 위에 작게 */
 body[data-layout="crimson_silk"] .hero-content,
 body[data-layout="crimson_silk"] .hero-content-top,
 body[data-layout="crimson_silk"] .hero-content-middle,
-body[data-layout="crimson_silk"] .hero-content-bottom { top: 44px !important; bottom: auto !important; transform: none !important; left: 28px; right: 28px; text-align: center; }
+body[data-layout="crimson_silk"] .hero-content-bottom { top: 72px !important; bottom: auto !important; transform: none !important; left: 28px; right: 28px; text-align: center; }
 body[data-layout="crimson_silk"] .hero-names { color: var(--card); font-size: clamp(22px, 6vw, 32px); letter-spacing: 0.06em; text-shadow: 0 1px 6px rgba(0,0,0,0.25); line-height: 1.2; }
 body[data-layout="crimson_silk"] .hero-eyebrow { color: color-mix(in srgb, var(--card) 80%, transparent); text-shadow: none; font-size: 10px; letter-spacing: 0.26em; }
 body[data-layout="crimson_silk"] .hero-date { color: color-mix(in srgb, var(--card) 80%, transparent); text-shadow: none; font-size: 11px; letter-spacing: 0.16em; }
@@ -1242,8 +1260,8 @@ body[data-layout="crimson_silk"] .invitation-intro { background: color-mix(in sr
 body[data-layout="crimson_silk"] .invitation-intro-copy { color: var(--card); text-align: center; }
 body[data-layout="crimson_silk"] .invitation-intro-copy p,
 body[data-layout="crimson_silk"] .invitation-intro-copy span { color: color-mix(in srgb, var(--card) 68%, transparent); }
-/* 섹션 사이 웨이브 장식선 — accent-dark 색상으로 테마 연동 */
-body[data-layout="crimson_silk"] .section + .section::before { content: ""; display: block; width: 68%; height: 22px; margin: 0 auto 24px; background-color: var(--accent-dark); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11Q25 3 50 11Q75 19 100 11Q125 3 150 11Q175 19 200 11' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11Q25 3 50 11Q75 19 100 11Q125 3 150 11Q175 19 200 11' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; opacity: 0.55; }
+/* 섹션 구분선 제거 (웨이브 장식 없이 깔끔하게) */
+body[data-layout="crimson_silk"] .section + .section::before { display: none; }
 /* 하트 타임라인 불릿 */
 body[data-layout="crimson_silk"] .timetable-item { position: relative; padding-left: 18px; }
 body[data-layout="crimson_silk"] .timetable-item::before { content: "♥"; position: absolute; left: 0; top: 0; color: var(--accent-dark); font-size: 10px; line-height: 1.6; }
@@ -1251,7 +1269,10 @@ body[data-layout="crimson_silk"] .timetable-item::before { content: "♥"; posit
 /* ═══════════════════════════════════════════════════════════════
    TEMPLATE: editorial_red  —  흑백 사진 · 잡지형 타이포 · 폴라로이드 · 레드 장식
    ════════════════════════════════════════════════════════════ */
-body[data-layout="editorial_red"] .hero { min-height: 540px; }
+body[data-layout="editorial_red"] {
+  --ending-decoration: url("data:image/svg+xml,%3Csvg id='fi_2556038' enable-background='new 0 0 64 64' height='512' viewBox='0 0 64 64' width='512' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath d='m.099 16.64 1.65 8.55c.092.478.511.81.98.81.063 0 .127-.006.19-.019.542-.104.897-.629.792-1.171l-1.46-7.568 20.938-4.043c.542-.104.897-.629.792-1.171-.104-.543-.634-.901-1.171-.792l-21.92 4.232c-.541.105-.897.63-.791 1.172z'%3E%3C/path%3E%3Cpath d='m20.869 17.825c-2.202.517-3.931 2.025-5.136 4.483-1.096 2.233-1.139 4.385-.127 6.394 3.275 6.509 16.854 9.079 17.431 9.186.061.011.121.017.182.017.207 0 .411-.064.582-.188.474-.339 11.594-8.39 11.796-15.662.063-2.255-.892-4.19-2.835-5.754-2.144-1.725-4.353-2.355-6.557-1.886-3.365.72-5.744 3.854-6.774 5.475-1.639-1.029-5.172-2.862-8.562-2.065zm9.106 4.468c.288-.065.534-.256.669-.519.024-.047 2.425-4.647 5.985-5.404 1.59-.337 3.229.163 4.879 1.489 1.451 1.167 2.135 2.521 2.09 4.139-.155 5.639-8.773 12.445-10.617 13.838-2.271-.478-13.048-2.984-15.588-8.034-.725-1.439-.68-2.948.136-4.612.929-1.892 2.204-3.041 3.792-3.416.425-.101.857-.145 1.291-.145 3.231 0 6.499 2.456 6.536 2.484.234.18.54.244.827.18z'%3E%3C/path%3E%3Cpath d='m20.874 0c-.011 0-.021 0-.032 0-1.188 0-2.219.652-2.882 1.209-.663-.557-1.692-1.209-2.881-1.209-.011 0-.021 0-.032 0-.712.008-1.758.264-2.703 1.444-.695.87-.931 1.855-.68 2.851.723 2.864 5.376 4.917 5.904 5.142.125.054.259.08.392.08s.267-.026.392-.08c.528-.225 5.183-2.277 5.905-5.142.251-.995.016-1.98-.68-2.851-.945-1.18-1.991-1.436-2.703-1.444zm1.443 3.806c-.335 1.33-2.703 2.841-4.358 3.615-1.652-.772-4.019-2.279-4.355-3.614-.065-.261-.09-.622.303-1.112.547-.686 1.005-.693 1.156-.695h.017c.864 0 1.84.924 2.112 1.246.19.229.472.36.769.36s.578-.132.769-.359c.269-.325 1.235-1.247 2.112-1.247h.013c.15.002.61.007 1.16.694.392.491.368.852.302 1.112z'%3E%3C/path%3E%3Cpath d='m63.925 31.627c-.003-.007-.003-.014-.006-.02-.044-.103-.111-.194-.187-.278-.02-.021-.039-.041-.06-.06s-.037-.042-.06-.06l-4.311-3.339-4.22-21.85c-.104-.543-.623-.894-1.171-.793l-2.328.449c-.066-.081-.132-.156-.198-.223-.841-.858-2.044-1.13-2.914-1.206-.076-.87-.348-2.073-1.206-2.914-.508-.499-1.427-1.057-2.933-.891-1.106.123-1.97.653-2.496 1.535-.919 1.538-.603 3.886-.164 5.616l-6.851 1.325-2.208-1.709c-.361-.279-.864-.279-1.224 0l-4.089 3.161-.489.094c-.542.104-.897.629-.792 1.171.092.479.511.811.98.811.063 0 .127-.006.19-.019l15.08-2.911c.046.123.085.223.106.274.102.252.302.452.554.554.38.153 2.9 1.132 5.235 1.132.939 0 1.849-.158 2.576-.593.881-.526 1.412-1.39 1.535-2.496.033-.294.031-.559.014-.81l1.018-.196 4.988 25.819-22.459 11.045-3.3-2.09c-.326-.207-.744-.207-1.07 0l-29.465 18.661v-27.21l21.559 10.603c.142.069.292.103.44.103.369 0 .725-.205.898-.559.243-.496.039-1.095-.456-1.339l-21.56-10.604 1.41-1.09c.438-.337.518-.966.18-1.402-.335-.436-.965-.519-1.402-.18l-2.68 2.07c-.008.006-.011.015-.018.021-.016.013-.03.027-.045.041-.045.042-.077.093-.113.142-.031.042-.069.078-.092.124-.004.008-.012.013-.017.022-.004.009-.003.018-.007.027-.022.047-.028.1-.042.151-.016.058-.037.113-.043.172-.002.021-.004.042-.005.063-.002.011-.007.019-.007.029v29c0 1.654 1.346 3 3 3h58c1.654 0 3-1.346 3-3v-26-3c0-.016-.008-.029-.009-.044-.005-.114-.024-.225-.066-.329zm-31.925-22.363.205.159-.547.106zm18.287-1.098c-.069.624-.342.862-.572.999-1.176.704-3.919.098-5.638-.523-.621-1.719-1.229-4.461-.523-5.639.137-.229.375-.502.999-.571.864-.098 1.201.222 1.309.327.623.606.661 1.963.625 2.387-.026.295.08.586.288.795.209.211.514.323.795.292.43-.039 1.784.001 2.39.624.104.108.425.436.327 1.309zm9.589 22.68 1.245.964-.967.476zm-27.876 13.338 28.131 17.816h-56.262zm30 16.632-24.184-15.316 24.184-11.894v1.394z'%3E%3C/path%3E%3C/g%3E%3C/svg%3E");
+}
+body[data-layout="editorial_red"] .hero { min-height: 660px; }
 /* 흑백 사진 */
 body[data-layout="editorial_red"] .hero-media { filter: saturate(0.62) contrast(1.04); }
 /* 잡지형 대형 이름 */
@@ -1299,7 +1320,7 @@ body[data-layout="cream_organic"] .day-wedding .day-num { color: var(--card); }
 body[data-layout="editorial_red"] .day-wedding .day-week,
 body[data-layout="cream_organic"] .day-wedding .day-week { color: var(--accent-dark); font-weight: 700; }
 body[data-layout="editorial_red"] .day-wedding .day-num::before,
-body[data-layout="cream_organic"] .day-wedding .day-num::before { content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; transform: translate(-50%, -46%); width: 1.6em; height: 1.46em; background-color: var(--accent-dark); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat; }
+body[data-layout="cream_organic"] .day-wedding .day-num::before { content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; transform: translate(-50%, -38%); width: 1.6em; height: 1.46em; background-color: var(--accent-dark); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat; }
 /* 전체 섹션 좌측정렬 (영문 라벨 + 국문 타이틀, location 스타일 통일) */
 body[data-layout="editorial_red"] .section { padding: 44px 80px; border-top: none; text-align: left; }
 body[data-layout="editorial_red"] .section-title,
@@ -1322,6 +1343,10 @@ body[data-layout="editorial_red"] .profile-card .media { border: 5px solid var(-
 body[data-layout="editorial_red"] .section + .section::before { display: none; }
 /* 물결 섹션 구분 — accent-dark 색상으로 테마 연동 */
 body[data-layout="editorial_red"] .section::after { content: ""; display: block; margin: 24px 0 0; width: 56px; height: 12px; background-color: var(--accent-dark); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 18'%3E%3Cpath d='M4 9Q14 3 24 9Q34 15 44 9Q54 3 64 9Q74 15 84 9Q94 3 96 9' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 18'%3E%3Cpath d='M4 9Q14 3 24 9Q34 15 44 9Q54 3 64 9Q74 15 84 9Q94 3 96 9' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; opacity: 0.55; }
+/* 식장안내 슬라이드 카드 — 매거진 좌측정렬 통일 */
+body[data-layout="editorial_red"] .information-slider { text-align: left; }
+body[data-layout="editorial_red"] .information-slide { border-radius: 4px; }
+body[data-layout="editorial_red"] .information-dots { justify-content: flex-start; }
 
 /* ═══════════════════════════════════════════════════════════════
    TEMPLATE: garden_doodle  —  하트 사진 마스크 · 굵은 이름 · 낙서 테두리
@@ -1329,9 +1354,11 @@ body[data-layout="editorial_red"] .section::after { content: ""; display: block;
 body[data-layout="garden_doodle"] .hero { min-height: 600px; overflow: hidden; }
 /* 다른 메인이미지 꾸밈(아치/임베드/문구)을 선택하면 러브 두들 전용 하트 배경을 비움 */
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero { background: var(--card); }
-/* 섹션 구분 아이콘 — 손그림 낙서 하트 + 양옆 물결 */
-body[data-layout="garden_doodle"] { --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 24'%3E%3Cpath d='M5 14c8 3 11-4 17-2m37 2c-8 3-11-4-17-2' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M32 7.5c-2.6-3-7 0-3.6 3.4L32 14.5l3.6-3.6c3.4-3.4-1-6.4-3.6-3.4Z' fill='none' stroke='%23000' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-body[data-layout="garden_doodle"] .section + .section::before { width: 64px; }
+/* 섹션 구분 아이콘 — 손그림 낙서 하트(크게) + 양옆 물결 */
+body[data-layout="garden_doodle"] {
+  --section-divider: url("data:image/svg+xml,%3Csvg id='fi_9518153' enable-background='new 0 0 100 100' height='512' viewBox='0 0 100 100' width='512' xmlns='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath d='m45.5 32.73c-1.45-1.6-4.94-4.45-6.61-6.52-1.61-2-2.28-4.33-1.57-6.92.64-2.34 2.8-3.76 5.24-3.94 2.4-.18 4.41.67 5.8 2.19.23.26 1.02 1.02 1.31 1.3.8-.66 1.53-1.31 1.68-1.42 4.09-2.98 7.89-1.78 10.11.54 2.84 2.96.66 6.61-1.37 9.69-1.07 1.62-3 4.13-4.33 5.58 2.96.18 2.67.63 2.6 3.56-.04 1.56-.15 1.94 2.01 2.84 3.43 1.43 7.84 5.26 10.14 8.36 2.34 3.15 4.08 11 3.45 15.08-.92 5.91-3.15 10.39-7.48 14.5-3.44 3.26-10.89 6.85-17.86 6.62-8.67-.28-14.98-4.96-19.04-10.41-2.92-3.93-4.31-11.51-3.49-15.92.75-4.04 3.5-9.29 5.25-11.36 2.31-2.73 7.48-6.35 10.53-7.36 2.33-.77 1.29-1.83 1.27-4.39 0-1.46-.22-2.02 2.36-2.02zm-16.49 29.84c0 4.15 2.55 9.95 6.73 13.61 4.72 4.13 12.7 5.82 18.45 4.34 5.43-1.4 9.19-3.45 12.67-8.09 2.33-3.11 4.55-8.23 4.11-12.25-.87-7.77-2.23-10.42-7.32-14.97-3.78-3.38-10.53-5.26-16.57-4.18-5.04.9-9.72 3.05-12.79 6.76-3.47 4.19-5.28 8.8-5.28 14.78zm14.33-43.57c-1.1.01-2.86.54-2.67 3.52.18 2.78 4.67 5.78 7.07 7.95 1.9 1.72 4.07 2 5.49.39.91-1.04 4.35-5.1 5.43-7.1 1.18-2.19-.27-4.62-3.04-4.14-2.02.35-3.28 1.4-4.23 3.14-.35.63-.73 1.43-1.35 1.49-.92.09-1.91-.25-2.03-1.38-.29-2.6-2.84-3.89-4.67-3.87zm12.25 19.17c0-.22 0-1.48 0-2.28 0-.34-.26-.61-.6-.62-2.58-.08-5.27-.11-8.02-.08-.36 0-.64.3-.62.66.03.53.06 1.16.12 2.16 3.17-.5 5.71-.54 9.12.16z'%3E%3C/path%3E%3Cpath d='m62.68 70.81c-3.2 3.63-7.61 5.66-12.68 5.96-3.93.23-9.37-1.47-12.38-5.07-3.33-3.99-4.21-7.4-4.18-11.12.05-4.69 3.28-9.61 6.29-11.78 3.52-2.53 6.28-4.09 11.04-3.89 6.89.28 10.31 3.66 12.1 5.91 1.76 2.23 3.61 5.82 3.61 10.02 0 2.93-1.57 7.43-3.8 9.97zm-26.05-10.42c-.42 8.67 7.13 13.39 13.24 13.38 7.18-.01 14.12-6.3 13.46-13.67-.69-7.77-6.78-12.47-13.33-12.1-7.12.4-13.04 5.63-13.37 12.39z'%3E%3C/path%3E%3C/g%3E%3C/svg%3E");
+  --ending-decoration: url("data:image/svg+xml,%3Csvg id='fi_5217602' enable-background='new 0 0 1080 1080' height='512' viewBox='0 0 1080 1080' width='512' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m672.7 360.14c-18.88-6.19-38.29-7.09-58.06-3.43-21.13 3.91-39.81 13.12-58.47 22.97-2.98-2.02-5.68-3.57-8.03-5.49-35.55-29.23-85.44-18.44-111.19 9.21-27.89 29.95-34.28 64.76-30.69 102.67 2.78 29.3 14.62 56.73 19.42 85.62 2.39 14.37 1.03 28.96 2.22 44.06 9.38-2.83 10.1-9.1 11.61-14.64 4.25-15.64 3.96-31.56.67-47.17-4.6-21.83-11.58-43.25-15.48-65.16-6.77-38.02-.27-73.18 31.27-101.15 25.64-22.73 60.39-21.13 84.27 3.69-.94 4.69-5.1 7.35-8 10.78-15.31 18.13-26.51 38.28-33.07 60.47-4.67 15.8-4.08 31.48 6.02 45.73 8.97 12.65 21.58 15.68 35.87 8.46 16.92-8.55 26.45-22.6 31.55-39.37 8.63-28.4 9.33-56.57-6.11-84.56 25.35-15.95 51.28-26.24 81.25-22.99 44.32 4.8 66.61 31.21 62.23 72.71-.83 7.86-2.31 15.72-4.28 23.4-16.1 62.8-59.1 104.23-121.3 128.67-57.32 22.52-116.93 37.82-182.96 41.14 13.49 12.37 27.77 11.38 40.96 10.29 59.64-4.96 117.82-16.85 171.04-42.89 76.3-37.35 116.48-96.37 113.12-178.22-1.36-32.95-21.14-54.07-53.86-64.8zm-147.31 142.79c-20.92-19.23-6.48-70.35 25.85-94.37 18.81 26.3 4.17 81.49-25.85 94.37z' fill='rgb(0,0,0)'%3E%3C/path%3E%3C/svg%3E");
+}
 /* 상단은 이름 가독성용 살짝 어둡게, 하단은 흰색으로 페이드 → 아래 섹션과 연결 */
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero::after { background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.06) 20%, transparent 42%, transparent 70%, var(--paper) 100%); }
 /* 하트 마스크 사진 */
@@ -1339,12 +1366,12 @@ body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([
 /* 메인이미지 — 기본 레이아웃처럼 전체 배경으로 깔림 */
 body[data-layout="garden_doodle"] .hero-media { inset: 0; height: auto; border-radius: 0; overflow: hidden; opacity: 1; background-size: cover; background-position: center; }
 /* 손그림 하트 — 사진 위에 얇은 흰 선 스티커로 얹음 (사진보다 작게, 좌/하단 안 짤리게) */
-body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero::before { display: block; content: ""; position: absolute; z-index: 4; inset: 96px 52px auto; height: 430px; pointer-events: none; transform: scale(var(--hero-decoration-size, 1)); transform-origin: 50% 42%; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.28)); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z' fill='none' stroke='%23ffffff' stroke-width='6' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero::before { display: block; content: ""; position: absolute; z-index: 4; inset: 136px 52px auto; height: 430px; pointer-events: none; transform: scale(var(--hero-decoration-size, 1)); transform-origin: 50% 42%; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.28)); background: var(--heart-frame-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E")) center/contain no-repeat; }
 /* 텍스트 상단 고정 (다른 메인이미지 꾸밈 선택 시에는 해당 꾸밈의 기본 문구 위치를 사용) */
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-content,
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-content-top,
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-content-middle,
-body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-content-bottom { top: 32px !important; bottom: auto !important; transform: none !important; text-align: center; }
+body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-content-bottom { top: 72px !important; bottom: auto !important; transform: none !important; text-align: center; }
 /* 굵은 올캡스 이름 — 흰 히어로 배경 위 진한 색 */
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-names { font-size: clamp(24px, 6.6vw, 36px); font-weight: 900; letter-spacing: 0.03em; line-height: 1.05; text-transform: uppercase; color: var(--card) !important; text-shadow: 0 1px 10px rgba(0,0,0,0.45); }
 body[data-layout="garden_doodle"]:not([data-hero-decoration="frame_arch"]):not([data-hero-decoration="frame_inset"]):not([data-hero-decoration="text_marriage"]) .hero-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--card) !important; text-shadow: 0 1px 6px rgba(0,0,0,0.4); }
@@ -1367,7 +1394,7 @@ body[data-hero-decoration="text_marriage"] .hero-media::after { content: "저희
 body[data-hero-decoration="frame_heart"] .hero { min-height: 600px; overflow: hidden; }
 body[data-hero-decoration="frame_heart"] .hero-media { inset: 0; border-radius: 0; transform: none; box-shadow: none; }
 body[data-hero-decoration="frame_heart"] .hero::after { background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.06) 20%, transparent 42%, transparent 70%, var(--paper) 100%); }
-body[data-hero-decoration="frame_heart"] .hero::before { display: block !important; content: ""; position: absolute; z-index: 4; inset: 96px 52px auto; height: 430px; pointer-events: none; transform: scale(var(--hero-decoration-size, 1)); transform-origin: 50% 42%; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.28)); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z' fill='none' stroke='%23ffffff' stroke-width='6' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+body[data-hero-decoration="frame_heart"] .hero::before { display: block !important; content: ""; position: absolute; z-index: 4; inset: 96px 52px auto; height: 430px; pointer-events: none; transform: scale(var(--hero-decoration-size, 1)); transform-origin: 50% 42%; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.28)); background: var(--heart-frame-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='180 95 845 1010'%3E%3Cpath d='M1003.093 184.675c-25.849-65.573-79.989-95.277-149.221-81.281-30.358 6.146-57.611 19.656-83.676 35.888-42.185 26.28-77.034 60.568-107.87 99.15-33.202 41.511-61.886 86.052-87.769 132.456-10.155 18.215-20.489 36.318-30.738 54.477-2.521-.571-5.052-1.15-7.573-1.703.94-15.605 1.862-31.21 2.844-46.806 2.615-41.791-4.982-81.795-20.372-120.603-21.148-53.298-87.082-100.768-164.718-67.462-14.473 6.203-28.287 14.669-41.108 23.894-56.438 40.696-87.694 98.57-106.953 163.385-22.626 76.042-27.636 153.609-15.329 232.232 8.659 55.314 23.31 108.895 42.741 161.285 40.304 108.655 94.304 210.574 152.58 310.398 2.002 3.424 4 6.914 6.343 10.094 8.069 10.993 16.816 13.191 26.864 4.875 12.19-10.076 23.932-20.91 34.629-32.566 55.6-60.54 111.135-121.154 166.084-182.303 70.896-78.877 141.699-157.837 211.642-237.564 56.282-64.119 101.18-136.072 139.79-211.955 26.831-52.737 41.987-108.73 44.467-167.941 1.114-26.822-2.74-52.812-12.657-77.95z' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E")) center/contain no-repeat; }
 /* 아치 프레임 — 사진을 아치형으로 */
 body[data-hero-decoration="frame_arch"] .hero { min-height: 560px; overflow: hidden; }
 body[data-hero-decoration="frame_arch"] .hero-media { inset: 150px 50px auto; height: 320px; border-radius: 200px 200px 0 0; transform: scale(var(--hero-decoration-size, 1)); transform-origin: center top; box-shadow: 0 0 0 5px color-mix(in srgb, var(--card) 82%, transparent); }
@@ -1393,6 +1420,8 @@ body[data-hero-decoration="frame_inset"] .hero-date { color: color-mix(in srgb, 
 
 /* 낙서 대시 섹션 카드 */
 body[data-layout="garden_doodle"] .section { border-radius: 20px; margin: 4px 10px; padding: 40px 70px; border: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent); }
+body[data-layout="garden_doodle"] .section + .section { margin-top: 64px; }
+body[data-layout="garden_doodle"] .section + .section::before { top: -52px; }
 body[data-layout="garden_doodle"] .section-title { font-size: clamp(18px, 5vw, 24px); font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; }
 /* 귀여운 컨셉 — 본문도 둥근 폰트 */
 body[data-layout="garden_doodle"] .section p,
@@ -1468,6 +1497,7 @@ body[data-layout="navy_arch"] .profile-body { text-align: center; }
 body[data-layout="navy_arch"] .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 body[data-layout="navy_arch"] .gallery-item { aspect-ratio: 1; border-radius: 12px; border-width: 2px; border-bottom-width: 2px; transform: none !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 body[data-layout="navy_arch"] .btn { border-radius: 8px; }
+body[data-layout="navy_arch"] .contact-row .btn { flex: 0 1 148px; }
 body[data-layout="navy_arch"] .quick-nav a { border-radius: 8px; }
 body[data-layout="navy_arch"] .section-title { text-align: center; font-size: clamp(18px, 5vw, 24px); }
 body[data-layout="navy_arch"] .section-label { text-align: center; }
@@ -1576,7 +1606,7 @@ body[data-layout="garden_doodle"] .invitation-intro-copy strong {
 
 /* ── navy_arch : 포멀한 해군 스타일, 중앙 정렬, 수평선 장식 ── */
 /* invitation 섹션 위쪽 아치(돔) — 세로비율 키워 양옆 짤림 없이 위로 솟아오름 */
-body[data-layout="navy_arch"] #invitation { position: relative; z-index: 2; background: var(--card); border-radius: 50% 50% 0 0 / 132px 132px 0 0; margin-top: -76px; padding: 128px 28px 44px; }
+body[data-layout="navy_arch"] #invitation { position: relative; z-index: 2; background: var(--card); border-radius: 50% 50% 0 0 / 132px 132px 0 0; margin-top: -140px; padding: 128px 28px 44px; }
 body[data-layout="navy_arch"] #invitation .section-title { text-align: center; font-size: clamp(18px, 5vw, 24px); }
 body[data-layout="navy_arch"] #about-us .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; justify-items: center; }
 body[data-layout="navy_arch"] #about-us .profile-card { display: grid; grid-template-rows: auto auto; justify-items: center; justify-content: center; text-align: center; gap: 8px; width: 100%; }
@@ -1590,19 +1620,16 @@ body[data-layout="navy_arch"] .calendar .wedding-day span { background: var(--ac
 body[data-layout="navy_arch"] #location .location-venue { font-family: "Nanum Myeongjo", serif; font-size: 18px; }
 body[data-layout="navy_arch"] #guestbook .guestbook-form { background: color-mix(in srgb, var(--accent-dark) 5%, var(--card)); border-radius: 12px; padding: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
 
-/* ── cream_organic : 봄날 감성, 꽃 장식, 둥근 카드 ── */
-body[data-layout="cream_organic"] #invitation::before { content: "✿"; display: block; text-align: center; font-size: 22px; margin-bottom: 12px; color: var(--card); opacity: 0.75; }
+/* ── cream_organic : 봄날 감성, 둥근 카드 ── */
 body[data-layout="cream_organic"] #about-us .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 body[data-layout="cream_organic"] #about-us .profile-card { display: grid; grid-template-rows: auto auto; justify-items: center; text-align: center; gap: 8px; }
 body[data-layout="cream_organic"] #about-us .profile-name { font-family: "Gowun Batang", serif; font-size: 16px; font-weight: 700; }
 body[data-layout="cream_organic"] #wedding-day .timetable-item { padding: 12px 14px 12px 28px; }
+body[data-layout="cream_organic"] #wedding-day .calendar .wedding-day span::before { transform: translateY(-2px); }
 body[data-layout="cream_organic"] #location .section-title::after { content: ""; display: block; width: 32px; height: 2px; background: var(--accent-dark); border-radius: 2px; margin: 8px auto 0; }
 body[data-layout="cream_organic"] #guestbook .field input,
 body[data-layout="cream_organic"] #guestbook .field textarea { border-radius: 16px; border-color: color-mix(in srgb, var(--accent-dark) 35%, transparent); }
 body[data-layout="cream_organic"] #guestbook .btn { border-radius: 999px; }
-/* 섹션 타이틀 꽃 장식 */
-body[data-layout="cream_organic"] .section-label::before { content: "✿ "; color: var(--accent-dark); }
-body[data-layout="cream_organic"] .section-label::after { content: " ✿"; color: var(--accent-dark); }
 
 /* ── crimson_silk : 진홍 예식, 크림 on 다크 배경, 모던 미니멀 ── */
 body[data-layout="crimson_silk"] body,
@@ -1641,6 +1668,7 @@ body[data-layout="garden_doodle"] #invitation .section-title { font-size: clamp(
 body[data-layout="garden_doodle"] #about-us .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 body[data-layout="garden_doodle"] #about-us .profile-card { display: grid; grid-template-rows: auto auto; justify-items: center; text-align: center; gap: 8px; }
 body[data-layout="garden_doodle"] #about-us .profile-name { font-family: "Gowun Dodum", sans-serif; font-size: 16px; font-weight: 700; }
+body[data-layout="garden_doodle"] .contact-row .btn { flex: 0 1 148px; }
 body[data-layout="garden_doodle"] #wedding-day .timetable-item { padding: 10px 12px 10px 26px; position: relative; }
 body[data-layout="garden_doodle"] #wedding-day .timetable-item::before { content: "♥"; position: absolute; left: 4px; top: 12px; color: var(--accent); font-size: 11px; }
 body[data-layout="garden_doodle"] #gallery .gallery-section-note { font-family: "Gowun Dodum", sans-serif; font-style: italic; font-size: 13px; text-align: center; color: var(--muted); }
@@ -1776,7 +1804,6 @@ body[data-layout="garden_doodle"] #account details + details { margin-top: 12px;
 /* 공유(엔딩) 섹션 — 사진 없이 점선 박스 + 하트 꾸밈 위에 공유 버튼 */
 body[data-layout="garden_doodle"] .ending .media { display: none; }
 body[data-layout="garden_doodle"] .ending { background: color-mix(in srgb, var(--accent) 14%, var(--card)); border: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 18px; margin: 20px 14px; padding: 40px 28px; }
-body[data-layout="garden_doodle"] .ending::before { content: "♥"; display: block; text-align: center; font-size: 28px; color: var(--accent-dark); margin-bottom: 10px; }
 body[data-layout="garden_doodle"] .ending .ending-text,
 body[data-layout="garden_doodle"] .ending p { color: var(--ink); }
 /* information = 포스트잇 메모 스타일 (귀여운 컨셉) */
@@ -2867,6 +2894,11 @@ body:not([data-admin-area="general"]) .share-row .btn {
   padding-right: 12px;
   padding-left: 12px;
   letter-spacing: -0.035em;
+}
+
+body:not([data-admin-area="general"])[data-layout="navy_arch"] .contact-row .btn,
+body:not([data-admin-area="general"])[data-layout="garden_doodle"] .contact-row .btn {
+  flex: 0 1 148px;
 }
 
 body:not([data-admin-area="general"]) .guest-photo-actions {

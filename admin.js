@@ -1066,6 +1066,7 @@ function editorDesignPanel() {
         ${editorDesignFramePicker(system.assets.frames, design.heroDecoration || "inherit")}
         <div class="editor-color-strip">${input("appearance.design.heroDecorationTint", "꾸밈 색상", design.heroDecorationTint || "#ffffff", "color")}</div>
         ${rangeInput("appearance.design.heroDecorationSize", "꾸밈 크기 (하트·프레임)", Number(design.heroDecorationSize) || 100, 70, 130, 5)}
+        ${rangeInput("appearance.design.heroDecorationStrokeWidth", "하트프레임 획 두께", Number(design.heroDecorationStrokeWidth) || 3, 1, 8, 0.5)}
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="text">
         ${editorDesignTextThemePicker(system.assets.textThemes, selectedTextTheme)}
@@ -1992,6 +1993,7 @@ function editorData(form) {
   if (fields.get("appearance.design.heroDecoration")) next.appearance.design.heroDecoration = fields.get("appearance.design.heroDecoration");
   if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
   next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
+  next.appearance.design.heroDecorationStrokeWidth = Number(fields.get("appearance.design.heroDecorationStrokeWidth") || next.appearance.design.heroDecorationStrokeWidth || 3);
   const displayFormat = form.elements["wedding.displayDateFormat"]?.value || "long_ko";
   const displayCustom = form.elements["wedding.displayDateCustom"]?.value.trim() || "";
   next.wedding.displayDate = displayFormat === "custom"
