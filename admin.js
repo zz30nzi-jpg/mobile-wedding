@@ -3240,7 +3240,9 @@ function bindEditor() {
       updateSectionOrder();
     });
     list?.addEventListener("touchstart", (event) => {
-      draggedItem = event.target.closest(".section-order-item");
+      const handle = event.target.closest(".section-drag-handle");
+      if (!handle) return;
+      draggedItem = handle.closest(".section-order-item");
       draggedItem?.classList.add("is-dragging");
     }, { passive: true });
     list?.addEventListener("touchmove", (event) => {
@@ -3929,4 +3931,15 @@ async function start() {
   renderAdminView(localStorage.getItem(GENERAL_ADMIN_VIEW_KEY) || "editor");
 }
 
-start();
+start().catch((error) => {
+  console.error("[admin start]", error);
+  if (adminApp) {
+    adminApp.innerHTML = `
+      <section class="admin-card admin-login">
+        <p class="section-label">Admin Error</p>
+        <h2>관리자페이지를 열지 못했습니다</h2>
+        <p class="admin-message">페이지를 새로고침해도 반복되면 아래 오류 내용을 알려주세요.</p>
+        <p class="admin-message micro-help">${escapeAdminHtml(error.message || String(error))}</p>
+      </section>`;
+  }
+});
