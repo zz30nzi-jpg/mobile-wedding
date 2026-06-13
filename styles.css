@@ -3484,10 +3484,20 @@ body[data-admin-area="general"] .admin-editor-view.view-basic {
 }
 
 body[data-admin-area="general"] {
+  position: static !important;
   height: auto;
   min-height: 100%;
   overflow-y: auto !important;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+}
+
+body[data-admin-area="general"].modal-open,
+body[data-admin-area="general"].intro-open,
+body[data-admin-area="general"].admin-welcome-locked {
+  position: static !important;
+  overflow-y: auto !important;
+  touch-action: auto !important;
 }
 
 body[data-admin-area="general"] .admin-page {

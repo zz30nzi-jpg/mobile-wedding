@@ -5,7 +5,11 @@ const adminMediaUrl = (value = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(valu
 window.adminMediaUrl = adminMediaUrl;
 window.ADMIN_APP_READY = true;
 const storageApi = window.RSVP_STORAGE || {};
-const supabaseClient = storageApi.getSupabaseClient?.() || null;
+let supabaseClient = storageApi.getSupabaseClient?.() || null;
+const getAdminSupabaseClient = () => {
+  supabaseClient = supabaseClient || window.RSVP_STORAGE?.getSupabaseClient?.() || null;
+  return supabaseClient;
+};
 let invitationData = window.INVITATION_DATA;
 window.WEDDING_AI_SETTINGS = () => invitationData?.designSystem?.aiSettings || {};
 window.AI_DESIGN_SERVICE = (() => {
@@ -328,8 +332,9 @@ function adminHeader(active) {
 
 function bindAdminNavigation() {
   document.querySelector("#admin-logout")?.addEventListener("click", async () => {
-    if (!supabaseClient) return renderEditor("현재는 Supabase 연결 전 미리보기 모드입니다.");
-    await supabaseClient.auth.signOut();
+    const client = getAdminSupabaseClient();
+    if (!client) return renderEditor("현재는 Supabase 연결 전 미리보기 모드입니다.");
+    await client.auth.signOut();
     renderLogin();
   });
   document.querySelectorAll("[data-admin-view]").forEach((button) => {
@@ -485,11 +490,12 @@ function renderLogin(message = "") {
       alert("비밀번호를 재설정할 이메일을 먼저 입력해 주세요.");
       return;
     }
-    if (!supabaseClient) {
+    const client = getAdminSupabaseClient();
+    if (!client) {
       alert("Supabase 연결 후 비밀번호 찾기를 사용할 수 있습니다.");
       return;
     }
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}` });
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}` });
     alert(error ? `비밀번호 재설정 메일을 보내지 못했습니다.\n${error.message}` : "비밀번호 재설정 메일을 보냈습니다.");
   });
   const startOAuth = async (button, event) => {
@@ -600,7 +606,7 @@ function renderBasicInfoOnboarding(message = "") {
   const form = document.querySelector("#basic-info-form");
   document.querySelector("[data-onboarding-cancel]")?.addEventListener("click", async () => {
     if (!confirm("가입을 취소하고 처음으로 돌아갈까요? 입력하신 정보는 저장되지 않습니다.")) return;
-    try { await supabaseClient?.auth?.signOut(); } catch {}
+    try { await getAdminSupabaseClient()?.auth?.signOut(); } catch {}
     renderLogin();
   });
   // 단계 이동: 기본정보 → 레이아웃 선택
@@ -3621,11 +3627,17 @@ function hexToRgba(color = "#eff7fa", alpha = 0.94) {
 
 async function login(event) {
   event.preventDefault();
+  let client = getAdminSupabaseClient();
+  if (!client && window.ADMIN_SUPABASE_READY) {
+    await window.ADMIN_SUPABASE_READY;
+    client = getAdminSupabaseClient();
+  }
+  if (!client) return renderLogin("로그인 서버 연결이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
   const form = new FormData(event.currentTarget);
   const email = String(form.get("email") || "").trim();
   if (form.get("rememberEmail") === "on") localStorage.setItem(SAVED_LOGIN_EMAIL_KEY, email);
   else localStorage.removeItem(SAVED_LOGIN_EMAIL_KEY);
-  const { error } = await supabaseClient.auth.signInWithPassword({
+  const { error } = await client.auth.signInWithPassword({
     email,
     password: form.get("password"),
   });
@@ -3686,7 +3698,7 @@ async function signup(event) {
 }
 
 async function loadInvitationData() {
-  if (supabaseClient) {
+  if (getAdminSupabaseClient()) {
     currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
   }
   invitationData = await window.RSVP_STORAGE.loadInvitationData(window.INVITATION_DATA);
@@ -3695,12 +3707,13 @@ async function loadInvitationData() {
 
 async function renderResponses() {
   rememberAdminView("responses");
-  if (!supabaseClient) {
+  const client = getAdminSupabaseClient();
+  if (!client) {
     adminApp.innerHTML = `${adminHeader("responses")}${contentBackBar("참석 현황")}${responsesView(window.RSVP_STORAGE.readLocalResponses(), true)}`;
     bindAdminNavigation();
     return;
   }
-  let query = supabaseClient
+  let query = client
     .from("attendance_responses")
     .select("*")
     .order("created_at", { ascending: false });
@@ -3950,8 +3963,9 @@ async function start() {
   if (!window.INVITATION_DATA) return renderDependencyNotice("기본 청첩장 데이터 스크립트를 불러오지 못했습니다.");
   if (!window.RSVP_STORAGE?.loadInvitationData) return renderDependencyNotice("저장소 스크립트를 불러오지 못했습니다.");
   applyAppearance(invitationData.appearance);
-  if (!supabaseClient) return renderSetupNotice();
-  const { data } = await supabaseClient.auth.getSession();
+  const client = getAdminSupabaseClient();
+  if (!client) return renderLogin("로그인 서버 연결을 준비하고 있습니다. 화면이 열렸다면 잠시 후 로그인해 주세요.");
+  const { data } = await client.auth.getSession();
   if (!data.session) return renderLogin();
   currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
   if (!currentInvitationSite?.slug) return renderBasicInfoOnboarding();
