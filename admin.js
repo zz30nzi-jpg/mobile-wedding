@@ -1361,7 +1361,7 @@ function sectionOrderEditor(name, label, selected = []) {
     <div class="section-order-editor" data-section-order>
       <div class="section-order-head">
         <strong>${label}</strong>
-        <button class="btn btn-secondary section-icon-action" type="button" data-section-reset="${escapeAdminHtml(resetKey)}" aria-label="기본값으로 초기화" title="기본값으로 초기화">${ico("M3 12a9 9 0 1 0 3-6.7 M3 3v6h6")}</button>
+        <button class="btn btn-secondary section-icon-action" type="button" data-section-reset="${escapeAdminHtml(resetKey)}" aria-label="기본값으로 초기화" title="기본값으로 초기화">${tabIcon("M3 12a9 9 0 1 0 3-6.7 M3 3v6h6")}</button>
       </div>
       <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(selected))}">
       <div class="section-order-list">
@@ -1909,8 +1909,8 @@ function renderEditor(message = "", focus = "") {
             ${sectionOrderEditor("sectionSettings.weddingDay", "결혼식 당일 이후", invitationData.sectionSettings?.weddingDay)}
           </div>
           <div class="section-preview-actions">
-            <a class="btn section-icon-action" href="./index.html?previewSectionMode=preWedding" target="_blank" rel="noopener" aria-label="결혼식 전 화면 미리보기" title="결혼식 전 화면 미리보기">${ico("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
-            <a class="btn btn-primary section-icon-action" href="./index.html?previewSectionMode=weddingDay" target="_blank" rel="noopener" aria-label="결혼식 당일 이후 미리보기" title="결혼식 당일 이후 미리보기">${ico("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
+            <a class="btn section-icon-action" href="./index.html?previewSectionMode=preWedding" target="_blank" rel="noopener" aria-label="결혼식 전 화면 미리보기" title="결혼식 전 화면 미리보기">${tabIcon("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
+            <a class="btn btn-primary section-icon-action" href="./index.html?previewSectionMode=weddingDay" target="_blank" rel="noopener" aria-label="결혼식 당일 이후 미리보기" title="결혼식 당일 이후 미리보기">${tabIcon("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
           </div>
           <p class="admin-message micro-help">변경한 순서를 저장한 다음 미리보기 버튼을 눌러 주세요.</p>
         </div></details>

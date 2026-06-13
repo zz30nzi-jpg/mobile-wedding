@@ -614,6 +614,7 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 .map-links { margin-top: 16px; }
 .map-links .btn { border: 0; background: transparent; color: var(--accent-dark); font-weight: 600; }
 .transport { margin-top: 22px; text-align: center; }
+.transport-list { display: grid; gap: 8px; }
 .transport-tabs { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .transport-tab { border: 1px solid var(--line); border-radius: 10px; padding: 9px 16px; background: var(--card); color: var(--ink); font-size: 13px; font-weight: 600; transition: 0.2s ease; }
 .transport-tab.is-active { border-color: var(--accent-dark); background: var(--accent-dark); color: var(--card); }
@@ -3097,9 +3098,11 @@ body[data-layout="classic"] .parents { max-width: min(100%, 248px); padding: 10p
 body[data-layout="classic"] #invitation .contact-row { max-width: min(100%, 248px); }
 body[data-layout="classic"] #invitation .contact-row .btn { flex: 0 1 118px; padding-right: 8px; padding-left: 8px; }
 body[data-layout="classic"] .calendar,
-body[data-layout="classic"] .countdown { max-width: 238px; }
-body[data-layout="classic"] .calendar td { height: 31px; font-size: 11px; }
+body[data-layout="classic"] .countdown { max-width: 258px; }
+body[data-layout="classic"] .calendar td { height: 33px; font-size: 11px; }
 body[data-layout="classic"] .calendar .wedding-day span { width: 27px; height: 27px; }
+body[data-layout="classic"] #wedding-day .countdown { margin-bottom: 22px; }
+body[data-layout="classic"] #countdown-message { margin-top: 0; }
 body[data-layout="classic"] .photo-interlude { min-height: 330px; margin: -8px 0 0; background: var(--paper); }
 body[data-layout="classic"] .photo-interlude-media { inset: 36px 0; background-position: center; background-size: cover; }
 body[data-layout="classic"] .photo-interlude::before,
@@ -3125,47 +3128,68 @@ body[data-layout="classic"] .map-links {
 body[data-layout="classic"] .map-links .btn {
   position: relative;
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   min-height: 0;
   place-items: center;
   border: 0 !important;
-  border-radius: 50%;
+  border-radius: 0;
   padding: 0;
-  background: color-mix(in srgb, var(--accent-dark) 11%, transparent) !important;
+  background: transparent !important;
   color: var(--accent-dark);
   font-size: 13px;
   font-weight: 900;
   box-shadow: none;
 }
 body[data-layout="classic"] .transport { margin-top: 30px; }
-body[data-layout="classic"] .transport-tabs {
-  display: inline-flex;
-  max-width: 100%;
-  gap: 5px;
-  border-radius: 999px;
-  padding: 5px;
-  background: color-mix(in srgb, var(--accent-dark) 7%, var(--card));
+body[data-layout="classic"] .transport-list {
+  width: min(100%, 300px);
+  margin: 0 auto;
+  gap: 10px;
 }
 body[data-layout="classic"] .transport-tab {
-  min-width: 78px;
-  border: 0;
+  position: relative;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 36%, var(--line));
   border-radius: 999px;
-  padding: 8px 10px;
-  background: transparent;
-  font-size: 12px;
+  padding: 9px 34px 9px 16px;
+  background: color-mix(in srgb, var(--card) 78%, var(--accent) 8%);
+  color: var(--accent-dark);
+  font-size: 13px;
+  text-align: left;
 }
-body[data-layout="classic"] .transport-tab.is-active { background: var(--accent-dark); color: var(--card); }
+body[data-layout="classic"] .transport-tab::before { content: "+"; margin-right: 8px; font-weight: 800; }
+body[data-layout="classic"] .transport-tab::after {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 9px;
+  height: 9px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  content: "";
+  transform: translateY(-65%) rotate(45deg);
+}
+body[data-layout="classic"] .transport-tab.is-active { background: color-mix(in srgb, var(--accent-dark) 16%, var(--card)); color: var(--accent-dark); }
+body[data-layout="classic"] .transport-tab.is-active::after { transform: translateY(-35%) rotate(225deg); }
 body[data-layout="classic"] .transport-panels { max-width: 300px; margin: 14px auto 0; }
 body[data-layout="classic"] .transport-panel {
   border: 0;
-  padding: 8px 6px 0;
+  padding: 10px 10px 4px;
   background: transparent;
   color: var(--copy);
   font-size: 15px;
   line-height: 1.9;
   text-align: center;
 }
+body[data-layout="classic"] .transport-panel:not(.is-active) { display: none; }
+body[data-layout="classic"] .copy-toast {
+  min-height: 24px;
+  padding: 5px 10px;
+  line-height: 1.25;
+}
+body[data-layout="classic"] #guestbook .subtle { margin-bottom: 12px; }
+body[data-layout="classic"] #guestbook-open { margin-top: 0; }
 body[data-layout="classic"] .guest-photo-actions { max-width: 236px; }
 body[data-layout="classic"] .guest-photo-actions .btn { min-height: 38px; padding-right: 8px; padding-left: 8px; }
 body[data-layout="classic"] .gallery-footer { justify-content: flex-end; margin-top: 40px; padding-right: 8px; }

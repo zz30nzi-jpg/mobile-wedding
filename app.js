@@ -506,15 +506,16 @@ function render() {
         ${location.hall ? `<p class="location-hall">${escapeHtml(location.hall)}</p>` : ""}
         <p class="location-address">${escapeHtml(data.wedding.address)}</p>
         <div class="map-links">
-          <button class="btn copy-btn" data-map-app="copy" data-copy="${escapeHtml(data.wedding.address)}" aria-label="주소 복사" title="주소 복사"><span aria-hidden="true">⧉</span><span class="copy-toast" aria-hidden="true">복사완료</span></button>
-          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener" aria-label="${escapeHtml(link.label)}" title="${escapeHtml(link.label)}"><span aria-hidden="true">${link.app === "naver" ? "N" : link.app === "kakao" ? "K" : "T"}</span></a>`).join("")}
+          <button class="btn copy-btn" data-map-app="copy" data-copy="${escapeHtml(data.wedding.address)}" aria-label="주소 복사" title="주소 복사"><span class="map-icon-label" aria-hidden="true"></span><span class="copy-toast" aria-hidden="true">복사완료</span></button>
+          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener" aria-label="${escapeHtml(link.label)}" title="${escapeHtml(link.label)}"><span class="map-icon-label" aria-hidden="true"></span></a>`).join("")}
         </div>
         <div class="transport">
-          <div class="transport-tabs" role="tablist">
-            ${sortedTransport().filter((item) => !item.hidden).map((item, index) => `<button type="button" class="transport-tab${index === 0 ? " is-active" : ""}" data-transport-tab="${index}" role="tab" aria-selected="${index === 0}">${escapeHtml(item.title)}</button>`).join("")}
-          </div>
-          <div class="transport-panels">
-            ${sortedTransport().filter((item) => !item.hidden).map((item, index) => `<div class="transport-panel${index === 0 ? " is-active" : ""}" data-transport-panel="${index}" role="tabpanel"><p class="preserve">${escapeLineHtml(item.text)}</p></div>`).join("")}
+          <div class="transport-list">
+            ${sortedTransport().filter((item) => !item.hidden).map((item, index) => `
+              <div class="transport-item">
+                <button type="button" class="transport-tab" data-transport-tab="${index}" aria-expanded="false">${escapeHtml(item.title)}</button>
+                <div class="transport-panel" data-transport-panel="${index}"><p class="preserve">${escapeLineHtml(item.text)}</p></div>
+              </div>`).join("")}
           </div>
         </div>
       </section>
@@ -1026,15 +1027,15 @@ function bindEvents() {
     const transportTab = event.target.closest("[data-transport-tab]");
     if (transportTab) {
       const index = transportTab.dataset.transportTab;
-      const tabs = transportTab.closest(".transport-tabs");
-      const panels = tabs?.parentElement.querySelector(".transport-panels");
-      tabs?.querySelectorAll(".transport-tab").forEach((tab) => {
-        const active = tab.dataset.transportTab === index;
+      const transport = transportTab.closest(".transport");
+      const shouldOpen = !transportTab.classList.contains("is-active");
+      transport?.querySelectorAll(".transport-tab").forEach((tab) => {
+        const active = shouldOpen && tab.dataset.transportTab === index;
         tab.classList.toggle("is-active", active);
-        tab.setAttribute("aria-selected", String(active));
+        tab.setAttribute("aria-expanded", String(active));
       });
-      panels?.querySelectorAll(".transport-panel").forEach((panel) => {
-        panel.classList.toggle("is-active", panel.dataset.transportPanel === index);
+      transport?.querySelectorAll(".transport-panel").forEach((panel) => {
+        panel.classList.toggle("is-active", shouldOpen && panel.dataset.transportPanel === index);
       });
     }
   });
