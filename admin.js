@@ -1354,14 +1354,18 @@ function parseSectionOrder(value) {
     .filter((item, index, items) => validSectionIds.includes(item) && items.indexOf(item) === index);
 }
 
-function sectionOrderEditor(name, label, selected = []) {
+function sectionOrderEditor(name, label, selected = [], previewMode = "") {
   const ordered = [...selected.filter((id) => validSectionIds.includes(id)), ...validSectionIds.filter((id) => !selected.includes(id))];
   const resetKey = name.split(".").pop();
+  const previewLabel = previewMode === "preWedding" ? "결혼식 전까지 미리보기" : "결혼식당일 이후 미리보기";
   return `
     <div class="section-order-editor" data-section-order>
       <div class="section-order-head">
         <strong>${label}</strong>
-        <button class="btn btn-secondary section-icon-action" type="button" data-section-reset="${escapeAdminHtml(resetKey)}" aria-label="기본값으로 초기화" title="기본값으로 초기화">${tabIcon("M3 12a9 9 0 1 0 3-6.7 M3 3v6h6")}</button>
+        <div class="section-order-actions">
+          <a class="btn section-icon-action" href="./index.html?previewSectionMode=${escapeAdminHtml(previewMode)}" target="_blank" rel="noopener" aria-label="${escapeAdminHtml(previewLabel)}" title="${escapeAdminHtml(previewLabel)}">${tabIcon("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
+          <button class="btn btn-secondary section-icon-action" type="button" data-section-reset="${escapeAdminHtml(resetKey)}" aria-label="기본값으로 초기화" title="기본값으로 초기화">${tabIcon("M3 12a9 9 0 1 0 3-6.7 M3 3v6h6")}</button>
+        </div>
       </div>
       <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(selected))}">
       <div class="section-order-list">
@@ -1690,8 +1694,10 @@ function accountManager(accounts = [], options = {}) {
       <button class="icon-btn account-remove" type="button" data-account-remove aria-label="계좌 삭제">×</button>
       <input type="hidden" name="account.${index}.side" value="${escapeAdminHtml(account.side)}">
       <div class="account-row account-row-main">
-        ${input(`account.${index}.personName`, "이름", account.personName || account.name || "")}
-        ${select(`account.${index}.relation`, "관계", relationOptions.includes(account.relation) ? account.relation : account.relation ? "직접입력" : "", [["", "선택"], ...relationOptions.map((item) => [item, item])])}
+        <div class="account-name-relation">
+          ${input(`account.${index}.personName`, "이름", account.personName || account.name || "")}
+          ${select(`account.${index}.relation`, "관계", relationOptions.includes(account.relation) ? account.relation : account.relation ? "직접입력" : "", [["", "선택"], ...relationOptions.map((item) => [item, item])])}
+        </div>
         ${input(`account.${index}.name`, "예금주", account.name || account.personName || "")}
       </div>
       <div class="account-row account-row-custom" data-account-relation-custom ${relationOptions.includes(account.relation) || !account.relation ? "hidden" : ""}>
@@ -1905,12 +1911,8 @@ function renderEditor(message = "", focus = "") {
         <details class="editor-details section-pane" open data-guided-step="sections" data-step-requires="wedding"><summary>섹션 순서와 노출 설정</summary><div class="editor-details-body">
           <p class="admin-message">표시할 섹션을 체크하고 화살표 버튼으로 순서를 정해 주세요.</p>
           <div class="section-order-columns">
-            ${sectionOrderEditor("sectionSettings.preWedding", "결혼식 전날까지", invitationData.sectionSettings?.preWedding)}
-            ${sectionOrderEditor("sectionSettings.weddingDay", "결혼식 당일 이후", invitationData.sectionSettings?.weddingDay)}
-          </div>
-          <div class="section-preview-actions">
-            <a class="btn section-icon-action" href="./index.html?previewSectionMode=preWedding" target="_blank" rel="noopener" aria-label="결혼식 전 화면 미리보기" title="결혼식 전 화면 미리보기">${tabIcon("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
-            <a class="btn btn-primary section-icon-action" href="./index.html?previewSectionMode=weddingDay" target="_blank" rel="noopener" aria-label="결혼식 당일 이후 미리보기" title="결혼식 당일 이후 미리보기">${tabIcon("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
+            ${sectionOrderEditor("sectionSettings.preWedding", "결혼식 전까지", invitationData.sectionSettings?.preWedding, "preWedding")}
+            ${sectionOrderEditor("sectionSettings.weddingDay", "결혼식당일 이후", invitationData.sectionSettings?.weddingDay, "weddingDay")}
           </div>
           <p class="admin-message micro-help">변경한 순서를 저장한 다음 미리보기 버튼을 눌러 주세요.</p>
         </div></details>

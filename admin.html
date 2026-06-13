@@ -14,10 +14,23 @@
   </head>
   <body data-admin-area="general" data-theme="white">
     <main class="admin-page">
-      <div class="admin-shell" id="admin-app"></div>
+      <div class="admin-shell" id="admin-app">
+        <section class="admin-card admin-login">
+          <p class="section-label">Loading</p>
+          <h2>관리자페이지를 여는 중입니다</h2>
+          <p class="admin-message">잠시만 기다려 주세요.</p>
+        </section>
+      </div>
     </main>
+    <script>
+      window.setTimeout(function () {
+        var app = document.getElementById("admin-app");
+        if (!app || !/Loading|여는 중/.test(app.textContent || "")) return;
+        app.innerHTML = '<section class="admin-card admin-login"><p class="section-label">Network</p><h2>관리자페이지를 불러오지 못했습니다</h2><p class="admin-message">모바일 Safari에서 스크립트 로딩이 지연되고 있습니다. 새로고침하거나 네트워크를 바꿔 다시 열어주세요.</p></section>';
+      }, 9000);
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script async src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <script src="./invitation-data.js?v=20260610-v45"></script>
     <script src="./design-system.js?v=20260612-v57"></script>
     <script src="./supabase-config.js"></script>
