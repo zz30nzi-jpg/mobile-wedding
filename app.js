@@ -89,8 +89,8 @@ const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
 const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
 const defaultSectionSettings = {
-  preWedding: ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
-  weddingDay: ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
+  preWedding: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
+  weddingDay: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
 };
 
 function applyTheme(theme) {
@@ -496,17 +496,26 @@ function render() {
         <p class="subtle" id="countdown-message"></p>
       </section>
 
+      <section class="section photo-interlude" id="photo-interlude">
+        <div class="photo-interlude-media media" ${mediaStyle(data.media?.interludePhoto)}></div>
+      </section>
+
       <section class="section" id="location">
         ${sectionCopy("location", "Location", "오시는 길")}
         <h3 class="location-venue single-line-fit">${escapeHtml(location.venue)}</h3>
         ${location.hall ? `<p class="location-hall">${escapeHtml(location.hall)}</p>` : ""}
         <p class="location-address">${escapeHtml(data.wedding.address)}</p>
         <div class="map-links">
-          <button class="btn copy-btn" data-map-app="copy" data-copy="${escapeHtml(data.wedding.address)}">주소 복사</button>
-          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join("")}
+          <button class="btn copy-btn" data-map-app="copy" data-copy="${escapeHtml(data.wedding.address)}" aria-label="주소 복사" title="주소 복사"><span aria-hidden="true">⧉</span><span class="copy-toast" aria-hidden="true">복사완료</span></button>
+          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener" aria-label="${escapeHtml(link.label)}" title="${escapeHtml(link.label)}"><span aria-hidden="true">${link.app === "naver" ? "N" : link.app === "kakao" ? "K" : "T"}</span></a>`).join("")}
         </div>
         <div class="transport">
-          ${sortedTransport().filter((item) => !item.hidden).map((item) => `<div><strong>${escapeHtml(item.title)}</strong>${escapeLineHtml(item.text)}</div>`).join("")}
+          <div class="transport-tabs" role="tablist">
+            ${sortedTransport().filter((item) => !item.hidden).map((item, index) => `<button type="button" class="transport-tab${index === 0 ? " is-active" : ""}" data-transport-tab="${index}" role="tab" aria-selected="${index === 0}">${escapeHtml(item.title)}</button>`).join("")}
+          </div>
+          <div class="transport-panels">
+            ${sortedTransport().filter((item) => !item.hidden).map((item, index) => `<div class="transport-panel${index === 0 ? " is-active" : ""}" data-transport-panel="${index}" role="tabpanel"><p class="preserve">${escapeLineHtml(item.text)}</p></div>`).join("")}
+          </div>
         </div>
       </section>
 
@@ -515,13 +524,16 @@ function render() {
         <div class="gallery-grid">
           ${galleryPreviewImages.map((image, index) => `<button class="gallery-item" data-gallery="${gallery.indexOf(image)}" aria-label="사진 ${index + 1} 크게 보기"><span class="media" ${lazyMediaStyle(galleryThumbAt(gallery.indexOf(image)))}></span></button>`).join("")}
         </div>
-        <button class="btn gallery-more" id="gallery-more">사진 더보기</button>
+        <div class="gallery-footer">
+          <button class="btn gallery-more" id="gallery-more" aria-label="사진 더보기" title="사진 더보기">사진 더보기</button>
+        </div>
       </section>
 
       ${guestPhotos.showSection ? `
         <section class="section guest-photo-section" id="wedding-snap">
-          ${sectionCopy("weddingSnap", "Guest Album", "예쁘게 빛난 순간, 같이 공유해요!")}
-          <p class="subtle">${guestPhotos.canUpload ? escapeLineHtml(data.sectionDescriptions?.weddingSnap || "오늘의 추억은 여러분의 한 장에서 완성돼요.\n예식 당일, 아래 버튼으로 가볍게 공유해주세요!") : escapeLineHtml(data.guestPhotos?.manageDescription || "이 휴대폰에서 보낸 사진과 영상을 확인하거나 삭제할 수 있습니다.")}</p>
+          ${sectionCopy("weddingSnap", "Guest Album", "함께만드는 웨딩스냅")}
+          <p class="subtle">${guestPhotos.canUpload ? escapeLineHtml(data.sectionDescriptions?.weddingSnap || "오늘의 추억은 여러분의 한 장에서 완성돼요!") : escapeLineHtml(data.guestPhotos?.manageDescription || "이 휴대폰에서 보낸 사진과 영상을 확인하거나 삭제할 수 있습니다.")}</p>
+          ${guestPhotos.canUpload ? '<p class="guest-photo-note">※ 영상은 가능하시다면, 카카오톡으로 전달부탁드립니다!</p>' : ""}
           <div class="guest-photo-actions">
             ${guestPhotos.canUpload ? '<button class="btn btn-primary" id="guest-photo-open">사진·영상 업로드</button>' : ""}
             <button class="btn" id="guest-photo-manage">내가 보낸 파일</button>
@@ -537,7 +549,7 @@ function render() {
 
       <section class="section" id="attendance">
         ${sectionCopy("attendance", "Rsvp", "참석 의사 전달")}
-        <p class="subtle">${escapeLineHtml(data.sectionDescriptions?.attendance || "신랑, 신부에게 참석의사를\n미리 전달할 수 있어요.")}</p>
+        <p class="subtle">${escapeLineHtml(data.sectionDescriptions?.attendance || "신랑신부에게 참석의사를 미리 전달해주세요")}</p>
         <button class="btn btn-primary" id="attendance-open">전달하기</button>
         ${isCopyEditorPreview ? '<button class="btn copy-preview-detail-edit" type="button" data-preview-detail-edit="rsvp">✎ 세부내용 수정</button>' : ""}
       </section>
@@ -551,11 +563,7 @@ function render() {
       <section class="section" id="guestbook">
         ${sectionCopy("guestbook", "Guestbook", "축하 메시지")}
         <p class="subtle">${escapeLineHtml(data.sectionDescriptions?.guestbook || "따뜻한 마음을 짧게 남겨 주세요.")}</p>
-        <form class="guestbook-form" id="guestbook-form">
-          <label class="field"><span>성함</span><input name="guest_name" required maxlength="30" autocomplete="name" placeholder="성함을 입력해 주세요."></label>
-          <label class="field"><span>축하 메시지</span><textarea name="message" required maxlength="300" rows="3" placeholder="축하 메시지를 남겨 주세요."></textarea></label>
-          <button class="btn btn-primary" id="guestbook-submit">메시지 남기기</button>
-        </form>
+        <button class="btn btn-primary" id="guestbook-open">작성하기</button>
         <div class="guestbook-list" id="guestbook-list">${guestbookMarkup()}</div>
       </section>
 
@@ -779,42 +787,53 @@ function bindShareModal() {
 }
 
 function attendanceForm() {
-  const rsvp = data.rsvp || {};
-  const transportOptions = rsvp.transportOptions || ["자가용", "기차", "버스", "택시", "도보", "직접입력"];
   return `
-    <h2>참석 정보 입력</h2>
-    <p class="form-guide">${escapeLineHtml(rsvp.modalGuide || "기차표와 숙소 준비를 위해 필요한 정보입니다.")}</p>
+    <div class="gallery-slider-head">
+      <h2>참석 의사 전달</h2>
+      <button class="gallery-close" type="button" data-close aria-label="닫기">×</button>
+    </div>
     <form class="form-grid" id="attendance-form">
-      <label class="field"><span>성함</span><input name="guest_name" required maxlength="30" autocomplete="name"></label>
-      <label class="field"><span>연락처</span><input name="phone" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
-      <label class="rsvp-switch"><span>참석 여부</span><input type="hidden" name="attendance" value="참석"><input type="checkbox" id="attendance-status" checked><i aria-hidden="true"></i></label>
-      <label class="field"><span>추가 전달 사항</span><textarea name="notes" rows="3" maxlength="500" placeholder="${escapeHtml(rsvp.notesPlaceholder || "교통편이나 숙소 관련 요청을 자유롭게 적어 주세요.")}"></textarea></label>
-      <div class="attendance-details" id="attendance-details">
-        <label class="field"><span>출발일자</span><input name="departure_date" type="date"></label>
-        <label class="field"><span>출발지</span><input name="origin" maxlength="50" placeholder="${escapeHtml(rsvp.originPlaceholder || "예: 서울역, 창원시 성산구")}"></label>
-        <section class="rsvp-choice-group">
-          <span>오는 방법</span>
-          <input type="hidden" name="transport" value="${escapeHtml(transportOptions[0] || "자가용")}">
-          <div class="rsvp-choice-list">
-            ${transportOptions.map((option, index) => `<button class="${index === 0 ? "is-active" : ""}" type="button" data-transport-choice="${escapeHtml(option)}">${escapeHtml(option)}</button>`).join("")}
-          </div>
-        </section>
-        <label class="field" id="travel-details-field" hidden><span>기타 이동 정보</span><input name="travel_details" maxlength="100" placeholder="${escapeHtml(rsvp.transportPlaceholder || "예: KTX 창원중앙역 도착 후 택시")}"></label>
-        <section class="companion-manager">
-          <span>함께 오시는 분</span>
-          <div id="companions-list">
-            <label class="companion-row"><input name="companions" maxlength="40" placeholder="이름 또는 관계"><button class="icon-btn" type="button" data-companion-add aria-label="동행인 추가">＋</button><button class="icon-btn" type="button" data-companion-remove aria-label="동행인 삭제">－</button></label>
-          </div>
-        </section>
-        <p class="attendance-count">예상 참석 인원 <strong id="attendance-count">1명</strong></p>
-        <label class="rsvp-switch"><span>숙소 필요 여부</span><input type="hidden" name="needs_accommodation" value="아니오"><input type="checkbox" id="accommodation-status"><i aria-hidden="true"></i></label>
-        <div class="accommodation-extra" id="accommodation-extra" hidden>
-          <p class="form-guide">${escapeLineHtml(rsvp.accommodationGuide || "숙소 준비를 위해 함께 오는 인원 이름 또는 명수를 적어 주세요.")}</p>
-          <label class="field"><span>숙소 인원 정보</span><input name="accommodation_details" maxlength="120" placeholder="예: 홍길동, 김영희 / 총 2명"></label>
+      <section class="rsvp-choice-group" data-rsvp-toggle="side">
+        <span>어느 측 하객이신가요? <b class="req">*</b></span>
+        <input type="hidden" name="side" value="신랑측">
+        <div class="rsvp-choice-list cols-2">
+          <button class="is-active" type="button" data-value="신랑측">신랑</button>
+          <button type="button" data-value="신부측">신부</button>
         </div>
-      </div>
-      <label class="consent"><input type="checkbox" required> <span>교통편 및 숙소 준비를 위한 개인정보 수집에 동의합니다.</span></label>
-      <div class="modal-actions"><button class="btn" type="button" data-close>취소</button><button class="btn btn-primary" id="attendance-submit">전달하기</button></div>
+      </section>
+      <section class="rsvp-choice-group" data-rsvp-toggle="attendance">
+        <span>참석 하시나요? <b class="req">*</b></span>
+        <input type="hidden" name="attendance" value="참석">
+        <div class="rsvp-choice-list cols-2">
+          <button class="is-active" type="button" data-value="참석">참석</button>
+          <button type="button" data-value="불참">불참석</button>
+        </div>
+      </section>
+      <label class="field"><span>성함 <b class="req">*</b></span><input name="guest_name" required maxlength="30" autocomplete="name"></label>
+      <section class="rsvp-choice-group" data-rsvp-toggle="meal">
+        <span>식사 하시나요?</span>
+        <input type="hidden" name="meal" value="O">
+        <div class="rsvp-choice-list cols-2">
+          <button class="is-active" type="button" data-value="O">O</button>
+          <button type="button" data-value="X">X</button>
+        </div>
+      </section>
+      <label class="consent"><input type="checkbox" id="attendance-consent" required> <span>개인정보 수집 및 활용 동의 <button type="button" class="consent-detail" data-consent-detail>[자세히보기]</button></span></label>
+      <p class="consent-detail-text" id="attendance-consent-detail" hidden>입력하신 정보는 결혼식 참석 인원 확인 목적으로만 사용되며, 행사 종료 후 파기됩니다.</p>
+      <div class="modal-actions"><button class="btn btn-primary" id="attendance-submit" type="submit" disabled>전달하기</button></div>
+    </form>`;
+}
+
+function guestbookForm() {
+  return `
+    <div class="gallery-slider-head">
+      <h2>축하 메시지 작성</h2>
+      <button class="gallery-close" type="button" data-close aria-label="닫기">×</button>
+    </div>
+    <form class="form-grid" id="guestbook-form">
+      <label class="field"><span>성함 <b class="req">*</b></span><input name="guest_name" required maxlength="30" autocomplete="name" placeholder="성함을 입력해 주세요."></label>
+      <label class="field"><span>축하 메시지 <b class="req">*</b></span><textarea name="message" required maxlength="300" rows="4" placeholder="축하 메시지를 남겨 주세요."></textarea></label>
+      <div class="modal-actions"><button class="btn btn-primary" id="guestbook-submit" type="submit">메시지 남기기</button></div>
     </form>`;
 }
 
@@ -857,14 +876,6 @@ function bindInformationSlider() {
     if (Math.abs(distance) > 45) move(distance > 0 ? -1 : 1);
   }, { passive: true });
   renderSlide();
-}
-
-function companionLines(value) {
-  return value.split("\n").map((line) => line.trim()).filter(Boolean);
-}
-
-function companionInputValues(form) {
-  return [...form.querySelectorAll('input[name="companions"]')].map((input) => input.value.trim()).filter(Boolean);
 }
 
 function gallerySlider(index = 0) {
@@ -1004,19 +1015,27 @@ function bindEvents() {
     if (copyButton) {
       try {
         await navigator.clipboard.writeText(copyButton.dataset.copy);
-        if (copyButton.classList.contains("account-copy-btn")) {
-          copyButton.classList.add("is-copied");
-          setTimeout(() => { copyButton.classList.remove("is-copied"); }, 1200);
-          return;
-        }
-        const original = copyButton.textContent;
-        copyButton.textContent = "복사 완료";
-        setTimeout(() => { copyButton.textContent = original; }, 1200);
+        copyButton.classList.add("is-copied");
+        setTimeout(() => { copyButton.classList.remove("is-copied"); }, 1200);
       } catch { alert(`복사할 내용: ${copyButton.dataset.copy}`); }
     }
     const galleryButton = event.target.closest("[data-gallery]");
     if (galleryButton) {
       openGallerySlider(Number(galleryButton.dataset.gallery));
+    }
+    const transportTab = event.target.closest("[data-transport-tab]");
+    if (transportTab) {
+      const index = transportTab.dataset.transportTab;
+      const tabs = transportTab.closest(".transport-tabs");
+      const panels = tabs?.parentElement.querySelector(".transport-panels");
+      tabs?.querySelectorAll(".transport-tab").forEach((tab) => {
+        const active = tab.dataset.transportTab === index;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", String(active));
+      });
+      panels?.querySelectorAll(".transport-panel").forEach((panel) => {
+        panel.classList.toggle("is-active", panel.dataset.transportPanel === index);
+      });
     }
   });
 
@@ -1027,88 +1046,37 @@ function bindEvents() {
   document.querySelector("#attendance-open")?.addEventListener("click", () => {
     openModal(attendanceForm());
     const form = document.querySelector("#attendance-form");
-    const status = document.querySelector("#attendance-status");
-    const attendanceValue = form.elements.attendance;
-    const accommodationStatus = document.querySelector("#accommodation-status");
-    const accommodationValue = form.elements.needs_accommodation;
-    const accommodationExtra = document.querySelector("#accommodation-extra");
-    const details = document.querySelector("#attendance-details");
-    const companionsList = document.querySelector("#companions-list");
-    const travelDetailsField = document.querySelector("#travel-details-field");
-    const count = document.querySelector("#attendance-count");
-    const updateAttendanceForm = () => {
-      const isAttending = status.checked;
-      attendanceValue.value = isAttending ? "참석" : "불참";
-      details.hidden = !isAttending;
-      count.textContent = `${isAttending ? companionInputValues(form).length + 1 : 0}명`;
-    };
-    const updateAccommodationForm = () => {
-      const needsRoom = accommodationStatus.checked;
-      accommodationValue.value = needsRoom ? "예" : "아니오";
-      accommodationExtra.hidden = !needsRoom;
-    };
-    const updateTransportForm = (choice) => {
-      form.elements.transport.value = choice;
-      form.querySelectorAll("[data-transport-choice]").forEach((button) => button.classList.toggle("is-active", button.dataset.transportChoice === choice));
-      travelDetailsField.hidden = choice !== "직접입력";
-      if (travelDetailsField.hidden) form.elements.travel_details.value = "";
-    };
-    const addCompanionInput = (value = "") => {
-      const row = document.createElement("label");
-      row.className = "companion-row";
-      row.innerHTML = `<input name="companions" maxlength="40" placeholder="이름 또는 관계" value="${escapeHtml(value)}"><button class="icon-btn" type="button" data-companion-add aria-label="동행인 추가">＋</button><button class="icon-btn" type="button" data-companion-remove aria-label="동행인 삭제">－</button>`;
-      companionsList.append(row);
-      updateCompanionButtons();
-      row.querySelector("input").focus();
-    };
-    const updateCompanionButtons = () => {
-      const rows = [...companionsList.querySelectorAll(".companion-row")];
-      rows.forEach((row) => {
-        row.querySelector("[data-companion-remove]").disabled = rows.length <= 1;
+    const consent = document.querySelector("#attendance-consent");
+    const consentDetail = document.querySelector("#attendance-consent-detail");
+    const submitButton = document.querySelector("#attendance-submit");
+
+    form.querySelectorAll("[data-rsvp-toggle]").forEach((group) => {
+      const input = group.querySelector("input[type=hidden]");
+      group.querySelectorAll("button[data-value]").forEach((button) => {
+        button.addEventListener("click", () => {
+          input.value = button.dataset.value;
+          group.querySelectorAll("button[data-value]").forEach((other) => other.classList.toggle("is-active", other === button));
+        });
       });
-    };
-    status.addEventListener("change", updateAttendanceForm);
-    accommodationStatus.addEventListener("change", updateAccommodationForm);
-    form.querySelectorAll("[data-transport-choice]").forEach((button) => {
-      button.addEventListener("click", () => updateTransportForm(button.dataset.transportChoice));
     });
-    companionsList.addEventListener("click", (event) => {
-      if (event.target.closest("[data-companion-add]")) addCompanionInput();
-      const removeButton = event.target.closest("[data-companion-remove]");
-      if (removeButton && companionsList.querySelectorAll(".companion-row").length > 1) {
-        removeButton.closest(".companion-row").remove();
-        updateCompanionButtons();
-        updateAttendanceForm();
-      }
+
+    consent?.addEventListener("change", () => { submitButton.disabled = !consent.checked; });
+
+    form.querySelector("[data-consent-detail]")?.addEventListener("click", () => {
+      consentDetail.hidden = !consentDetail.hidden;
     });
-    companionsList.addEventListener("input", updateAttendanceForm);
-    updateCompanionButtons();
-    updateAttendanceForm();
-    updateAccommodationForm();
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const submitButton = document.querySelector("#attendance-submit");
       const fields = new FormData(form);
-      const isAttending = fields.get("attendance") === "참석";
-      const companionList = isAttending ? companionInputValues(form) : [];
       submitButton.disabled = true;
       submitButton.textContent = "전달 중...";
       try {
         const result = await window.RSVP_STORAGE.submitAttendanceResponse({
           guest_name: fields.get("guest_name").trim(),
-          phone: fields.get("phone").trim(),
           attendance: fields.get("attendance"),
-          origin: isAttending ? fields.get("origin") : null,
-          transport: isAttending ? fields.get("transport") : null,
-          departure_date: isAttending ? fields.get("departure_date") : null,
-          travel_details: isAttending ? fields.get("travel_details").trim() : "",
-          companions: companionList,
-          companion_count: companionList.length,
-          total_count: isAttending ? companionList.length + 1 : 0,
-          needs_accommodation: isAttending ? fields.get("needs_accommodation") : null,
-          accommodation_details: isAttending && fields.get("needs_accommodation") === "예" ? fields.get("accommodation_details").trim() : "",
-          notes: fields.get("notes").trim(),
+          side: fields.get("side"),
+          meal: fields.get("meal"),
         });
         closeModal();
         alert(result.isPreview
@@ -1169,28 +1137,29 @@ function bindEvents() {
 
   document.querySelector("#guest-photo-manage")?.addEventListener("click", openOwnGuestPhotos);
 
-  document.querySelector("#guestbook-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const button = document.querySelector("#guestbook-submit");
-    const fields = new FormData(form);
-    button.disabled = true;
-    button.textContent = "등록 중...";
-    try {
-      await window.RSVP_STORAGE.submitGuestbookEntry({
-        guest_name: fields.get("guest_name").trim(),
-        message: fields.get("message").trim(),
-      });
-      guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries();
-      document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
-      form.reset();
-      button.disabled = false;
-      button.textContent = "메시지 남기기";
-    } catch {
-      button.disabled = false;
-      button.textContent = "메시지 남기기";
-      alert("메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-    }
+  document.querySelector("#guestbook-open")?.addEventListener("click", () => {
+    openModal(guestbookForm());
+    const form = document.querySelector("#guestbook-form");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = document.querySelector("#guestbook-submit");
+      const fields = new FormData(form);
+      button.disabled = true;
+      button.textContent = "등록 중...";
+      try {
+        await window.RSVP_STORAGE.submitGuestbookEntry({
+          guest_name: fields.get("guest_name").trim(),
+          message: fields.get("message").trim(),
+        });
+        guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries();
+        document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
+        closeModal();
+      } catch {
+        button.disabled = false;
+        button.textContent = "메시지 남기기";
+        alert("메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    });
   });
 
   document.querySelector("#share-button").addEventListener("click", () => {
@@ -1258,6 +1227,7 @@ async function start() {
   render();
   if (isCopyEditorPreview) {
     document.body.classList.add("copy-editor-public-preview");
+    document.documentElement.style.overscrollBehaviorY = "contain";
     document.querySelector("[data-invitation-intro]")?.remove();
   } else {
     playInvitationIntro();

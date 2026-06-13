@@ -277,8 +277,12 @@ document.addEventListener("wheel", (event) => {
   scroller.scrollLeft += event.deltaY;
 }, { passive: false });
 
+function tabIcon(d, extra = "") {
+  return `<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra}<path d="${d}"/></svg>`;
+}
+
 function adminHeader(active) {
-  const ico = (d, extra = "") => `<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra}<path d="${d}"/></svg>`;
+  const ico = tabIcon;
   const coupleBadge = [invitationData.couple?.groom?.name, invitationData.couple?.bride?.name].filter(Boolean).join(" · ");
   const cardSlug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
   const cardUrl = cardSlug && cardSlug !== "main" ? `./index.html?card=${encodeURIComponent(cardSlug)}` : "./index.html";
@@ -965,8 +969,7 @@ function editorPresetSelect(name, label, themes, selected) {
 function editorDesignFramePicker(frames, selected) {
   const option = (frame) => `<label class="hero-decoration-option">
     <input type="radio" name="appearance.design.heroDecoration" value="${escapeAdminHtml(frame.id)}" ${selected === frame.id ? "checked" : ""}>
-    <span class="hero-decoration-preview" data-decoration-preview="${escapeAdminHtml(frame.id)}"><i></i></span>
-    <span class="hero-decoration-copy"><strong>${escapeAdminHtml(frame.name)}</strong><small>${frame.id === "inherit" ? "선택한 프리셋의 기본 꾸밈을 사용합니다." : frame.mode === "outer" ? "사진 바깥 프레임" : "사진 위 오버레이"}</small></span>
+    <span class="hero-decoration-copy"><strong>${escapeAdminHtml(frame.name)}</strong></span>
   </label>`;
   return `<fieldset class="hero-decoration-field"><legend>메인 이미지 꾸밈</legend><div class="hero-decoration-list">${option({ id: "inherit", name: "프리셋 기본값 사용" })}${frames.map(option).join("")}</div></fieldset>`;
 }
@@ -1064,9 +1067,12 @@ function editorDesignPanel() {
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="frame">
         ${editorDesignFramePicker(system.assets.frames, design.heroDecoration || "inherit")}
-        <div class="editor-color-strip">${input("appearance.design.heroDecorationTint", "꾸밈 색상", design.heroDecorationTint || "#ffffff", "color")}</div>
-        ${rangeInput("appearance.design.heroDecorationSize", "꾸밈 크기 (하트·프레임)", Number(design.heroDecorationSize) || 100, 70, 130, 5)}
-        ${rangeInput("appearance.design.heroDecorationStrokeWidth", "하트프레임 획 두께", Number(design.heroDecorationStrokeWidth) || 3, 1, 8, 0.5)}
+        <div class="editor-frame-compact">
+          <div class="editor-color-strip">${input("appearance.design.heroDecorationTint", "꾸밈 색상", design.heroDecorationTint || "#ffffff", "color")}</div>
+          ${rangeInput("appearance.design.heroDecorationSize", "크기", Number(design.heroDecorationSize) || 100, 70, 130, 5)}
+          ${rangeInput("appearance.design.heroDecorationStrokeWidth", "획 두께", Number(design.heroDecorationStrokeWidth) || 3, 1, 8, 0.5)}
+          ${rangeInput("appearance.design.heroDecorationYPercent", "하트 위치", Number(design.heroDecorationYPercent) || 0, -80, 80, 2)}
+        </div>
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="text">
         ${editorDesignTextThemePicker(system.assets.textThemes, selectedTextTheme)}
@@ -1294,7 +1300,7 @@ function parseList(value, fields) {
   });
 }
 
-const validSectionIds = ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
+const validSectionIds = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
 const defaultSectionSettings = {
   preWedding: [...validSectionIds],
   weddingDay: [...validSectionIds],
@@ -1303,6 +1309,7 @@ const sectionLabels = {
   invitation: "초대글",
   "about-us": "두 사람 소개",
   "wedding-day": "예식일",
+  "photo-interlude": "포토 섹션",
   location: "오시는 길",
   gallery: "갤러리",
   "wedding-snap": "하객 사진·영상 업로드",
@@ -1354,17 +1361,14 @@ function sectionOrderEditor(name, label, selected = []) {
     <div class="section-order-editor" data-section-order>
       <div class="section-order-head">
         <strong>${label}</strong>
-        <button class="btn btn-secondary" type="button" data-section-reset="${escapeAdminHtml(resetKey)}">기본값으로 초기화</button>
+        <button class="btn btn-secondary section-icon-action" type="button" data-section-reset="${escapeAdminHtml(resetKey)}" aria-label="기본값으로 초기화" title="기본값으로 초기화">${ico("M3 12a9 9 0 1 0 3-6.7 M3 3v6h6")}</button>
       </div>
       <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(selected))}">
       <div class="section-order-list">
         ${ordered.map((id) => `
-          <div class="section-order-item" data-section-id="${id}">
+          <div class="section-order-item" data-section-id="${id}" draggable="true">
             <label><input type="checkbox" ${selected.includes(id) ? "checked" : ""}> <span>${sectionLabels[id]}</span></label>
-            <div>
-              <button class="btn" type="button" data-section-move="-1" aria-label="${sectionLabels[id]} 위로 이동">↑</button>
-              <button class="btn" type="button" data-section-move="1" aria-label="${sectionLabels[id]} 아래로 이동">↓</button>
-            </div>
+            <button class="section-drag-handle" type="button" aria-label="${sectionLabels[id]} 길게 눌러 순서 변경" title="길게 눌러 순서 변경">☰</button>
           </div>`).join("")}
       </div>
     </div>`;
@@ -1751,10 +1755,10 @@ function renderEditor(message = "", focus = "") {
       </div>
       <p class="admin-message">${escapeAdminHtml(message || "수정 후 맨 아래 저장 버튼을 눌러 주세요. 사진은 선택하면 즉시 업로드됩니다.")}</p>
       <nav class="admin-quick-actions basic-pane guided-progress" aria-label="입력 단계">
-        <button type="button" data-editor-jump="couple-settings"><strong>1. 핵심 정보</strong><span>이름과 예식 일시</span></button>
-        <button type="button" data-editor-jump="main-media-settings"><strong>2. 첫 화면</strong><span>메인 사진·영상</span></button>
-        <button type="button" data-editor-jump="people-detail-settings"><strong>3. 두 사람</strong><span>연락처와 대표사진</span></button>
-        <button type="button" data-editor-jump="wedding-detail-settings"><strong>4. 장소 안내</strong><span>주소와 표시 일시</span></button>
+        <button type="button" data-editor-jump="couple-settings">${tabIcon("M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2", '<circle cx="12" cy="7" r="4"/>')}<span>핵심정보</span></button>
+        <button type="button" data-editor-jump="main-media-settings">${tabIcon("M21 15l-5-5L5 21", '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>')}<span>첫화면</span></button>
+        <button type="button" data-editor-jump="people-detail-settings">${tabIcon("M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.8 1-1.1a5.5 5.5 0 0 0 0-7.8z")}<span>두사람</span></button>
+        <button type="button" data-editor-jump="wedding-detail-settings">${tabIcon("M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z", '<circle cx="12" cy="10" r="3"/>')}<span>장소안내</span></button>
       </nav>
       <form class="editor-form" id="invitation-editor">
         <fieldset class="basic-pane guided-step" id="couple-settings" data-guided-step="core"><legend>1. 가장 먼저 입력해 주세요</legend>
@@ -1762,17 +1766,25 @@ function renderEditor(message = "", focus = "") {
           <div class="quick-couple-cards">
             <section class="quick-side-card">
               <h3>신랑측 정보</h3>
-              ${quickInput("couple.groom.name", "신랑 이름", groom.name)}
-              ${quickInput("couple.groom.birthday", "신랑 생일", birthdayInputValue(groom.birthday), "date")}
-              ${quickInput("groomFather", "신랑 아버지", groomFather)}
-              ${quickInput("groomMother", "신랑 어머니", groomMother)}
+              <div class="quick-field-row">
+                ${quickInput("couple.groom.name", "신랑 이름", groom.name)}
+                ${quickInput("couple.groom.birthday", "신랑 생일", birthdayInputValue(groom.birthday), "date")}
+              </div>
+              <div class="quick-field-row">
+                ${quickInput("groomFather", "신랑 아버지", groomFather)}
+                ${quickInput("groomMother", "신랑 어머니", groomMother)}
+              </div>
             </section>
             <section class="quick-side-card">
               <h3>신부측 정보</h3>
-              ${quickInput("couple.bride.name", "신부 이름", bride.name)}
-              ${quickInput("couple.bride.birthday", "신부 생일", birthdayInputValue(bride.birthday), "date")}
-              ${quickInput("brideFather", "신부 아버지", brideFather)}
-              ${quickInput("brideMother", "신부 어머니", brideMother)}
+              <div class="quick-field-row">
+                ${quickInput("couple.bride.name", "신부 이름", bride.name)}
+                ${quickInput("couple.bride.birthday", "신부 생일", birthdayInputValue(bride.birthday), "date")}
+              </div>
+              <div class="quick-field-row">
+                ${quickInput("brideFather", "신부 아버지", brideFather)}
+                ${quickInput("brideMother", "신부 어머니", brideMother)}
+              </div>
             </section>
           </div>
           <div class="quick-input-grid">
@@ -1838,6 +1850,10 @@ function renderEditor(message = "", focus = "") {
             <button class="btn btn-primary" type="button" data-address-search>주소 검색</button>
           </div>
           <p class="admin-message" data-venue-status>등록된 식장은 이름을 입력하면 주소가 자동으로 채워집니다. 다른 식장은 주소 검색에서 지도 확인 또는 직접입력을 사용할 수 있습니다.</p>
+          <div class="interlude-upload-admin">
+            <strong>업로드 관리</strong>
+            ${imageField("media.interludePhoto", "달력과 오시는 길 사이 사진", invitationData.media?.interludePhoto || "")}
+          </div>
         </fieldset>
         <details class="editor-details basic-pane guided-step" open data-guided-step="accounts" data-step-requires="wedding"><summary>4. 계좌 안내</summary><div class="editor-details-body">
           ${textarea("sectionDescriptions.account", "계좌 안내 문구", invitationData.sectionDescriptions?.account || "참석이 어려우신 분들을 위해\n계좌번호를 안내해 드립니다.")}
@@ -1893,8 +1909,8 @@ function renderEditor(message = "", focus = "") {
             ${sectionOrderEditor("sectionSettings.weddingDay", "결혼식 당일 이후", invitationData.sectionSettings?.weddingDay)}
           </div>
           <div class="section-preview-actions">
-            <a class="btn" href="./index.html?previewSectionMode=preWedding" target="_blank" rel="noopener">결혼식 전 화면 미리보기</a>
-            <a class="btn btn-primary" href="./index.html?previewSectionMode=weddingDay" target="_blank" rel="noopener">결혼식 당일 이후 미리보기</a>
+            <a class="btn section-icon-action" href="./index.html?previewSectionMode=preWedding" target="_blank" rel="noopener" aria-label="결혼식 전 화면 미리보기" title="결혼식 전 화면 미리보기">${ico("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
+            <a class="btn btn-primary section-icon-action" href="./index.html?previewSectionMode=weddingDay" target="_blank" rel="noopener" aria-label="결혼식 당일 이후 미리보기" title="결혼식 당일 이후 미리보기">${ico("M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z", '<circle cx="12" cy="12" r="3"/>')}</a>
           </div>
           <p class="admin-message micro-help">변경한 순서를 저장한 다음 미리보기 버튼을 눌러 주세요.</p>
         </div></details>
@@ -1994,6 +2010,7 @@ function editorData(form) {
   if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
   next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
   next.appearance.design.heroDecorationStrokeWidth = Number(fields.get("appearance.design.heroDecorationStrokeWidth") || next.appearance.design.heroDecorationStrokeWidth || 3);
+  next.appearance.design.heroDecorationYPercent = Number(fields.get("appearance.design.heroDecorationYPercent") || next.appearance.design.heroDecorationYPercent || 0);
   const displayFormat = form.elements["wedding.displayDateFormat"]?.value || "long_ko";
   const displayCustom = form.elements["wedding.displayDateCustom"]?.value.trim() || "";
   next.wedding.displayDate = displayFormat === "custom"
@@ -3196,6 +3213,50 @@ function bindEditor() {
         .map((item) => item.dataset.sectionId)
         .join("\n");
     };
+    const list = editor.querySelector(".section-order-list");
+    let draggedItem = null;
+    const itemAfterPointer = (y) => [...list.querySelectorAll(".section-order-item:not(.is-dragging)")].reduce((closest, item) => {
+      const box = item.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      return offset < 0 && offset > closest.offset ? { offset, item } : closest;
+    }, { offset: Number.NEGATIVE_INFINITY, item: null }).item;
+    list?.addEventListener("dragstart", (event) => {
+      draggedItem = event.target.closest(".section-order-item");
+      if (!draggedItem) return;
+      draggedItem.classList.add("is-dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedItem.dataset.sectionId);
+    });
+    list?.addEventListener("dragover", (event) => {
+      if (!draggedItem) return;
+      event.preventDefault();
+      const after = itemAfterPointer(event.clientY);
+      if (after) list.insertBefore(draggedItem, after);
+      else list.appendChild(draggedItem);
+    });
+    list?.addEventListener("dragend", () => {
+      draggedItem?.classList.remove("is-dragging");
+      draggedItem = null;
+      updateSectionOrder();
+    });
+    list?.addEventListener("touchstart", (event) => {
+      draggedItem = event.target.closest(".section-order-item");
+      draggedItem?.classList.add("is-dragging");
+    }, { passive: true });
+    list?.addEventListener("touchmove", (event) => {
+      if (!draggedItem) return;
+      event.preventDefault();
+      const touch = event.touches[0];
+      const after = itemAfterPointer(touch.clientY);
+      if (after) list.insertBefore(draggedItem, after);
+      else list.appendChild(draggedItem);
+      updateSectionOrder();
+    }, { passive: false });
+    list?.addEventListener("touchend", () => {
+      draggedItem?.classList.remove("is-dragging");
+      draggedItem = null;
+      updateSectionOrder();
+    });
     editor.addEventListener("change", updateSectionOrder);
     editor.addEventListener("click", (event) => {
       const reset = event.target.closest("[data-section-reset]");

@@ -57,6 +57,9 @@ window.INVITATION_DATA = {
       { label: "티맵", url: "https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EC%B0%BD%EC%9B%90%EC%8B%9C%20%EC%84%B1%EC%82%B0%EA%B5%AC%20%EC%9B%90%EC%9D%B4%EB%8C%80%EB%A1%9C%20332" },
     ],
   },
+  media: {
+    interludePhoto: "",
+  },
   hero: {
     eyebrow: "our wedding day",
     introEyebrow: "our wedding day",
@@ -90,20 +93,20 @@ window.INVITATION_DATA = {
     gallery: { en: "Gallery", ko: "갤러리" },
     information: { en: "Information", ko: "식장 안내" },
     attendance: { en: "Rsvp", ko: "참석 의사 전달" },
-    weddingSnap: { en: "Guest Album", ko: "예쁘게 빛난 순간, 같이 공유해요!" },
+    weddingSnap: { en: "Guest Album", ko: "함께만드는 웨딩스냅" },
     account: { en: "Account", ko: "마음 전하는 곳" },
     guestbook: { en: "Guestbook", ko: "축하 메시지" },
   },
   sectionDescriptions: {
-    attendance: "신랑, 신부에게 참석의사를\n미리 전달할 수 있어요.",
-    weddingSnap: "오늘의 추억은 여러분의 한 장에서 완성돼요.\n예식 당일, 아래 버튼으로 가볍게 공유해주세요!",
+    attendance: "신랑신부에게 참석의사를 미리 전달해주세요",
+    weddingSnap: "오늘의 추억은 여러분의 한 장에서 완성돼요!",
     account: "참석이 어려우신 분들을 위해\n계좌번호를 안내해 드립니다.",
     guestbook: "따뜻한 마음을 짧게 남겨 주세요.",
   },
   transport: [
-    { title: "지하철 · 기차", text: "KTX 창원중앙역 또는 창원역에서 호텔까지 차량으로 약 10분입니다." },
-    { title: "버스", text: "창원고속버스터미널에서 호텔까지 차량으로 약 10분입니다. 버스 노선은 변동될 수 있으니 지도 앱에서 최신 경로를 확인해 주세요." },
-    { title: "자가용", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요." },
+    { title: "자가용 이용", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요." },
+    { title: "대중교통 이용", text: "창원고속버스터미널에서 호텔까지 차량으로 약 10분입니다. 버스 노선은 변동될 수 있으니 지도 앱에서 최신 경로를 확인해 주세요." },
+    { title: "기차 이용", text: "KTX 창원중앙역 또는 창원역에서 호텔까지 차량으로 약 10분입니다." },
   ],
   gallery: Array.from({ length: 30 }, () => ""),
   galleryThumbs: Array.from({ length: 30 }, () => ""),
@@ -159,8 +162,8 @@ window.INVITATION_DATA = {
     },
   },
   sectionSettings: {
-    preWedding: ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
-    weddingDay: ["invitation", "about-us", "wedding-day", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
+    preWedding: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
+    weddingDay: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
   },
   accounts: [
     { side: "신랑측", name: "조성호", relation: "신랑", bank: "국민은행", number: "000000-00-000000" },

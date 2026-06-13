@@ -39,6 +39,12 @@ alter table public.attendance_responses
   add column if not exists invitation_id text not null default 'main';
 alter table public.attendance_responses
   add column if not exists accommodation_details text not null default '';
+alter table public.attendance_responses
+  add column if not exists side text check (side in ('신랑측', '신부측'));
+alter table public.attendance_responses
+  add column if not exists meal text check (meal in ('O', 'X'));
+alter table public.attendance_responses
+  alter column phone drop not null;
 
 create table if not exists public.invitation_settings (
   id text primary key,

@@ -217,14 +217,14 @@
       gallery: { en: "Gallery", ko: "갤러리" },
       information: { en: "Information", ko: "식장 안내" },
       attendance: { en: "Rsvp", ko: "참석 의사 전달" },
-      weddingSnap: { en: "Guest Album", ko: "예쁘게 빛난 순간, 같이 공유해요!" },
+      weddingSnap: { en: "Guest Album", ko: "함께만드는 웨딩스냅" },
       account: { en: "Account", ko: "마음 전하는 곳" },
       guestbook: { en: "Guestbook", ko: "축하 메시지" },
     };
     data.sectionTitles = Object.fromEntries(Object.entries(sectionTitles).map(([key, value]) => [key, { ...value, ...(data.sectionTitles?.[key] || {}) }]));
     data.sectionDescriptions = {
       attendance: "신랑, 신부에게 참석의사를\n미리 전달할 수 있어요.",
-      weddingSnap: "오늘의 추억은 여러분의 한 장에서 완성돼요.\n예식 당일, 아래 버튼으로 가볍게 공유해주세요!",
+      weddingSnap: "오늘의 추억은 여러분의 한 장에서 완성돼요!",
       account: "참석이 어려우신 분들을 위해\n계좌번호를 안내해 드립니다.",
       guestbook: "따뜻한 마음을 짧게 남겨 주세요.",
       ...(data.sectionDescriptions || {}),
@@ -322,6 +322,8 @@
     root.style.setProperty("--design-background-decoration", resolved.backgroundDecoration ? `url("${mediaUrl(resolved.backgroundDecoration)}")` : "none");
     root.style.setProperty("--design-section-icon", resolved.sectionIcon ? `url("${mediaUrl(resolved.sectionIcon)}")` : "var(--section-divider)");
     root.style.setProperty("--hero-decoration-size", String((Number(data.appearance.design?.heroDecorationSize) || 100) / 100));
+    root.style.setProperty("--hero-decoration-y", `${Number(data.appearance.design?.heroDecorationYPercent ?? 0) || 0}px`);
+    root.style.setProperty("--hero-decoration-tint", data.appearance.design?.heroDecorationTint || "#ffffff");
     root.style.setProperty("--heart-frame-icon", heartFrameIconUrl(data.appearance.design?.heroDecorationStrokeWidth));
     root.style.setProperty("--custom-hero-decoration", resolved.heroDecorationAsset?.url ? `url("${mediaUrl(resolved.heroDecorationAsset.url)}")` : "none");
     root.style.setProperty("--custom-decoration-opacity", String(resolved.heroDecorationAsset?.opacity ?? 1));
