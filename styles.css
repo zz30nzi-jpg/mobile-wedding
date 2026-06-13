@@ -3483,7 +3483,6 @@ body[data-admin-area="general"] .admin-editor-view.view-basic {
   padding-top: 14px;
 }
 
-html:has(body[data-admin-area="general"]),
 body[data-admin-area="general"] {
   height: auto;
   min-height: 100%;
@@ -3492,6 +3491,7 @@ body[data-admin-area="general"] {
 }
 
 body[data-admin-area="general"] .admin-page {
+  min-height: 100vh;
   min-height: 100svh;
   overflow: visible;
 }

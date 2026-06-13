@@ -3568,20 +3568,28 @@ function showAdminWelcomeOverlay(force = false) {
   const target = overlay.querySelector("[data-admin-welcome-text]");
   const text = settings.text || defaultWelcomeOverlay.text;
   let index = 0;
+  let isClosing = false;
+  const closeOverlay = () => {
+    if (isClosing) return;
+    isClosing = true;
+    overlay.classList.add("is-leaving");
+    window.setTimeout(() => {
+      overlay.remove();
+      document.body.classList.remove("admin-welcome-locked");
+    }, 420);
+  };
+  overlay.addEventListener("click", closeOverlay, { once: true });
+  overlay.addEventListener("touchend", closeOverlay, { once: true, passive: true });
+  window.setTimeout(closeOverlay, 5200);
   const typeNext = () => {
+    if (isClosing) return;
     target.textContent = text.slice(0, index);
     index += 1;
     if (index <= text.length) {
       window.setTimeout(typeNext, text[index - 2] === "\n" ? 170 : 52);
       return;
     }
-    window.setTimeout(() => {
-      overlay.classList.add("is-leaving");
-      window.setTimeout(() => {
-        overlay.remove();
-        document.body.classList.remove("admin-welcome-locked");
-      }, 420);
-    }, 900);
+    window.setTimeout(closeOverlay, 900);
   };
   window.setTimeout(typeNext, 240);
 }
