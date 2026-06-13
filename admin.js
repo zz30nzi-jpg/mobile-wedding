@@ -279,9 +279,8 @@ document.addEventListener("wheel", (event) => {
   if (!scroller) return;
   if (scroller.scrollWidth <= scroller.clientWidth) return;
   if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-  event.preventDefault();
   scroller.scrollLeft += event.deltaY;
-}, { passive: false });
+}, { passive: true });
 
 function tabIcon(d, extra = "") {
   return `<svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${extra}<path d="${d}"/></svg>`;
@@ -1324,9 +1323,10 @@ function parseList(value, fields) {
 }
 
 const validSectionIds = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
+const defaultSectionOrder = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
 const defaultSectionSettings = {
-  preWedding: [...validSectionIds],
-  weddingDay: [...validSectionIds],
+  preWedding: [...defaultSectionOrder],
+  weddingDay: [...defaultSectionOrder],
 };
 const sectionLabels = {
   invitation: "초대글",
@@ -1372,13 +1372,27 @@ function sectionOrderText(items = []) {
 }
 
 function parseSectionOrder(value) {
-  return value.split("\n")
+  return normalizeSectionOrder(value.split("\n")
     .map((item) => item.trim())
-    .filter((item, index, items) => validSectionIds.includes(item) && items.indexOf(item) === index);
+    .filter((item, index, items) => validSectionIds.includes(item) && items.indexOf(item) === index));
+}
+
+function normalizeSectionOrder(items = [], appendMissing = false) {
+  const selected = items.filter((item, index) => validSectionIds.includes(item) && items.indexOf(item) === index);
+  const withMissing = appendMissing ? [...selected, ...defaultSectionOrder.filter((id) => !selected.includes(id))] : [...selected];
+  const photoIndex = withMissing.indexOf("photo-interlude");
+  const locationIndex = withMissing.indexOf("location");
+  const weddingIndex = withMissing.indexOf("wedding-day");
+  const looksLikeLegacyDefault = photoIndex > locationIndex && weddingIndex !== -1 && locationIndex !== -1;
+  if (!looksLikeLegacyDefault) return withMissing;
+  const moved = withMissing.filter((id) => id !== "photo-interlude");
+  moved.splice(moved.indexOf("wedding-day") + 1, 0, "photo-interlude");
+  return moved;
 }
 
 function sectionOrderEditor(name, label, selected = [], previewMode = "") {
-  const ordered = [...selected.filter((id) => validSectionIds.includes(id)), ...validSectionIds.filter((id) => !selected.includes(id))];
+  const normalizedSelected = normalizeSectionOrder(selected);
+  const ordered = normalizeSectionOrder(normalizedSelected, true);
   const resetKey = name.split(".").pop();
   const previewLabel = previewMode === "preWedding" ? "결혼식 전까지 미리보기" : "결혼식당일 이후 미리보기";
   return `
@@ -1390,11 +1404,11 @@ function sectionOrderEditor(name, label, selected = [], previewMode = "") {
           <button class="btn btn-secondary section-icon-action" type="button" data-section-reset="${escapeAdminHtml(resetKey)}" aria-label="기본값으로 초기화" title="기본값으로 초기화">${tabIcon("M3 12a9 9 0 1 0 3-6.7 M3 3v6h6")}</button>
         </div>
       </div>
-      <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(selected))}">
+      <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(normalizedSelected))}">
       <div class="section-order-list">
         ${ordered.map((id) => `
           <div class="section-order-item" data-section-id="${id}" draggable="true">
-            <label><input type="checkbox" ${selected.includes(id) ? "checked" : ""}> <span>${sectionLabels[id]}</span></label>
+            <label><input type="checkbox" ${normalizedSelected.includes(id) ? "checked" : ""}> <span>${sectionLabels[id]}</span></label>
             <button class="section-drag-handle" type="button" aria-label="${sectionLabels[id]} 길게 눌러 순서 변경" title="길게 눌러 순서 변경">☰</button>
           </div>`).join("")}
       </div>
@@ -1721,13 +1735,17 @@ function accountManager(accounts = [], options = {}) {
           ${input(`account.${index}.personName`, "이름", account.personName || account.name || "")}
           ${select(`account.${index}.relation`, "관계", relationOptions.includes(account.relation) ? account.relation : account.relation ? "직접입력" : "", [["", "선택"], ...relationOptions.map((item) => [item, item])])}
         </div>
-        ${input(`account.${index}.name`, "예금주", account.name || account.personName || "")}
       </div>
       <div class="account-row account-row-custom" data-account-relation-custom ${relationOptions.includes(account.relation) || !account.relation ? "hidden" : ""}>
         ${input(`account.${index}.relationCustom`, "관계 직접 입력", relationOptions.includes(account.relation) ? "" : account.relation || "")}
       </div>
+      <div class="account-row">
+        ${input(`account.${index}.name`, "예금주", account.name || account.personName || "")}
+      </div>
       <div class="account-row account-row-bank">
         ${select(`account.${index}.bankSelect`, "은행", bankOptions.includes(account.bank) ? account.bank : account.bank ? "직접 입력" : "", bankOptions.map((bank) => [bank, bank || "선택"]))}
+      </div>
+      <div class="account-row">
         ${input(`account.${index}.number`, "계좌번호", formatAccountNumber(account.number))}
       </div>
       <div class="account-row account-row-custom" data-account-bank-custom ${bankOptions.includes(account.bank) ? "hidden" : ""}>
@@ -1902,6 +1920,7 @@ function renderEditor(message = "", focus = "") {
             <div class="copy-editor-toolbar"><div><strong>편집 기능</strong><small>점선 영역을 누르면 아래 도구가 해당 영역에 맞게 바뀝니다.</small></div></div>
             ${editorDesignPanel()}
             <p class="admin-message copy-editor-guide">공개 청첩장에서 수정 가능한 영역만 점선으로 표시됩니다.</p>
+            <button class="copy-frame-interaction-toggle" type="button" data-copy-frame-toggle>미리보기 편집</button>
             <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260612-v14" title="공개 청첩장 문구 수정 미리보기" data-copy-editor-frame></iframe>
             <aside class="copy-editor-drawer" data-copy-editor-drawer>
             <section class="copy-editor-section copy-editor-intro-settings">
@@ -2118,6 +2137,12 @@ function bindEditor() {
   copyEditor.querySelector('[name="hero.introDesign.align"]')?.addEventListener("change", updateIntroDesignPreview);
   updateIntroDesignPreview();
   const toolPanel = copyEditor.querySelector("[data-editor-tool-panel]");
+  const frameToggle = copyEditor.querySelector("[data-copy-frame-toggle]");
+  frameToggle?.addEventListener("click", () => {
+    const nextEnabled = !copyEditor.classList.contains("is-frame-interaction-enabled");
+    copyEditor.classList.toggle("is-frame-interaction-enabled", nextEnabled);
+    frameToggle.textContent = nextEnabled ? "스크롤 모드" : "미리보기 편집";
+  });
   if (window.visualViewport) {
     const updateKeyboardOffset = () => {
       const offset = Math.max(0, window.innerHeight - window.visualViewport.height);
@@ -3291,7 +3316,7 @@ function bindEditor() {
         const defaults = defaultSectionSettings[reset.dataset.sectionReset] || validSectionIds;
         const list = editor.querySelector(".section-order-list");
         const items = new Map([...editor.querySelectorAll(".section-order-item")].map((item) => [item.dataset.sectionId, item]));
-        [...defaults, ...validSectionIds.filter((id) => !defaults.includes(id))].forEach((id) => {
+        [...defaults, ...defaultSectionOrder.filter((id) => !defaults.includes(id))].forEach((id) => {
           const item = items.get(id);
           if (!item) return;
           const checkbox = item.querySelector('input[type="checkbox"]');

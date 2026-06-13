@@ -434,14 +434,26 @@ body.intro-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
   content: "";
   transform: translateX(-50%);
 }
-.section.photo-interlude { padding: 0; min-height: 260px; overflow: hidden; }
-.photo-interlude-media { position: absolute; inset: 0; }
+.section.photo-interlude { min-height: 360px; overflow: hidden; padding: 0; background: var(--paper); }
+.section.photo-interlude::before { display: none !important; }
+.photo-interlude-media {
+  position: absolute;
+  z-index: 0;
+  inset: 44px 0;
+  min-height: 280px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
 .photo-interlude::after {
   position: absolute;
+  z-index: 1;
   inset: 0;
   content: "";
   pointer-events: none;
-  background: linear-gradient(180deg, var(--paper) 0%, transparent 22%, transparent 78%, var(--paper) 100%);
+  background:
+    linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 96%, transparent) 13%, color-mix(in srgb, var(--paper) 42%, transparent) 30%, transparent 46%),
+    linear-gradient(0deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 96%, transparent) 13%, color-mix(in srgb, var(--paper) 42%, transparent) 30%, transparent 46%);
 }
 .section-title { margin: 0 0 40px; font-size: 22px; font-weight: 500; letter-spacing: -0.035em; }
 .section-label {
@@ -886,9 +898,9 @@ body[data-admin-area="general"]:has(.editor-tooldock:not([hidden]):not(.is-colla
 .admin-editor-intro { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .admin-editor-intro h2 { margin: 0; }
 .admin-mode-badge { border-radius: 999px; padding: 5px 9px; background: var(--soft-bg); color: var(--accent-dark); font-size: 10px; font-weight: 700; white-space: nowrap; }
-.admin-editor-view.view-basic { padding-top: 60px; }
+.admin-editor-view.view-basic { padding-top: 14px; }
 .admin-editor-view.view-basic .basic-pane.guided-progress {
-  position: fixed; top: 70px; left: 0; right: 0; z-index: 91;
+  position: sticky; top: calc(58px + env(safe-area-inset-top)); left: auto; right: auto; z-index: 91;
   display: flex; gap: 4px; margin: 0; padding: 6px 8px;
   background: var(--admin-bg); border-top: 1px solid var(--line); border-radius: 0;
   box-shadow: 0 6px 14px -10px rgba(0,0,0,0.2);
@@ -1047,9 +1059,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 3px s
 .account-side-list { display: grid; gap: 8px; padding: 9px; }
 .account-editor { position: relative; display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 42px 12px 12px; background: var(--surface); box-shadow: 0 6px 16px rgba(70,85,93,0.04); }
 .account-row { display: grid; gap: 7px; }
-.account-row-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.account-name-relation { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 7px; min-width: 0; }
-.account-row-bank { grid-template-columns: 120px minmax(0, 1fr); }
+.account-row-main { grid-template-columns: 1fr; }
+.account-name-relation { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 7px; min-width: 0; }
+.account-row-bank { grid-template-columns: 1fr; }
 .account-row-custom[hidden] { display: none; }
 .account-remove { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; font-size: 15px; }
 .account-add { width: calc(100% - 18px); margin: 0 9px 10px; }
@@ -3201,20 +3213,32 @@ body[data-layout="classic"] .calendar td { height: 33px; font-size: 11px; }
 body[data-layout="classic"] .calendar .wedding-day span { width: 27px; height: 27px; }
 body[data-layout="classic"] #wedding-day .countdown { margin-bottom: 22px; }
 body[data-layout="classic"] #countdown-message { margin-top: 0; }
-body[data-layout="classic"] .photo-interlude { min-height: 330px; margin: -8px 0 0; background: var(--paper); }
-body[data-layout="classic"] .photo-interlude-media { inset: 36px 0; background-position: center; background-size: cover; }
+body[data-layout="classic"] .photo-interlude { min-height: clamp(330px, 64vw, 430px); margin: -8px 0 0; background: var(--paper); }
+body[data-layout="classic"] .photo-interlude-media {
+  inset: 42px 0;
+  min-height: 260px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
 body[data-layout="classic"] .photo-interlude::before,
 body[data-layout="classic"] .photo-interlude::after {
   position: absolute;
   z-index: 1;
   right: 0;
   left: 0;
-  height: 104px;
+  height: 100%;
   content: "";
   pointer-events: none;
 }
-body[data-layout="classic"] .photo-interlude::before { top: 0; background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 0%, transparent)); }
-body[data-layout="classic"] .photo-interlude::after { top: auto; bottom: 0; background: linear-gradient(0deg, var(--paper), color-mix(in srgb, var(--paper) 0%, transparent)); }
+body[data-layout="classic"] .photo-interlude::before { content: none !important; }
+body[data-layout="classic"] .photo-interlude::after {
+  top: 0;
+  bottom: 0;
+  background:
+    linear-gradient(180deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 98%, transparent) 14%, color-mix(in srgb, var(--paper) 48%, transparent) 32%, transparent 48%),
+    linear-gradient(0deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 98%, transparent) 14%, color-mix(in srgb, var(--paper) 48%, transparent) 32%, transparent 48%);
+}
 body[data-layout="classic"] #location { text-align: center; }
 body[data-layout="classic"] .map-links {
   display: flex;
@@ -3508,24 +3532,56 @@ body[data-admin-area="general"] .admin-page {
 
 body[data-admin-area="general"] .admin-editor-view.view-basic .admin-quick-actions.guided-progress {
   position: sticky !important;
-  top: calc(60px + env(safe-area-inset-top)) !important;
+  top: calc(72px + env(safe-area-inset-top)) !important;
   left: auto !important;
   right: auto !important;
-  margin: 0 0 12px !important;
+  width: calc(100% - 16px);
+  margin: 8px auto 18px !important;
   z-index: 91;
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 13%, var(--line));
+  border-radius: 22px;
+  padding: 18px 10px 16px;
+  background: color-mix(in srgb, var(--card) 98%, transparent);
+  box-shadow: 0 10px 24px rgba(70,85,93,0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body[data-admin-area="general"] .admin-quick-actions.guided-progress button {
+  gap: 6px;
+  min-height: 72px;
+  border-radius: 16px;
+  color: color-mix(in srgb, var(--accent-dark) 70%, var(--muted));
+  font-size: 13px;
+}
+
+body[data-admin-area="general"] .admin-quick-actions.guided-progress button .tab-icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.7;
+}
+
+body[data-admin-area="general"] .admin-quick-actions.guided-progress button span {
+  font-size: 13px;
+  line-height: 1.15;
 }
 
 body[data-admin-area="general"] .account-row-main {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-columns: 1fr !important;
 }
 
 body[data-admin-area="general"] .account-name-relation {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px;
+  grid-template-columns: minmax(0, 1fr) 112px;
   gap: 7px;
   min-width: 0;
+}
+
+body[data-admin-area="general"] .account-row-bank {
+  grid-template-columns: 1fr !important;
 }
 
 body[data-admin-area="general"] .quick-field-row input[type="date"],
@@ -3562,6 +3618,10 @@ body[data-admin-area="general"] .section-preview-actions {
   display: none !important;
 }
 
+.copy-frame-interaction-toggle {
+  display: none;
+}
+
 @media (max-width: 560px) {
   body[data-admin-area="general"] .copy-pane {
     overflow: visible;
@@ -3574,5 +3634,31 @@ body[data-admin-area="general"] .section-preview-actions {
   body[data-admin-area="general"] .copy-editor-public-frame {
     height: min(58svh, 430px);
     min-height: 360px;
+    pointer-events: none;
+    touch-action: none;
+  }
+
+  body[data-admin-area="general"] .copy-pane.is-frame-interaction-enabled .copy-editor-public-frame {
+    pointer-events: auto;
+    touch-action: auto;
+  }
+
+  body[data-admin-area="general"] .copy-frame-interaction-toggle {
+    position: sticky;
+    top: calc(64px + env(safe-area-inset-top));
+    z-index: 5;
+    display: inline-flex;
+    width: fit-content;
+    min-height: 30px;
+    justify-self: end;
+    margin: 2px 10px 6px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 10px;
+    background: var(--card);
+    color: var(--accent-dark);
+    font-size: 11px;
+    font-weight: 800;
+    box-shadow: 0 6px 16px rgba(70,85,93,0.12);
   }
 }
