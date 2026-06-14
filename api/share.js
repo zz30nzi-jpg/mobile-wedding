@@ -36,11 +36,14 @@ module.exports = async function sharePage(request, response) {
   let invitation = {};
 
   try {
-    const result = await fetch(`${SUPABASE_URL}/rest/v1/invitation_settings?id=eq.${encodeURIComponent(slug)}&select=content`, {
+    const result = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_invitation`, {
+      method: "POST",
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ invitation_slug: slug }),
     });
     if (result.ok) invitation = (await result.json())[0]?.content || {};
   } catch {

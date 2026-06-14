@@ -74,19 +74,19 @@ revoke all on table public.attendance_responses from anon, authenticated;
 revoke all on table public.invitation_settings from anon, authenticated;
 revoke all on table public.guestbook_entries from anon, authenticated;
 grant select, insert, update, delete on table public.invitation_sites to authenticated;
-grant select on table public.invitation_sites to anon;
 grant insert on table public.attendance_responses to anon, authenticated;
 grant select on table public.attendance_responses to authenticated;
-grant select on table public.invitation_settings to anon, authenticated;
+grant select on table public.invitation_settings to authenticated;
 grant insert, update, delete on table public.invitation_settings to authenticated;
 grant select, insert on table public.guestbook_entries to anon, authenticated;
 grant update on table public.guestbook_entries to authenticated;
 
 drop policy if exists "public can read invitation site slugs" on public.invitation_sites;
-create policy "public can read invitation site slugs"
+drop policy if exists "owners can read own invitation site" on public.invitation_sites;
+create policy "owners can read own invitation site"
 on public.invitation_sites for select
-to anon, authenticated
-using (true);
+to authenticated
+using ((select auth.uid()) = owner_id);
 
 drop policy if exists "owners can create own invitation site" on public.invitation_sites;
 create policy "owners can create own invitation site"
@@ -127,10 +127,41 @@ using (
 );
 
 drop policy if exists "guests can read invitation settings" on public.invitation_settings;
-create policy "guests can read invitation settings"
+drop policy if exists "registered admins can read invitation settings" on public.invitation_settings;
+create policy "registered admins can read invitation settings"
 on public.invitation_settings for select
-to anon, authenticated
-using (true);
+to authenticated
+using (
+  id in ('main', '_design_library')
+  or exists (
+    select 1 from public.invitation_sites where slug = id and owner_id = (select auth.uid())
+  )
+);
+
+create or replace function public.get_public_invitation(invitation_slug text)
+returns table(content jsonb)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select settings.content
+  from public.invitation_settings settings
+  where settings.id = coalesce(nullif(trim(invitation_slug), ''), 'main')
+    and (
+      settings.id = 'main'
+      or exists (
+        select 1
+        from public.invitation_sites sites
+        where sites.slug = settings.id
+          and sites.disabled = false
+      )
+    )
+  limit 1
+$$;
+
+revoke all on function public.get_public_invitation(text) from public;
+grant execute on function public.get_public_invitation(text) to anon, authenticated;
 
 drop policy if exists "registered admins can create invitation settings" on public.invitation_settings;
 create policy "registered admins can create invitation settings"

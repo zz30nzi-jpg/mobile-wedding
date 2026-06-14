@@ -454,9 +454,7 @@ async function loadDesignLibrary() {
 
 async function fetchAndCacheInvitation(client, fallback, slug, library) {
   const { data, error } = await client
-    .from("invitation_settings")
-    .select("content")
-    .eq("id", slug)
+    .rpc("get_public_invitation", { invitation_slug: slug })
     .maybeSingle();
   if (error || !data?.content) return null;
   writeInvitationCache(slug, data.content);
