@@ -100,9 +100,9 @@ window.createWeddingAIService = function createWeddingAIService() {
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
     items: [
-      { title: "지하철", text: `가까운 역(확인 필요)에서 하차해 주세요.\n역에서 예식장까지 도보 또는 택시로 이동해 주세요.` },
-      { title: "버스", text: `이용 가능한 버스 번호(확인 필요)와 정류장을 확인해 주세요.\n정류장에서 예식장까지 도보로 이동해 주세요.` },
-      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n주차장 위치와 이용 방법은 예식장 안내를 확인해 주세요.` },
+      { title: "지하철", text: `가까운 역(확인 필요) → 도보 이동\n예식장 인근 하차` },
+      { title: "버스", text: `정류장(확인 필요), 노선 버스 번호(확인 필요)\n예식장 인근 정류장 하차 → 도보 이동` },
+      { title: "자가용", text: `${context.venue || "예식장"} 주소 내비게이션 입력\n주차장 위치 확인 필요` },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
