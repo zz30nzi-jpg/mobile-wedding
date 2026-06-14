@@ -3462,6 +3462,10 @@ function bindEditor() {
       return offset < 0 && offset > closest.offset ? { offset, item } : closest;
     }, { offset: Number.NEGATIVE_INFINITY, item: null }).item;
     list?.addEventListener("dragstart", (event) => {
+      if (!event.target.closest(".section-drag-handle")) {
+        event.preventDefault();
+        return;
+      }
       draggedItem = event.target.closest(".section-order-item");
       if (!draggedItem) return;
       draggedItem.classList.add("is-dragging");

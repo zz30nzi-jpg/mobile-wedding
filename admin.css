@@ -343,13 +343,11 @@ body[data-admin-area="general"] .section-order-list {
 body[data-admin-area="general"] .section-order-item {
   min-height: 38px;
   padding: 6px 8px;
-  cursor: grab;
   user-select: none;
 }
 
 body[data-admin-area="general"] .section-order-item.is-dragging {
   opacity: 0.55;
-  cursor: grabbing;
 }
 
 body[data-admin-area="general"] .section-drag-handle {
@@ -363,6 +361,11 @@ body[data-admin-area="general"] .section-drag-handle {
   color: var(--accent-dark);
   font-size: 13px;
   line-height: 1;
+  cursor: grab;
+}
+
+body[data-admin-area="general"] .section-order-item.is-dragging .section-drag-handle {
+  cursor: grabbing;
 }
 
 body[data-admin-area="general"] .section-icon-action {
