@@ -1407,7 +1407,7 @@ function sectionOrderEditor(name, label, selected = [], previewMode = "") {
       <input type="hidden" name="${name}" value="${escapeAdminHtml(sectionOrderText(normalizedSelected))}">
       <div class="section-order-list">
         ${ordered.map((id) => `
-          <div class="section-order-item" data-section-id="${id}" draggable="true">
+          <div class="section-order-item" data-section-id="${id}">
             <label><input type="checkbox" ${normalizedSelected.includes(id) ? "checked" : ""}> <span>${sectionLabels[id]}</span></label>
             <button class="section-drag-handle" type="button" aria-label="${sectionLabels[id]} 길게 눌러 순서 변경" title="길게 눌러 순서 변경">☰</button>
           </div>`).join("")}
@@ -3456,54 +3456,38 @@ function bindEditor() {
     };
     const list = editor.querySelector(".section-order-list");
     let draggedItem = null;
+    let activePointerId = null;
     const itemAfterPointer = (y) => [...list.querySelectorAll(".section-order-item:not(.is-dragging)")].reduce((closest, item) => {
       const box = item.getBoundingClientRect();
       const offset = y - box.top - box.height / 2;
       return offset < 0 && offset > closest.offset ? { offset, item } : closest;
     }, { offset: Number.NEGATIVE_INFINITY, item: null }).item;
-    list?.addEventListener("dragstart", (event) => {
-      if (!event.target.closest(".section-drag-handle")) {
-        event.preventDefault();
-        return;
-      }
-      draggedItem = event.target.closest(".section-order-item");
+    const endDrag = (event) => {
+      if (!draggedItem || (event && event.pointerId !== activePointerId)) return;
+      draggedItem.classList.remove("is-dragging");
+      draggedItem = null;
+      activePointerId = null;
+      updateSectionOrder();
+    };
+    list?.addEventListener("pointerdown", (event) => {
+      const handle = event.target.closest(".section-drag-handle");
+      if (!handle) return;
+      event.preventDefault();
+      draggedItem = handle.closest(".section-order-item");
       if (!draggedItem) return;
+      activePointerId = event.pointerId;
+      handle.setPointerCapture?.(activePointerId);
       draggedItem.classList.add("is-dragging");
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", draggedItem.dataset.sectionId);
     });
-    list?.addEventListener("dragover", (event) => {
-      if (!draggedItem) return;
+    list?.addEventListener("pointermove", (event) => {
+      if (!draggedItem || event.pointerId !== activePointerId) return;
       event.preventDefault();
       const after = itemAfterPointer(event.clientY);
       if (after) list.insertBefore(draggedItem, after);
       else list.appendChild(draggedItem);
     });
-    list?.addEventListener("dragend", () => {
-      draggedItem?.classList.remove("is-dragging");
-      draggedItem = null;
-      updateSectionOrder();
-    });
-    list?.addEventListener("touchstart", (event) => {
-      const handle = event.target.closest(".section-drag-handle");
-      if (!handle) return;
-      draggedItem = handle.closest(".section-order-item");
-      draggedItem?.classList.add("is-dragging");
-    }, { passive: true });
-    list?.addEventListener("touchmove", (event) => {
-      if (!draggedItem) return;
-      event.preventDefault();
-      const touch = event.touches[0];
-      const after = itemAfterPointer(touch.clientY);
-      if (after) list.insertBefore(draggedItem, after);
-      else list.appendChild(draggedItem);
-      updateSectionOrder();
-    }, { passive: false });
-    list?.addEventListener("touchend", () => {
-      draggedItem?.classList.remove("is-dragging");
-      draggedItem = null;
-      updateSectionOrder();
-    });
+    list?.addEventListener("pointerup", endDrag);
+    list?.addEventListener("pointercancel", endDrag);
     editor.addEventListener("change", updateSectionOrder);
     editor.addEventListener("click", (event) => {
       const reset = event.target.closest("[data-section-reset]");

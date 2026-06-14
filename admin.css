@@ -346,8 +346,15 @@ body[data-admin-area="general"] .section-order-item {
   user-select: none;
 }
 
+body[data-admin-area="general"] .section-order-item {
+  position: relative;
+}
+
 body[data-admin-area="general"] .section-order-item.is-dragging {
-  opacity: 0.55;
+  z-index: 2;
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  transform: scale(1.03);
 }
 
 body[data-admin-area="general"] .section-drag-handle {
@@ -362,6 +369,10 @@ body[data-admin-area="general"] .section-drag-handle {
   font-size: 13px;
   line-height: 1;
   cursor: grab;
+  touch-action: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 body[data-admin-area="general"] .section-order-item.is-dragging .section-drag-handle {
