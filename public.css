@@ -227,42 +227,10 @@ body[data-layout="classic"] .transport-list {
   margin: 0 auto;
   gap: 10px;
 }
-body[data-layout="classic"] .transport-tab {
-  position: relative;
-  width: 100%;
-  border: 1px solid color-mix(in srgb, var(--accent-dark) 36%, var(--line));
-  border-radius: 999px;
-  padding: 9px 34px 9px 16px;
-  background: color-mix(in srgb, var(--card) 78%, var(--accent) 8%);
-  color: var(--accent-dark);
-  font-size: 13px;
-  text-align: left;
-}
-body[data-layout="classic"] .transport-tab::before { content: "+"; margin-right: 8px; font-weight: 800; }
-body[data-layout="classic"] .transport-tab::after {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  width: 9px;
-  height: 9px;
-  border-right: 1px solid currentColor;
-  border-bottom: 1px solid currentColor;
-  content: "";
-  transform: translateY(-65%) rotate(45deg);
-}
-body[data-layout="classic"] .transport-tab.is-active { background: color-mix(in srgb, var(--accent-dark) 16%, var(--card)); color: var(--accent-dark); }
-body[data-layout="classic"] .transport-tab.is-active::after { transform: translateY(-35%) rotate(225deg); }
-body[data-layout="classic"] .transport-panels { max-width: 300px; margin: 14px auto 0; }
 body[data-layout="classic"] .transport-panel {
-  border: 0;
-  padding: 10px 10px 4px;
-  background: transparent;
-  color: color-mix(in srgb, var(--accent-dark) 58%, var(--copy));
-  font-size: 12px;
-  line-height: 1.8;
-  text-align: center;
+  background: color-mix(in srgb, var(--accent-dark) 6%, var(--card));
+  border-color: color-mix(in srgb, var(--accent-dark) 22%, var(--line));
 }
-body[data-layout="classic"] .transport-panel:not(.is-active) { display: none; }
 body[data-layout="classic"] .copy-toast {
   min-height: 24px;
   padding: 5px 10px;

@@ -626,15 +626,13 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 .map-links { margin-top: 16px; }
 .map-links .btn { border: 0; background: transparent; color: var(--accent-dark); font-weight: 600; }
 .transport { margin-top: 22px; text-align: left; }
-.transport-list { display: grid; gap: 8px; }
-.transport-tabs { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-.transport-tab { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 16px; background: var(--card); color: var(--ink); font-size: 13px; font-weight: 600; text-align: left; transition: 0.2s ease; }
-.transport-tab.is-active { border-color: var(--accent-dark); background: var(--accent-dark); color: var(--card); }
-.transport-panels { margin-top: 12px; }
-.transport-panel { display: none; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--panel-bg); font-size: 14px; line-height: 1.75; text-align: left; }
-.transport-panel.is-active { display: block; }
-.transport-panel p { margin: 0; text-align: left; }
-.transport-panel .preserve { display: block; text-align: left; }
+.transport-list { display: grid; gap: 10px; }
+.transport-panel { display: block; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--panel-bg); font-size: 14px; line-height: 1.6; text-align: left; }
+.transport-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 700; color: var(--ink); }
+.transport-icon { flex: none; font-size: 16px; line-height: 1; }
+.transport-lines { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.transport-lines li { display: flex; align-items: flex-start; gap: 8px; text-align: left; }
+.transport-line-icon { flex: none; font-size: 14px; line-height: 1.6; }
 
 .gallery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 11px; }
 .gallery-item { aspect-ratio: 3 / 4; border: 4px solid var(--card); border-bottom-width: 9px; border-radius: 3px; overflow: hidden; padding: 0; box-shadow: 0 5px 14px rgba(70,85,93,0.1); }
@@ -1799,9 +1797,7 @@ body[data-layout="editorial_red"] #invitation p,
 body[data-layout="editorial_red"] #invitation .invitation-quote { font-size: 14px; line-height: 2; }
 body[data-layout="editorial_red"] #location { text-align: left; border-top: none; }
 body[data-layout="editorial_red"] #location .location-address { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-/* location 교통편 — 매거진 톤의 각진 탭/카드 */
-body[data-layout="editorial_red"] .transport-tab { border-radius: 0; font-weight: 900; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
-body[data-layout="editorial_red"] .transport-tab.is-active { border-color: var(--accent-dark); background: var(--accent-dark); }
+/* location 교통편 — 매거진 톤의 각진 카드 */
 body[data-layout="editorial_red"] .transport-panel { border-radius: 0; border: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; }
 body[data-layout="editorial_red"] #account { text-align: left; }
 body[data-layout="editorial_red"] #account details { border: 2px solid var(--ink); border-radius: 0; }
@@ -1819,7 +1815,6 @@ body[data-layout="cream_organic"] #location .location-venue { color: var(--accen
 body[data-layout="cream_organic"] #wedding-day .timetable-time { font-family: "Gowun Batang", serif; }
 body[data-layout="cream_organic"] #location .location-hall { color: color-mix(in srgb, var(--accent-dark) 78%, var(--ink)); }
 body[data-layout="cream_organic"] .transport-panel { background: color-mix(in srgb, var(--accent-dark) 9%, var(--card)); border-color: color-mix(in srgb, var(--accent-dark) 28%, transparent); border-radius: 14px; }
-body[data-layout="cream_organic"] .transport-tab.is-active { background: var(--accent-dark); border-color: var(--accent-dark); }
 body[data-layout="cream_organic"] #account details { background: color-mix(in srgb, var(--accent-dark) 8%, var(--card)); border: none; border-radius: 18px; overflow: hidden; }
 body[data-layout="cream_organic"] #account summary { padding: 14px 18px; background: color-mix(in srgb, var(--accent-dark) 16%, var(--card)); color: var(--accent-dark); font-weight: 800; }
 body[data-layout="cream_organic"] #account .account-row { padding: 11px 18px; }
@@ -1848,7 +1843,6 @@ body[data-layout="crimson_silk"] #location { background: color-mix(in srgb, var(
 body[data-layout="crimson_silk"] #location .location-venue { color: var(--accent-dark); }
 body[data-layout="crimson_silk"] #wedding-day .timetable-time { font-family: "Libre Baskerville", serif; }
 body[data-layout="crimson_silk"] .transport-panel { background: color-mix(in srgb, var(--accent-dark) 5%, transparent); border-left: 3px solid color-mix(in srgb, var(--accent-dark) 35%, transparent); border-radius: 0 8px 8px 0; border-top: none; border-right: none; border-bottom: none; }
-body[data-layout="crimson_silk"] .transport-tab.is-active { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--card); }
 body[data-layout="crimson_silk"] #account details { border: 1px solid color-mix(in srgb, var(--accent-dark) 22%, transparent); border-radius: 10px; overflow: hidden; }
 body[data-layout="crimson_silk"] #account details[open] { border-color: color-mix(in srgb, var(--accent-dark) 40%, transparent); }
 body[data-layout="crimson_silk"] #account summary { background: var(--accent-dark); color: var(--card); padding: 12px 18px; letter-spacing: 0.03em; }
@@ -1861,7 +1855,6 @@ body[data-layout="navy_arch"] #location { background: transparent; padding: 40px
 body[data-layout="navy_arch"] #location .location-venue { color: var(--accent-dark); }
 /* accent 틴트 카드 — 교통·계좌·공지 (흰 배경 위) */
 body[data-layout="navy_arch"] .transport-panel { background: color-mix(in srgb, var(--accent-dark) 7%, var(--card)); border-color: color-mix(in srgb, var(--accent-dark) 20%, transparent); border-radius: 10px; }
-body[data-layout="navy_arch"] .transport-tab.is-active { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--card); }
 body[data-layout="navy_arch"] #account details { background: color-mix(in srgb, var(--accent-dark) 7%, var(--card)); border: none; border-radius: 14px; overflow: hidden; }
 body[data-layout="navy_arch"] #account summary { background: color-mix(in srgb, var(--accent-dark) 18%, var(--card)); color: var(--accent-dark); padding: 14px 18px; font-weight: 800; }
 body[data-layout="navy_arch"] #account .account-row { padding: 11px 18px; color: var(--ink); }
@@ -1880,8 +1873,6 @@ body[data-layout="navy_arch"] #location .btn { background: transparent; border: 
 /* ── garden_doodle : 낙서 점선 카드 ── */
 body[data-layout="garden_doodle"] #location .location-venue { font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
 body[data-layout="garden_doodle"] .transport-panel { background: transparent; border: 2px dashed color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 14px; }
-body[data-layout="garden_doodle"] .transport-tab { border: 2px dashed color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 14px; }
-body[data-layout="garden_doodle"] .transport-tab.is-active { background: var(--accent-dark); border-color: var(--accent-dark); border-style: solid; color: var(--card); }
 body[data-layout="garden_doodle"] #account details { border: 2px dashed color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 20px; overflow: hidden; }
 body[data-layout="garden_doodle"] #account summary { padding: 13px 18px; font-weight: 900; color: var(--accent-dark); }
 body[data-layout="garden_doodle"] #account .account-row { padding: 11px 18px; }

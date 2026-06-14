@@ -36,6 +36,15 @@ const sectionRegistry = window.WEDDING_SECTIONS || {};
 const escapeHtml = sharedUtils.escapeHtml || ((value = "") =>
   String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]));
 const escapeLineHtml = sharedUtils.escapeLineHtml || ((value = "") => escapeHtml(value).replace(/\n/g, "<br>"));
+const TRANSPORT_TYPES = sharedUtils.TRANSPORT_TYPES || [];
+const normalizeTransportTitle = sharedUtils.normalizeTransportTitle || ((title = "") => title);
+const transportType = (title) => TRANSPORT_TYPES.find((type) => type.label === normalizeTransportTitle(title)) || TRANSPORT_TYPES[0];
+const transportPanelHtml = (item) => {
+  const type = transportType(item.title);
+  const lines = String(item.text || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  return `<div class="transport-head"><span class="transport-icon" aria-hidden="true">${type.icon}</span><strong>${escapeHtml(type.label)}</strong></div>
+    <ul class="transport-lines">${lines.map((line, index) => `<li><span class="transport-line-icon" aria-hidden="true">${type.lines[index] || type.lines[type.lines.length - 1]}</span><span>${escapeHtml(line)}</span></li>`).join("")}</ul>`;
+};
 const mediaUrl = (src = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(src) || src || "";
 const mediaStyle = (src) => mediaUrl(src) ? `style="background-image:url('${escapeHtml(mediaUrl(src))}')"` : "";
 const lazyMediaStyle = (src) => mediaUrl(src) ? `data-lazy-background="${escapeHtml(mediaUrl(src))}"` : "";
@@ -410,12 +419,8 @@ function applySectionOrder() {
 }
 
 function sortedTransport() {
-  const priorities = ["지하철", "버스", "자가용"];
   return [...data.transport].sort((left, right) => {
-    const rank = (item) => {
-      const index = priorities.findIndex((keyword) => String(item.title).includes(keyword));
-      return index < 0 ? priorities.length : index;
-    };
+    const rank = (item) => TRANSPORT_TYPES.findIndex((type) => type.label === normalizeTransportTitle(item.title));
     return rank(left) - rank(right);
   });
 }
@@ -516,10 +521,7 @@ function render() {
         <div class="transport">
           <div class="transport-list">
             ${sortedTransport().filter((item) => !item.hidden).map((item, index) => `
-              <div class="transport-item">
-                <button type="button" class="transport-tab" data-transport-tab="${index}" aria-expanded="false">${escapeHtml(item.title)}</button>
-                <div class="transport-panel" data-transport-panel="${index}"><p class="preserve">${escapeLineHtml(item.text)}</p></div>
-              </div>`).join("")}
+              <div class="transport-panel" data-transport-panel="${index}">${transportPanelHtml(item)}</div>`).join("")}
           </div>
         </div>
       </section>
@@ -1053,20 +1055,6 @@ function bindEvents() {
     const galleryButton = event.target.closest("[data-gallery]");
     if (galleryButton) {
       openGallerySlider(Number(galleryButton.dataset.gallery));
-    }
-    const transportTab = event.target.closest("[data-transport-tab]");
-    if (transportTab) {
-      const index = transportTab.dataset.transportTab;
-      const transport = transportTab.closest(".transport");
-      const shouldOpen = !transportTab.classList.contains("is-active");
-      transport?.querySelectorAll(".transport-tab").forEach((tab) => {
-        const active = shouldOpen && tab.dataset.transportTab === index;
-        tab.classList.toggle("is-active", active);
-        tab.setAttribute("aria-expanded", String(active));
-      });
-      transport?.querySelectorAll(".transport-panel").forEach((panel) => {
-        panel.classList.toggle("is-active", shouldOpen && panel.dataset.transportPanel === index);
-      });
     }
   });
 

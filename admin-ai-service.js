@@ -100,8 +100,9 @@ window.createWeddingAIService = function createWeddingAIService() {
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
     items: [
-      { title: "대중교통", text: `가까운 역(확인 필요) 또는 정류장에서 하차해 주세요.\n도보 20분 이내면 표지판을 따라 이동해 주세요.\n도보 20분 이상이면 버스(번호 확인 필요)를 이용해 예식장 근처에서 하차해 주세요.\n정확한 역/정류장명과 배차 간격은 당일 다시 확인해 주세요.` },
-      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n도착 후에는 예식장 안내 표지나 주차 요원의 안내를 따라 이동해 주세요.\n주차장 입구와 혼잡 시간은 식장 안내를 확인해 주세요.` },
+      { title: "지하철", text: `가까운 역(확인 필요)에서 하차해 주세요.\n역에서 예식장까지 도보 또는 택시로 이동해 주세요.` },
+      { title: "버스", text: `이용 가능한 버스 번호(확인 필요)와 정류장을 확인해 주세요.\n정류장에서 예식장까지 도보로 이동해 주세요.` },
+      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n주차장 위치와 이용 방법은 예식장 안내를 확인해 주세요.` },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
@@ -119,7 +120,7 @@ window.createWeddingAIService = function createWeddingAIService() {
     return { ...response, notices: normalizeGuideItems(response.notices || [], maxLines) };
   };
   return {
-    generateTransportGuide: wrap(generateTransportGuide, "items", 5),
+    generateTransportGuide: wrap(generateTransportGuide, "items", 4),
     generateVenueGuide: wrap(generateVenueGuide, "notices"),
   };
 };

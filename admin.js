@@ -1335,9 +1335,9 @@ const venuePresets = [
     names: ["그랜드 머큐어 앰배서더 창원", "창원 그랜드머큐어 호텔웨딩", "그랜드머큐어 창원"],
     address: "경상남도 창원시 성산구 원이대로 332",
     transport: [
-      { title: "지하철 · 기차", text: "KTX 창원중앙역 또는 창원역에서 호텔까지 차량으로 약 10분입니다." },
-      { title: "버스", text: "창원고속버스터미널에서 호텔까지 차량으로 약 10분입니다. 버스 노선은 변동될 수 있으니 지도 앱에서 최신 경로를 확인해 주세요." },
-      { title: "자가용 · 주차", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요. 주차 안내는 예식 전 호텔에 확인해 주세요." },
+      { title: "지하철", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요.\n역에서 호텔까지 택시로 약 10분입니다." },
+      { title: "버스", text: "창원고속버스터미널에서 하차해 주세요.\n터미널에서 호텔까지 택시로 약 10분입니다." },
+      { title: "자가용", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요.\n주차 안내는 예식 전 호텔에 확인해 주세요." },
     ],
   },
 ];
@@ -1629,11 +1629,14 @@ function noticeManager(notices = []) {
 }
 
 function transportEditor(item = {}, index = 0) {
+  const transportTypes = adminUtils.TRANSPORT_TYPES || [];
+  const normalizeTransportTitle = adminUtils.normalizeTransportTitle || ((title = "") => title);
+  const selected = transportTypes.length ? normalizeTransportTitle(item.title) : item.title || "";
   return `
     <div class="notice-editor" data-transport-editor>
       <div class="notice-editor-head"><strong>교통 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-transport-remove aria-label="교통 안내 ${index + 1} 삭제">×</button></div>
-      ${input(`transport.${index}.title`, "제목", item.title || "")}
-      ${textarea(`transport.${index}.text`, "내용", item.text || "", 2)}
+      ${select(`transport.${index}.title`, "교통수단", selected, transportTypes.map((type) => [type.label, `${type.icon} ${type.label}`]))}
+      ${textarea(`transport.${index}.text`, "내용 (줄바꿈으로 줄을 나누면 각 줄 앞에 아이콘이 자동으로 붙습니다. 줄을 추가/삭제하며 자유롭게 수정할 수 있습니다)", item.text || "", 2)}
       <label class="consent"><input type="checkbox" name="transport.${index}.hidden" ${item.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
     </div>`;
 }
@@ -1641,7 +1644,7 @@ function transportEditor(item = {}, index = 0) {
 function transportManager(items = []) {
   return `
     <section class="editor-subsection"><div class="editor-subsection-head"><strong>교통 안내</strong><span>가까운 역·정류장 기준으로 경로와 소요시간을 항목별로 관리합니다.</span></div>
-    <p class="admin-message micro-help">AI 연결 시에는 식장 주소 기준 가장 가까운 기차/지하철역과 버스정류장을 찾아 차량·버스·지하철·도보 소요시간을 생성합니다. 도보는 20분 이하일 때만 표시하는 기준으로 작성해 주세요.</p>
+    <p class="admin-message micro-help">교통수단을 선택하고 내용을 2줄로 작성하면, 청첩장에 아이콘과 함께 표시됩니다. AI 연결 시에는 식장 주소 기준 가장 가까운 기차/지하철역과 버스정류장을 찾아 차량·버스·지하철·도보 안내를 생성합니다. 도보는 20분 이하일 때만 표시하는 기준으로 작성해 주세요.</p>
     <div class="notice-manager" data-transport-manager>
       <div class="notice-manager-list" data-transport-list>${items.map(transportEditor).join("")}</div>
       <div class="notice-ai-actions">
@@ -2011,7 +2014,7 @@ function editorData(form) {
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   })).filter((notice) => notice.title || notice.text);
   next.transport = [...form.querySelectorAll("[data-transport-editor]")].map((editor) => ({
-    title: editor.querySelector('input[name*=".title"]').value.trim(),
+    title: editor.querySelector('[name*=".title"]').value.trim(),
     text: editor.querySelector('textarea[name*=".text"]').value.trim(),
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   })).filter((item) => item.title || item.text);
@@ -3178,7 +3181,7 @@ function bindEditor() {
   const transportManagerElement = form.querySelector("[data-transport-manager]");
   const transportList = transportManagerElement.querySelector("[data-transport-list]");
   const transportItems = () => [...transportList.querySelectorAll("[data-transport-editor]")].map((editor) => ({
-    title: editor.querySelector('input[name*=".title"]').value,
+    title: editor.querySelector('[name*=".title"]').value,
     text: editor.querySelector('textarea[name*=".text"]').value,
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   }));
