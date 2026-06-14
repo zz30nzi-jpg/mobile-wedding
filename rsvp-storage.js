@@ -5,6 +5,58 @@ const DEFAULT_INVITATION_ID = "main";
 let activeInvitationSlug = "";
 let supabaseClientInstance = null;
 
+function isLocalDevelopmentHost() {
+  return ["localhost", "127.0.0.1", ""].includes(location.hostname);
+}
+
+function publicInvitationError(status, message) {
+  const error = new Error(message);
+  error.publicInvitationStatus = status;
+  return error;
+}
+
+function isEmptyInvitationContent(content) {
+  return !content || typeof content !== "object" || Array.isArray(content) || !Object.keys(content).length;
+}
+
+function compactPublicDesignData(content) {
+  if (!content || typeof content !== "object") return content;
+  const copy = JSON.parse(JSON.stringify(content));
+  const system = copy.designSystem;
+  if (!system || typeof system !== "object") return copy;
+  const design = copy.appearance?.design || {};
+  const activeThemeId = design.presetId || "sky";
+  const activeTheme = Array.isArray(system.themes) ? system.themes.find((theme) => theme.id === activeThemeId) : null;
+  const keepAssetIds = new Set([
+    design.heroDecoration,
+    design.heroTextTheme,
+    activeTheme?.heroDecoration,
+    activeTheme?.heroTextTheme,
+    activeTheme?.sectionIcon,
+    activeTheme?.backgroundDecoration,
+  ].filter((value) => value && value !== "inherit" && !/^https?:|^data:|^invitations\//.test(String(value))));
+  const nextAssets = {};
+  Object.entries(system.assets || {}).forEach(([key, value]) => {
+    if (!Array.isArray(value)) return;
+    nextAssets[key] = value.filter((asset) => keepAssetIds.has(asset.id));
+  });
+  const keptFontIds = new Set((nextAssets.textThemes || []).map((asset) => asset.fontId).filter(Boolean));
+  if (Array.isArray(system.assets?.fonts)) {
+    nextAssets.fonts = system.assets.fonts.filter((font) => keptFontIds.has(font.id));
+  }
+  copy.designSystem = {
+    activeLayoutId: system.activeLayoutId || "classic",
+    colorDefaults: system.colorDefaults || {},
+    fontDefaults: system.fontDefaults || {},
+    themes: activeTheme ? [activeTheme] : [],
+    layoutTemplates: Array.isArray(system.layoutTemplates)
+      ? system.layoutTemplates.filter((template) => template.id === system.activeLayoutId && !template.builtIn)
+      : [],
+    assets: nextAssets,
+  };
+  return copy;
+}
+
 function getSupabaseClient() {
   if (supabaseClientInstance) return supabaseClientInstance;
   const config = window.RSVP_CONFIG || {};
@@ -24,7 +76,9 @@ function clearStoredSupabaseAuth() {
       }
     }
     keys.forEach((key) => localStorage.removeItem(key));
-  } catch {}
+  } catch (error) {
+    console.warn("[supabase auth cleanup]", error);
+  }
 }
 
 function readLocalResponses() {
@@ -148,6 +202,10 @@ function storageSlug(value = "") {
 
 function fallbackSlug(seed = "") {
   return storageSlug(seed) || `card-${Date.now().toString(36)}`;
+}
+
+function normalizeRecoveryPhone(value = "") {
+  return String(value || "").replace(/[^0-9]/g, "").slice(0, 20);
 }
 
 function getStorageSlug() {
@@ -276,6 +334,8 @@ async function ensureInvitationForCurrentUser(fallback = window.INVITATION_DATA,
   const brideName = profile.brideName || meta.bride_name || "";
   const weddingDate = profile.weddingDate || meta.wedding_date || "";
   const weddingVenue = profile.weddingVenue || meta.wedding_venue || "";
+  const recoveryName = profile.recoveryName || meta.recovery_name || groomName || brideName || "";
+  const recoveryPhone = normalizeRecoveryPhone(profile.recoveryPhone || meta.recovery_phone || "");
   if (!groomName || !brideName || !weddingDate || !weddingVenue) return null;
   const slug = fallbackSlug(profile.cardSlug || meta.card_slug || `${groomName}-${brideName}` || user.email?.split("@")[0]);
   const title = [groomName, brideName].filter(Boolean).join(" · ") || user.email || "새 청첩장";
@@ -300,7 +360,7 @@ async function ensureInvitationForCurrentUser(fallback = window.INVITATION_DATA,
   }, library);
   const { data: site, error: siteError } = await client
     .from("invitation_sites")
-    .insert({ slug, owner_id: user.id, title, groom_name: groomName, bride_name: brideName, signup_email: user.email })
+    .insert({ slug, owner_id: user.id, title, groom_name: groomName, bride_name: brideName, signup_email: user.email, recovery_name: recoveryName, recovery_phone: recoveryPhone })
     .select("*")
     .single();
   if (siteError) throw siteError;
@@ -333,19 +393,9 @@ async function loadGuestbookEntries() {
   const client = getSupabaseClient();
   if (!client) return readLocalGuestbookEntries();
   const { data, error } = await client
-    .from("guestbook_entries")
-    .select("*")
-    .eq("invitation_id", getActiveInvitationSlug())
-    .eq("hidden", false)
-    .order("created_at", { ascending: false })
-    .limit(30);
-  if (error?.code === "42703") {
-    const legacy = await client.from("guestbook_entries").select("*").order("created_at", { ascending: false }).limit(30);
-    if (legacy.error) throw legacy.error;
-    return legacy.data.map((entry) => ({ ...entry, hidden: false }));
-  }
+    .rpc("get_public_guestbook_entries", { invitation_slug: getActiveInvitationSlug() });
   if (error) throw error;
-  return data;
+  return (data || []).map((entry) => ({ ...entry, hidden: false }));
 }
 
 async function loadAdminGuestbookEntries() {
@@ -400,11 +450,13 @@ function readInvitationCache(slug) {
 function writeInvitationCache(slug, data) {
   try {
     localStorage.setItem(invitationCacheKey(slug), JSON.stringify({ data, cachedAt: Date.now() }));
-  } catch {}
+  } catch (error) {
+    console.warn("[invitation cache write]", error);
+  }
 }
 
 function clearInvitationCache(slug) {
-  try { localStorage.removeItem(invitationCacheKey(slug)); } catch {}
+  try { localStorage.removeItem(invitationCacheKey(slug)); } catch (error) { console.warn("[invitation cache clear]", error); }
 }
 
 const DESIGN_LIBRARY_ID = "_design_library";
@@ -428,7 +480,7 @@ function readDesignLibraryCache() {
 }
 
 function writeDesignLibraryCache(data) {
-  try { localStorage.setItem(DESIGN_LIBRARY_CACHE_KEY, JSON.stringify({ data, cachedAt: Date.now() })); } catch {}
+  try { localStorage.setItem(DESIGN_LIBRARY_CACHE_KEY, JSON.stringify({ data, cachedAt: Date.now() })); } catch (error) { console.warn("[design library cache write]", error); }
 }
 
 async function fetchDesignLibrary(client) {
@@ -444,7 +496,7 @@ async function loadDesignLibrary() {
   if (!client) return readDesignLibraryCache();
   const cached = readDesignLibraryCache();
   if (cached) {
-    fetchDesignLibrary(client).then((fresh) => { if (fresh) writeDesignLibraryCache(fresh); }).catch(() => {});
+    fetchDesignLibrary(client).then((fresh) => { if (fresh) writeDesignLibraryCache(fresh); }).catch((error) => console.warn("[design library refresh]", error));
     return cached;
   }
   const fresh = await fetchDesignLibrary(client);
@@ -452,12 +504,37 @@ async function loadDesignLibrary() {
   return fresh;
 }
 
-async function fetchAndCacheInvitation(client, fallback, slug, library) {
+async function fetchAndCacheInvitation(client, fallback, slug) {
   const { data, error } = await client
     .rpc("get_public_invitation", { invitation_slug: slug })
     .maybeSingle();
-  if (error || !data?.content) return null;
-  writeInvitationCache(slug, data.content);
+  if (error) {
+    const status = error.code === "42883" || /function .*get_public_invitation/i.test(error.message || "")
+      ? "setup_error"
+      : "network_error";
+    throw publicInvitationError(status, "청첩장을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+  }
+  if (!data) throw publicInvitationError("not_found", "존재하지 않는 청첩장입니다.");
+  if (data.status === "not_found") throw publicInvitationError("not_found", "존재하지 않는 청첩장입니다.");
+  if (data.status === "disabled") throw publicInvitationError("disabled", "현재 공개되지 않은 청첩장입니다.");
+  if (data.status === "empty" || isEmptyInvitationContent(data.content)) {
+    throw publicInvitationError("empty", "청첩장 설정이 아직 완료되지 않았습니다.");
+  }
+  const publicContent = compactPublicDesignData(data.content);
+  writeInvitationCache(slug, publicContent);
+  return normalizeInvitationData(fallback, publicContent, null);
+}
+
+async function fetchOwnedInvitation(client, fallback, slug, library) {
+  const { data, error } = await client
+    .from("invitation_settings")
+    .select("content")
+    .eq("id", slug)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.content || isEmptyInvitationContent(data.content)) {
+    throw publicInvitationError("empty", "청첩장 설정이 아직 완료되지 않았습니다.");
+  }
   return normalizeInvitationData(fallback, data.content, library);
 }
 
@@ -465,6 +542,9 @@ async function loadInvitationData(fallback) {
   const client = getSupabaseClient();
   const urlSlug = getUrlInvitationSlug();
   if (!client) {
+    if (urlSlug || !isLocalDevelopmentHost()) {
+      throw publicInvitationError("network_error", "청첩장을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    }
     setActiveInvitationSlug(urlSlug || activeInvitationSlug || DEFAULT_INVITATION_ID);
     const saved = JSON.parse(localStorage.getItem(invitationLocalKey()) || "null");
     return normalizeInvitationData(fallback, saved);
@@ -472,21 +552,16 @@ async function loadInvitationData(fallback) {
   // 로그인한 사용자가 있으면 소유한 사이트로 분기 (관리자 페이지용)
   const ownedSite = urlSlug ? null : await currentUserInvitationSite(client);
   const slug = setActiveInvitationSlug(urlSlug || ownedSite?.slug || DEFAULT_INVITATION_ID);
-  const library = await loadDesignLibrary();
-
-  // 캐시에서 즉시 반환 후 백그라운드에서 최신 데이터 갱신 (stale-while-revalidate)
-  const cached = readInvitationCache(slug);
-  if (cached) {
-    // 백그라운드에서 갱신 (화면은 이미 렌더됨)
-    fetchAndCacheInvitation(client, fallback, slug, library).then((fresh) => {
-      if (fresh) window.__invitationFreshData = fresh;
-    }).catch(() => {});
-    return normalizeInvitationData(fallback, cached, library);
+  if (urlSlug || !ownedSite?.slug) {
+    try {
+      return await fetchAndCacheInvitation(client, fallback, slug);
+    } catch (error) {
+      if (!urlSlug && isLocalDevelopmentHost()) return window.WEDDING_DESIGN.normalize(fallback);
+      throw error;
+    }
   }
-
-  // 캐시 없으면 직접 fetch
-  const result = await fetchAndCacheInvitation(client, fallback, slug, library);
-  return result || window.WEDDING_DESIGN.normalize(fallback, library);
+  const library = await loadDesignLibrary();
+  return fetchOwnedInvitation(client, fallback, slug, library);
 }
 
 async function loadSafeInvitationData(fallback = window.INVITATION_DATA) {
@@ -510,12 +585,13 @@ async function saveInvitationData(content) {
     .upsert({ id: slug, content, updated_at: new Date().toISOString() });
   if (error) throw error;
   clearInvitationCache(slug); // 저장 후 캐시 즉시 무효화
-  await client.from("invitation_sites").update({
+  const { error: siteError } = await client.from("invitation_sites").update({
     title: `${content.couple?.groom?.name || ""} · ${content.couple?.bride?.name || ""}`.trim() || "청첩장",
     groom_name: content.couple?.groom?.name || "",
     bride_name: content.couple?.bride?.name || "",
     updated_at: new Date().toISOString(),
   }).eq("slug", slug);
+  if (siteError) throw siteError;
 }
 
 async function signUpInvitationAdmin({ email, password, groomName = "", brideName = "", groomBirthday = "", brideBirthday = "", weddingDate = "", weddingVenue = "", weddingHall = "", publicOpenDate = "", publicCloseDate = "", agreeTerms, agreePrivacy, agreeMarketing = false }) {
@@ -555,7 +631,7 @@ async function signInWithProvider(provider) {
   const client = getSupabaseClient();
   if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
   const redirectTo = `${location.origin}/admin.html`;
-  try { await client.auth.signOut({ scope: "local" }); } catch {}
+  try { await client.auth.signOut({ scope: "local" }); } catch (error) { console.warn("[oauth local signout]", error); }
   clearStoredSupabaseAuth();
   const queryParams = provider === "kakao"
     ? { prompt: "login" }
@@ -571,6 +647,19 @@ async function signInWithProvider(provider) {
   const authUrl = new URL(data.url);
   authUrl.searchParams.set("redirect_to", redirectTo);
   location.assign(authUrl.toString());
+}
+
+async function findAdminLoginId({ recoveryName = "", recoveryPhone = "" } = {}) {
+  const client = getSupabaseClient();
+  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
+  const { data, error } = await client
+    .rpc("find_admin_login_id", {
+      recovery_name_input: String(recoveryName || "").trim(),
+      recovery_phone_input: normalizeRecoveryPhone(recoveryPhone),
+    })
+    .maybeSingle();
+  if (error) throw error;
+  return data?.masked_email || "";
 }
 
 async function optimizeInvitationImage(file) {
@@ -880,6 +969,7 @@ window.RSVP_STORAGE = {
   getCurrentInvitationSite,
   ensureInvitationForCurrentUser,
   signUpInvitationAdmin,
+  findAdminLoginId,
   signInWithProvider,
   loadInvitationData,
   loadDesignLibrary,

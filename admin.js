@@ -26,6 +26,7 @@ const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
 const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
 let currentInvitationSite = null;
+let passwordRecoveryListenerBound = false;
 const GALLERY_MAX = 30;
 const SAVED_LOGIN_EMAIL_KEY = "wedding-admin-remembered-email";
 const GENERAL_ADMIN_VIEW_KEY = "wedding-general-admin-active-view";
@@ -45,6 +46,21 @@ const defaultWelcomeOverlay = {
   shadowColor: "#3b6674",
   shadowOpacity: 24,
 };
+
+function notifySaveFailure(error, context = "저장") {
+  alert(`${context}하지 못했습니다.\n${error?.message || "네트워크와 관리자 권한 설정을 확인해 주세요."}`);
+}
+
+function hasPasswordRecoveryContext() {
+  const params = new URLSearchParams(location.search);
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+  return params.get("type") === "recovery" || hashParams.get("type") === "recovery";
+}
+
+function clearAuthUrlState() {
+  if (!history.replaceState) return;
+  history.replaceState({}, document.title, `${location.origin}${location.pathname}`);
+}
 
 function themeWelcomePalette(source = invitationData) {
   const resolved = window.WEDDING_DESIGN?.resolve?.(source);
@@ -368,7 +384,11 @@ function renderLogin(message = "") {
   syncSignupPublicPeriod();
   document.querySelector("[data-find-email]")?.addEventListener("click", () => {
     const saved = localStorage.getItem(SAVED_LOGIN_EMAIL_KEY);
-    alert(saved ? `저장된 아이디는 ${saved} 입니다.` : "보안을 위해 전체 가입 이메일 목록은 표시하지 않습니다. 아이디 저장을 사용했거나 관리자에게 가입 이메일을 문의해 주세요.");
+    if (saved) {
+      alert(`저장된 아이디는 ${saved} 입니다.`);
+      return;
+    }
+    findAdminLoginId();
   });
   document.querySelector("[data-reset-password]")?.addEventListener("click", async () => {
     const emailField = document.querySelector('#admin-login-form input[name="email"]');
@@ -412,6 +432,71 @@ function renderLogin(message = "") {
   });
 }
 
+async function findAdminLoginId() {
+  if (!window.RSVP_STORAGE?.findAdminLoginId) {
+    alert("아이디 찾기 기능을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+    return;
+  }
+  const recoveryName = prompt("가입 시 등록한 복구용 이름을 입력해 주세요.");
+  if (!recoveryName) return;
+  const recoveryPhone = prompt("가입 시 등록한 복구용 연락처를 입력해 주세요.");
+  if (!recoveryPhone) return;
+  try {
+    const maskedEmail = await window.RSVP_STORAGE.findAdminLoginId({ recoveryName, recoveryPhone });
+    alert(maskedEmail
+      ? `가입 아이디는 ${maskedEmail} 입니다. 보안을 위해 일부만 표시합니다.`
+      : "일치하는 관리자 아이디를 찾지 못했습니다. 입력값을 확인하거나 관리자에게 문의해 주세요.");
+  } catch (error) {
+    alert(`아이디를 찾지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
+  }
+}
+
+function renderPasswordReset(message = "") {
+  adminApp.innerHTML = `
+    <section class="admin-card admin-login">
+      <p class="section-label">Password Reset</p>
+      <h1>비밀번호 변경</h1>
+      <p class="admin-message">${escapeAdminHtml(message || "새 비밀번호를 입력해 주세요.")}</p>
+      <form class="form-grid" id="admin-password-reset-form">
+        <label class="field"><span>새 비밀번호</span><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+        <label class="field"><span>새 비밀번호 확인</span><input name="passwordConfirm" type="password" required minlength="8" autocomplete="new-password"></label>
+        <button class="btn btn-primary" type="submit">비밀번호 변경</button>
+        <button class="btn" type="button" data-login-back>로그인으로 돌아가기</button>
+      </form>
+    </section>`;
+  document.querySelector("[data-login-back]")?.addEventListener("click", () => {
+    clearAuthUrlState();
+    renderLogin();
+  });
+  document.querySelector("#admin-password-reset-form")?.addEventListener("submit", updatePassword);
+}
+
+async function updatePassword(event) {
+  event.preventDefault();
+  const client = getAdminSupabaseClient();
+  if (!client) return renderPasswordReset("로그인 서버 연결이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+  const form = new FormData(event.currentTarget);
+  const password = String(form.get("password") || "");
+  const passwordConfirm = String(form.get("passwordConfirm") || "");
+  if (password !== passwordConfirm) return renderPasswordReset("새 비밀번호가 서로 일치하지 않습니다.");
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  if (button) {
+    button.disabled = true;
+    button.textContent = "변경 중...";
+  }
+  const { error } = await client.auth.updateUser({ password });
+  if (error) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "비밀번호 변경";
+    }
+    return renderPasswordReset(`비밀번호를 변경하지 못했습니다. ${error.message || "재설정 링크를 다시 요청해 주세요."}`);
+  }
+  clearAuthUrlState();
+  await client.auth.signOut();
+  renderLogin("비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.");
+}
+
 function renderBasicInfoOnboarding(message = "") {
   const today = dateInputToday();
   // 레이아웃 미리보기 카드 생성 (builtInLayouts 기준)
@@ -453,6 +538,8 @@ function renderBasicInfoOnboarding(message = "") {
           <label class="field"><span>신부 이름</span><input name="brideName" required autocomplete="additional-name"></label>
           <label class="field"><span>신랑 생년월일</span><input name="groomBirthday" type="date"></label>
           <label class="field"><span>신부 생년월일</span><input name="brideBirthday" type="date"></label>
+          <label class="field"><span>아이디 찾기용 이름</span><input name="recoveryName" required autocomplete="name"></label>
+          <label class="field"><span>아이디 찾기용 연락처</span><input name="recoveryPhone" required inputmode="tel" autocomplete="tel" placeholder="숫자만 입력해도 됩니다"></label>
           <label class="field"><span>예식일자</span><input name="weddingDate" type="datetime-local" required></label>
           <label class="field"><span>예식 장소</span><input name="weddingVenue" required></label>
           <label class="field"><span>홀 이름</span><input name="weddingHall"></label>
@@ -494,7 +581,7 @@ function renderBasicInfoOnboarding(message = "") {
   const form = document.querySelector("#basic-info-form");
   document.querySelector("[data-onboarding-cancel]")?.addEventListener("click", async () => {
     if (!confirm("가입을 취소하고 처음으로 돌아갈까요? 입력하신 정보는 저장되지 않습니다.")) return;
-    try { await getAdminSupabaseClient()?.auth?.signOut(); } catch {}
+    try { await getAdminSupabaseClient()?.auth?.signOut(); } catch (error) { console.warn("[onboarding cancel signout]", error); }
     renderLogin();
   });
   // 단계 이동: 기본정보 → 레이아웃 선택
@@ -573,6 +660,8 @@ function renderBasicInfoOnboarding(message = "") {
         brideName: fields.get("brideName")?.trim(),
         groomBirthday: fields.get("groomBirthday"),
         brideBirthday: fields.get("brideBirthday"),
+        recoveryName: fields.get("recoveryName")?.trim(),
+        recoveryPhone: fields.get("recoveryPhone")?.trim(),
         weddingDate: fields.get("weddingDate"),
         weddingVenue: fields.get("weddingVenue")?.trim(),
         weddingHall: fields.get("weddingHall")?.trim(),
@@ -584,7 +673,7 @@ function renderBasicInfoOnboarding(message = "") {
       // 선택한 레이아웃 저장
       if (selectedLayout !== "classic") {
         invitationData.designSystem.activeLayoutId = selectedLayout;
-        try { await window.RSVP_STORAGE.saveInvitationData(invitationData); } catch {}
+        await window.RSVP_STORAGE.saveInvitationData(invitationData);
         if (typeof applyLayoutTemplate === "function") applyLayoutTemplate(selectedLayout);
       }
       renderAdminView("editor");
@@ -592,7 +681,7 @@ function renderBasicInfoOnboarding(message = "") {
     } catch (error) {
       button.disabled = false;
       button.textContent = "내 일반관리자 페이지 만들기";
-      alert(`일반관리자 페이지를 만들지 못했습니다.\n${error.message || "입력값과 Supabase 설정을 확인해 주세요."}`);
+      notifySaveFailure(error, "일반관리자 페이지를 생성");
     }
   });
 }
@@ -1044,7 +1133,9 @@ function editorDesignPanel() {
 async function decodeCropImage(file) {
   try {
     if ("createImageBitmap" in window) return await createImageBitmap(file);
-  } catch {}
+  } catch (error) {
+    console.warn("[image bitmap decode]", error);
+  }
   const url = URL.createObjectURL(file);
   try {
     const image = new Image();
@@ -2532,12 +2623,22 @@ function bindEditor() {
   copyEditor.querySelectorAll("[data-editor-layout]").forEach((button) => {
     button.addEventListener("click", async () => {
       const layoutId = button.dataset.editorLayout;
+      const previousLayoutId = invitationData.designSystem.activeLayoutId || "classic";
+      const previousActive = copyEditor.querySelector("[data-editor-layout].is-active");
+      button.disabled = true;
       copyEditor.querySelectorAll("[data-editor-layout]").forEach((b) => b.classList.toggle("is-active", b === button));
       invitationData.designSystem.activeLayoutId = layoutId;
       refreshFrameAppearance();
       try {
         await window.RSVP_STORAGE.saveInvitationData(invitationData);
-      } catch {}
+      } catch (error) {
+        invitationData.designSystem.activeLayoutId = previousLayoutId;
+        copyEditor.querySelectorAll("[data-editor-layout]").forEach((b) => b.classList.toggle("is-active", b === previousActive));
+        refreshFrameAppearance();
+        notifySaveFailure(error, "레이아웃을 저장");
+      } finally {
+        button.disabled = false;
+      }
     });
   });
   copyEditor.querySelector("[data-copy-editor-frame]")?.addEventListener("load", (event) => {
@@ -2563,7 +2664,9 @@ function bindEditor() {
       frameElement._copyPreviewResizeObserver = new frameElement.contentWindow.ResizeObserver(syncFrameScrollHeight);
       frameElement._copyPreviewResizeObserver.observe(frameDocument.documentElement);
       frameElement._copyPreviewResizeObserver.observe(frameDocument.body);
-    } catch {}
+    } catch (error) {
+      console.warn("[copy preview resize observer]", error);
+    }
     const logFrameSetupError = (error) => console.error("copy editor preview setup failed", error);
     try {
       refreshFrameAppearance();
@@ -3498,12 +3601,12 @@ function bindEditor() {
       applyAppearance(invitationData.appearance);
       await window.RSVP_STORAGE.saveInvitationData(invitationData);
       renderEditor("저장했습니다. 현재 편집 화면에 계속 머무릅니다.", keepFocus);
-    } catch {
+    } catch (error) {
       buttons.forEach((button) => {
         button.disabled = false;
         button.textContent = button.dataset.defaultLabel;
       });
-      alert("저장하지 못했습니다. 관리자 권한 설정을 확인해 주세요.");
+      notifySaveFailure(error, "저장");
     }
   });
   const floatingSave = document.querySelector('.admin-floating-save[form="invitation-editor"]');
@@ -3611,6 +3714,14 @@ async function login(event) {
   await loadInvitationData();
   renderAdminView(localStorage.getItem(GENERAL_ADMIN_VIEW_KEY) || "editor");
   showAdminWelcomeOverlay();
+}
+
+function bindPasswordRecoveryListener(client) {
+  if (!client || passwordRecoveryListenerBound) return;
+  passwordRecoveryListenerBound = true;
+  client.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") renderPasswordReset();
+  });
 }
 
 async function signup(event) {
@@ -3924,7 +4035,9 @@ async function start() {
   applyAppearance(invitationData.appearance);
   const client = getAdminSupabaseClient();
   if (!client) return renderLogin("로그인 서버 연결을 준비하고 있습니다. 화면이 열렸다면 잠시 후 로그인해 주세요.");
+  bindPasswordRecoveryListener(client);
   const { data } = await client.auth.getSession();
+  if (hasPasswordRecoveryContext()) return renderPasswordReset();
   if (!data.session) return renderLogin();
   currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
   if (!currentInvitationSite?.slug) return renderBasicInfoOnboarding();

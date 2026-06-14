@@ -24,7 +24,9 @@ async function redirectSignedInAdminFromRoot() {
     const { data: sessionData } = client ? await client.auth.getSession() : { data: {} };
     const user = sessionData.session?.user;
     if (user && !user.is_anonymous) location.replace(`${location.origin}/admin.html`);
-  } catch {}
+  } catch (error) {
+    console.warn("[public auth redirect]", error);
+  }
 }
 
 redirectSignedInAdminFromRoot();
@@ -584,6 +586,32 @@ function render() {
       </nav>
     </article>`;
   applySectionOrder();
+}
+
+function renderInvitationLoadError(error) {
+  const status = error?.publicInvitationStatus || "network_error";
+  const titleMap = {
+    not_found: "존재하지 않는 청첩장입니다",
+    disabled: "현재 공개되지 않은 청첩장입니다",
+    empty: "청첩장 설정이 아직 완료되지 않았습니다",
+    setup_error: "청첩장을 불러오지 못했습니다",
+    network_error: "청첩장을 불러오지 못했습니다",
+  };
+  const textMap = {
+    not_found: "주소가 정확한지 다시 확인해 주세요.",
+    disabled: "공개 기간이 아니거나 관리자가 공개를 중지했습니다.",
+    empty: "관리자가 청첩장 기본 설정을 완료한 뒤 다시 확인해 주세요.",
+    setup_error: "서비스 설정이 아직 반영되지 않았습니다. 잠시 후 다시 시도해주세요.",
+    network_error: "잠시 후 다시 시도해주세요.",
+  };
+  app.innerHTML = `
+    <main class="invitation-closed" role="main" data-public-load-status="${escapeHtml(status)}">
+      <div>
+        <p class="section-label">Wedding Invitation</p>
+        <h1>${escapeHtml(titleMap[status] || titleMap.network_error)}</h1>
+        <p>${escapeHtml(textMap[status] || textMap.network_error)}</p>
+      </div>
+    </main>`;
 }
 
 function updateCountdown() {
@@ -1216,7 +1244,12 @@ function applyAIThemePreviewOverride() {
 
 async function start() {
   applyAppearance(data.appearance);
-  data = await window.RSVP_STORAGE.loadInvitationData(data);
+  try {
+    data = await window.RSVP_STORAGE.loadInvitationData(data);
+  } catch (error) {
+    renderInvitationLoadError(error);
+    return;
+  }
   normalizeWeddingDisplayDate();
   applyAIThemePreviewOverride();
   try { guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries(); }

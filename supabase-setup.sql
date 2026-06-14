@@ -7,6 +7,8 @@ create table if not exists public.invitation_sites (
   groom_name text not null default '',
   bride_name text not null default '',
   signup_email text,
+  recovery_name text,
+  recovery_phone text,
   disabled boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -14,6 +16,13 @@ create table if not exists public.invitation_sites (
 create index if not exists invitation_sites_owner_idx on public.invitation_sites(owner_id);
 alter table public.invitation_sites
   add column if not exists disabled boolean not null default false;
+alter table public.invitation_sites
+  add column if not exists recovery_name text;
+alter table public.invitation_sites
+  add column if not exists recovery_phone text;
+create index if not exists invitation_sites_recovery_idx
+  on public.invitation_sites(lower(recovery_name), recovery_phone)
+  where recovery_name is not null and recovery_phone is not null;
 
 create table if not exists public.attendance_responses (
   id uuid primary key default gen_random_uuid(),
@@ -78,7 +87,8 @@ grant insert on table public.attendance_responses to anon, authenticated;
 grant select on table public.attendance_responses to authenticated;
 grant select on table public.invitation_settings to authenticated;
 grant insert, update, delete on table public.invitation_settings to authenticated;
-grant select, insert on table public.guestbook_entries to anon, authenticated;
+grant insert on table public.guestbook_entries to anon, authenticated;
+grant select on table public.guestbook_entries to authenticated;
 grant update on table public.guestbook_entries to authenticated;
 
 drop policy if exists "public can read invitation site slugs" on public.invitation_sites;
@@ -111,7 +121,14 @@ drop policy if exists "guests can submit attendance" on public.attendance_respon
 create policy "guests can submit attendance"
 on public.attendance_responses for insert
 to anon, authenticated
-with check (true);
+with check (
+  exists (
+    select 1
+    from public.invitation_sites
+    where slug = attendance_responses.invitation_id
+      and disabled = false
+  )
+);
 
 drop policy if exists "registered admins can read attendance" on public.attendance_responses;
 create policy "registered admins can read attendance"
@@ -138,30 +155,131 @@ using (
   )
 );
 
-create or replace function public.get_public_invitation(invitation_slug text)
-returns table(content jsonb)
+drop function if exists public.get_public_invitation(text);
+
+create function public.get_public_invitation(invitation_slug text)
+returns table(status text, content jsonb)
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select settings.content
-  from public.invitation_settings settings
-  where settings.id = coalesce(nullif(trim(invitation_slug), ''), 'main')
-    and (
-      settings.id = 'main'
-      or exists (
-        select 1
-        from public.invitation_sites sites
-        where sites.slug = settings.id
-          and sites.disabled = false
-      )
-    )
+  with requested as (
+    select coalesce(nullif(trim(invitation_slug), ''), 'main') as slug
+  ),
+  target as (
+    select
+      requested.slug,
+      sites.disabled,
+      settings.content
+    from requested
+    left join public.invitation_sites sites
+      on sites.slug = requested.slug
+    left join public.invitation_settings settings
+      on settings.id = requested.slug
+    where requested.slug = 'main' or sites.slug is not null
+  )
+  select
+    case
+      when not exists (select 1 from target) then 'not_found'
+      when exists (select 1 from target where disabled = true) then 'disabled'
+      when not exists (select 1 from target where content is not null and content <> '{}'::jsonb) then 'empty'
+      else 'ok'
+    end as status,
+    case
+      when exists (select 1 from target where coalesce(disabled, false) = false and content is not null and content <> '{}'::jsonb)
+        then (
+          select jsonb_set(
+            content
+              #- '{designSystem,aiSettings}'
+              #- '{designSystem,deletedThemeIds}'
+              #- '{designSystem,deletedAssetIds}',
+            '{designSystem,layoutTemplates}',
+            coalesce((
+              select jsonb_agg(template.item)
+              from jsonb_array_elements(coalesce(content #> '{designSystem,layoutTemplates}', '[]'::jsonb)) as template(item)
+              where template.item->>'id' = content #>> '{designSystem,activeLayoutId}'
+                and coalesce(template.item->>'builtIn', 'false') <> 'true'
+            ), '[]'::jsonb),
+            true
+          )
+          from target
+          limit 1
+        )
+      else null::jsonb
+    end as content
   limit 1
 $$;
 
+drop function if exists public.get_public_design_library();
+
 revoke all on function public.get_public_invitation(text) from public;
 grant execute on function public.get_public_invitation(text) to anon, authenticated;
+
+drop function if exists public.find_admin_login_id(text, text);
+
+create function public.find_admin_login_id(recovery_name_input text, recovery_phone_input text)
+returns table(masked_email text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with normalized as (
+    select
+      lower(trim(coalesce(recovery_name_input, ''))) as recovery_name,
+      regexp_replace(coalesce(recovery_phone_input, ''), '[^0-9]', '', 'g') as recovery_phone
+  ),
+  matched as (
+    select sites.signup_email
+    from public.invitation_sites sites, normalized
+    where lower(trim(coalesce(sites.recovery_name, ''))) = normalized.recovery_name
+      and regexp_replace(coalesce(sites.recovery_phone, ''), '[^0-9]', '', 'g') = normalized.recovery_phone
+      and sites.signup_email is not null
+      and char_length(normalized.recovery_name) >= 2
+      and char_length(normalized.recovery_phone) >= 8
+    order by sites.created_at desc
+    limit 1
+  )
+  select
+    case
+      when position('@' in signup_email) <= 2 then regexp_replace(signup_email, '(^.).*(@.*$)', '\1***\2')
+      else regexp_replace(signup_email, '(^.{2}).*(@.*$)', '\1***\2')
+    end as masked_email
+  from matched
+$$;
+
+revoke all on function public.find_admin_login_id(text, text) from public;
+grant execute on function public.find_admin_login_id(text, text) to anon, authenticated;
+
+drop function if exists public.get_public_guestbook_entries(text);
+
+create function public.get_public_guestbook_entries(invitation_slug text)
+returns table(id uuid, guest_name text, message text, created_at timestamptz)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with requested as (
+    select coalesce(nullif(trim(invitation_slug), ''), 'main') as slug
+  )
+  select entries.id, entries.guest_name, entries.message, entries.created_at
+  from public.guestbook_entries entries
+  join requested on requested.slug = entries.invitation_id
+  where entries.hidden = false
+    and exists (
+      select 1
+      from public.invitation_sites sites
+      where sites.slug = requested.slug
+        and sites.disabled = false
+    )
+  order by entries.created_at desc
+  limit 30
+$$;
+
+revoke all on function public.get_public_guestbook_entries(text) from public;
+grant execute on function public.get_public_guestbook_entries(text) to anon, authenticated;
 
 drop policy if exists "registered admins can create invitation settings" on public.invitation_settings;
 create policy "registered admins can create invitation settings"
@@ -199,10 +317,11 @@ using (
 );
 
 drop policy if exists "guests can read guestbook" on public.guestbook_entries;
-create policy "guests can read guestbook"
+drop policy if exists "registered admins can read guestbook" on public.guestbook_entries;
+create policy "registered admins can read guestbook"
 on public.guestbook_entries for select
-to anon, authenticated
-using (hidden = false or exists (
+to authenticated
+using (exists (
   select 1 from public.invitation_sites where slug = guestbook_entries.invitation_id and owner_id = (select auth.uid())
 ));
 
@@ -210,7 +329,14 @@ drop policy if exists "guests can write guestbook" on public.guestbook_entries;
 create policy "guests can write guestbook"
 on public.guestbook_entries for insert
 to anon, authenticated
-with check (true);
+with check (
+  exists (
+    select 1
+    from public.invitation_sites
+    where slug = guestbook_entries.invitation_id
+      and disabled = false
+  )
+);
 
 drop policy if exists "registered admins can moderate guestbook" on public.guestbook_entries;
 create policy "registered admins can moderate guestbook"

@@ -625,15 +625,16 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 .location-address { display: inline-block; margin: 8px auto 0; border-radius: 999px; padding: 5px 11px; background: var(--soft-bg); font-size: 12px; }
 .map-links { margin-top: 16px; }
 .map-links .btn { border: 0; background: transparent; color: var(--accent-dark); font-weight: 600; }
-.transport { margin-top: 22px; text-align: center; }
+.transport { margin-top: 22px; text-align: left; }
 .transport-list { display: grid; gap: 8px; }
 .transport-tabs { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-.transport-tab { border: 1px solid var(--line); border-radius: 10px; padding: 9px 16px; background: var(--card); color: var(--ink); font-size: 13px; font-weight: 600; transition: 0.2s ease; }
+.transport-tab { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 16px; background: var(--card); color: var(--ink); font-size: 13px; font-weight: 600; text-align: left; transition: 0.2s ease; }
 .transport-tab.is-active { border-color: var(--accent-dark); background: var(--accent-dark); color: var(--card); }
 .transport-panels { margin-top: 12px; }
-.transport-panel { display: none; border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--panel-bg); font-size: 14px; line-height: 1.7; text-align: left; }
+.transport-panel { display: none; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--panel-bg); font-size: 14px; line-height: 1.75; text-align: left; }
 .transport-panel.is-active { display: block; }
-.transport-panel p { margin: 0; }
+.transport-panel p { margin: 0; text-align: left; }
+.transport-panel .preserve { display: block; text-align: left; }
 
 .gallery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 11px; }
 .gallery-item { aspect-ratio: 3 / 4; border: 4px solid var(--card); border-bottom-width: 9px; border-radius: 3px; overflow: hidden; padding: 0; box-shadow: 0 5px 14px rgba(70,85,93,0.1); }
@@ -1552,6 +1553,8 @@ body[data-layout="garden_doodle"] #about-us { padding-left: 42px; padding-right:
 .map-links .btn[data-map-app] { display: inline-flex; align-items: center; justify-content: center; min-height: 0; border: 0; border-radius: 0; background: transparent; padding: 4px; font-size: 0; line-height: 0; width: 36px; height: 36px; }
 .map-links .btn[data-map-app]:hover { border-color: transparent; background: transparent; }
 .map-links .btn[data-map-app]::before { content: ""; width: 24px; height: 24px; flex: 0 0 24px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+#location .map-links .btn[data-map-app] { border: 1px solid var(--accent) !important; border-radius: 999px; background: var(--paper) !important; }
+#location .map-links .btn[data-map-app]:hover { border-color: var(--accent) !important; background: var(--paper) !important; }
 /* 공통: 주소 복사 완료 토스트 */
 .copy-btn { position: relative; }
 .copy-toast { position: absolute; bottom: calc(100% + 8px); left: 50%; z-index: 2; transform: translateX(-50%) translateY(4px); border-radius: 999px; padding: 4px 11px; background: var(--accent-dark); color: var(--card); font-size: 11px; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; }

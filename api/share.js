@@ -45,13 +45,19 @@ module.exports = async function sharePage(request, response) {
       },
       body: JSON.stringify({ invitation_slug: slug }),
     });
-    if (result.ok) invitation = (await result.json())[0]?.content || {};
+    if (result.ok) {
+      const publicInvitation = (await result.json())[0] || {};
+      if (publicInvitation.status === "ok" && publicInvitation.content) invitation = publicInvitation.content;
+    }
   } catch {
     invitation = {};
   }
 
-  const title = invitation.meta?.title || "조성호 ♥ 전지연 결혼합니다";
-  const description = `${invitation.wedding?.displayDate || "2026. 10. 04. 일요일 오후 12시 20분"} · ${invitation.wedding?.venue || "그랜드 머큐어 앰배서더 창원"}`.slice(0, 180);
+  const hasInvitation = invitation && Object.keys(invitation).length > 0;
+  const title = hasInvitation ? (invitation.meta?.title || "모바일 청첩장") : "청첩장을 확인할 수 없습니다";
+  const description = hasInvitation
+    ? `${invitation.wedding?.displayDate || ""} · ${invitation.wedding?.venue || ""}`.replace(/^ · | · $/g, "").slice(0, 180)
+    : "청첩장 주소를 다시 확인해 주세요.";
   const image = mediaPublicUrl(invitation.meta?.shareImage || invitation.hero?.image || "");
   const imageMeta = image ? `
     <meta property="og:image" content="${escapeAttribute(image)}">

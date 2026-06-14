@@ -101,7 +101,7 @@ window.createWeddingAIService = function createWeddingAIService() {
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
     items: [
       { title: "대중교통", text: `가까운 역/정류장 기준 경로를 확인해 주세요.\n하차 후 도보 20분 이상이면 차량 이동을 권장합니다.\n정확한 배차 간격은 당일 다시 확인해 주세요.` },
-      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n주차장 입구와 혼잡 시간은 식장 안내를 확인해 주세요.` },
+      { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n도착 후에는 예식장 안내 표지나 주차 요원의 안내를 따라 이동해 주세요.\n주차장 입구와 혼잡 시간은 식장 안내를 확인해 주세요.` },
     ],
     caution: "Mock Mode 결과입니다.",
   }));
