@@ -328,13 +328,108 @@ body[data-admin-area="general"] .image-actions .btn {
   font-size: 13px;
 }
 
-.copy-frame-interaction-toggle { display: none; }
-
 body[data-admin-area="general"] .copy-editor-frame-scroll {
   order: 3;
-  display: grid;
-  justify-items: center;
+  display: block;
   width: 100%;
+  height: min(58svh, 430px);
+  min-height: 360px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 18px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+body[data-admin-area="general"] .copy-editor-public-frame {
+  display: block;
+  width: 100%;
+  height: var(--copy-frame-document-height, 2200px);
+  min-height: 100%;
+  border-radius: 18px;
+  pointer-events: none;
+  touch-action: auto;
+}
+
+body[data-admin-area="general"] .copy-pane.is-frame-interaction-enabled .copy-editor-public-frame {
+  pointer-events: auto;
+  touch-action: auto;
+}
+
+body[data-admin-area="general"] .copy-frame-interaction-toggle {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 28px);
+  min-height: 44px;
+  margin: 0 14px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 22%, var(--line));
+  border-radius: 14px;
+  padding: 9px 12px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(70,85,93,0.12);
+}
+
+body[data-admin-area="general"] .copy-frame-toggle-label {
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+body[data-admin-area="general"] .copy-frame-toggle-switch {
+  position: relative;
+  display: inline-flex;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--accent-dark) 16%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 14%, var(--card));
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+body[data-admin-area="general"] .copy-frame-toggle-switch::after {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 2px 6px rgba(70,85,93,0.22);
+  content: "";
+  transform: translateY(-50%);
+  transition: transform 0.18s ease;
+}
+
+body[data-admin-area="general"] .copy-frame-toggle-state {
+  min-width: 28px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on {
+  border-color: color-mix(in srgb, var(--accent-dark) 34%, var(--line));
+  background: color-mix(in srgb, var(--accent) 14%, var(--card));
+}
+
+body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame-toggle-switch {
+  border-color: color-mix(in srgb, var(--accent-dark) 44%, var(--line));
+  background: color-mix(in srgb, var(--accent-dark) 42%, var(--accent));
+}
+
+body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame-toggle-switch::after {
+  transform: translate(18px, -50%);
+}
+
+body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame-toggle-state {
+  color: var(--accent-dark);
 }
 
 @media (max-width: 430px) {

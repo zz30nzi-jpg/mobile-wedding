@@ -96,6 +96,7 @@ function normalizeWeddingDisplayDate() {
 }
 let weddingDate;
 let guestbookEntries = [];
+let guestbookVisibleCount = 3;
 let galleryPreviewImages = [];
 let modalScrollY = 0;
 const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
@@ -372,12 +373,15 @@ function loadLazyBackgrounds() {
 
 function guestbookMarkup() {
   const visibleEntries = guestbookEntries.filter((entry) => !entry.hidden);
+  const entriesToShow = visibleEntries.slice(0, guestbookVisibleCount);
+  const hasMore = visibleEntries.length > guestbookVisibleCount;
   return visibleEntries.length
-    ? visibleEntries.map((entry) => `
+    ? `${entriesToShow.map((entry) => `
       <article class="guestbook-entry">
         <div><strong>${escapeHtml(entry.guest_name)}</strong><span>${escapeHtml(new Date(entry.created_at).toLocaleDateString("ko-KR"))}</span></div>
         <p>${escapeHtml(entry.message)}</p>
-      </article>`).join("")
+      </article>`).join("")}
+      <button class="guestbook-more" type="button" id="guestbook-more" ${hasMore ? "" : "disabled"} aria-label="축하 메시지 더 보기">˘</button>`
     : '<p class="subtle">첫 번째 축하 메시지를 남겨 주세요.</p>';
 }
 
@@ -550,7 +554,7 @@ function render() {
           ${guestPhotos.canUpload ? '<p class="action-footnote">결혼식 당일부터 업로드 가능합니다.</p>' : ""}
         </section>` : ""}
 
-      ${(data.notices || []).filter((notice) => !notice.hidden).length ? `<section class="section" id="information">
+      ${(data.notices || []).filter((notice) => !notice.hidden && notice.text?.trim()).length ? `<section class="section" id="information">
         ${sectionCopy("information", "Information", "식장 안내")}
         ${informationSliderMarkup()}
       </section>` : ""}
@@ -872,7 +876,7 @@ function guestbookForm() {
 }
 
 function informationSliderMarkup() {
-  const notices = data.notices.filter((notice) => !notice.hidden);
+  const notices = data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
   return `
     <div class="information-slider" data-information-index="0">
       <div class="information-dots">${notices.map((_, index) => `<i class="${index === 0 ? "is-active" : ""}"></i>`).join("")}</div>
@@ -887,7 +891,7 @@ function informationSliderMarkup() {
 function bindInformationSlider() {
   const slider = document.querySelector(".information-slider");
   if (!slider) return;
-  const notices = data.notices.filter((notice) => !notice.hidden);
+  const notices = data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
   let touchStartX = 0;
   const renderSlide = () => {
     const index = Number(slider.dataset.informationIndex);
@@ -1172,6 +1176,7 @@ function bindEvents() {
           message: fields.get("message").trim(),
         });
         guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries();
+        guestbookVisibleCount = Math.max(3, guestbookVisibleCount);
         document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
         closeModal();
       } catch {
@@ -1180,6 +1185,13 @@ function bindEvents() {
         alert("메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       }
     });
+  });
+
+  document.querySelector("#guestbook-list")?.addEventListener("click", (event) => {
+    const moreButton = event.target.closest("#guestbook-more");
+    if (!moreButton || moreButton.disabled) return;
+    guestbookVisibleCount += 3;
+    document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
   });
 
   document.querySelector("#share-button").addEventListener("click", () => {

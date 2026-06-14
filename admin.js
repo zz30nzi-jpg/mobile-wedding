@@ -1292,7 +1292,7 @@ function copyEditorVisual(key) {
   if (key === "gallery") return `<div class="copy-editor-gallery">${invitationData.gallery.map((photo, index) => ({ photo, thumb: invitationData.galleryThumbs?.[index] || photo })).filter((item) => item.photo).slice(0, 4).map((item) => `<img src="${escapeAdminHtml(adminMediaUrl(item.thumb))}" alt="">`).join("")}</div>`;
   if (key === "location") return `<div class="copy-editor-location"><strong>${escapeAdminHtml(invitationData.wedding.venue)}</strong><span>${escapeAdminHtml(invitationData.wedding.hall || "")}</span><small>${escapeAdminHtml(invitationData.wedding.address)}</small></div>`;
   if (key === "weddingDay") return `<p class="copy-editor-date">${escapeAdminHtml(invitationData.wedding.displayDate)}</p>`;
-  if (key === "information") return `<div class="copy-editor-notice">${invitationData.notices.filter((notice) => !notice.hidden).slice(0, 1).map((notice) => `<strong>${escapeAdminHtml(notice.title)}</strong><p>${escapeAdminHtml(notice.text)}</p>`).join("")}</div>`;
+  if (key === "information") return `<div class="copy-editor-notice">${invitationData.notices.filter((notice) => !notice.hidden && notice.text?.trim()).slice(0, 1).map((notice) => `<strong>${escapeAdminHtml(notice.title)}</strong><p>${escapeAdminHtml(notice.text)}</p>`).join("")}</div>`;
   if (key === "weddingSnap") return '<div class="copy-editor-notice"><strong>Guest Album</strong><p>예식 당일 함께한 사진과 영상을 공유해 주세요.</p></div>';
   if (key === "attendance") return '<div class="copy-editor-notice"><p>신랑, 신부에게 참석 의사를 미리 전달할 수 있어요.</p></div>';
   if (key === "account") return `<div class="copy-editor-notice">${invitationData.accounts.slice(0, 2).map((account) => `<p><strong>${escapeAdminHtml(account.side)}</strong> ${escapeAdminHtml(account.bank)} ${escapeAdminHtml(account.number)}</p>`).join("")}</div>`;
@@ -1350,10 +1350,20 @@ const noticePresets = [
 ];
 const noticePresetValues = {
   meal: { title: "식사 안내", text: "예식 전후로 연회장을 편하게 이용해 주세요." },
-  parking: { title: "주차 안내", text: "주차 등록은 예식장 로비 키오스크에서 가능합니다." },
+  parking: { title: "주차 안내", text: "" },
   photo: { title: "사진 촬영 안내", text: "예식 중 사진 촬영은 다른 하객의 관람에 방해되지 않도록 부탁드립니다." },
   flower: { title: "화환 안내", text: "축하 화환은 정중히 사양합니다. 따뜻한 마음만 감사히 받겠습니다." },
 };
+const noticeContentPlaceholders = {
+  "주차 안내": "주차권배부, 주차정산 내용",
+  "연회장 이용 안내": "연회장 시간 및 위치 안내",
+  "2부 예식안내": "2부 예식 관련 안내 내용을 입력해 주세요.",
+};
+const venueGuideTemplate = [
+  { title: "주차 안내", text: "" },
+  { title: "연회장 이용 안내", text: "" },
+  { title: "2부 예식안내", text: "" },
+];
 const bankOptions = ["", "국민은행", "신한은행", "우리은행", "하나은행", "농협은행", "기업은행", "카카오뱅크", "토스뱅크", "새마을금고", "부산은행", "경남은행", "직접 입력"];
 
 function sectionOrderText(items = []) {
@@ -1611,16 +1621,18 @@ function noticeEditor(notice = {}, index = 0) {
       <div class="notice-editor-head"><strong>식장 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-notice-remove aria-label="식장 안내 ${index + 1} 삭제">−</button></div>
       ${select(`noticePreset.${index}`, `식장 안내 ${index + 1} 추천`, "", noticePresets)}
       ${input(`notice.${index}.title`, "제목", notice.title || "")}
-      ${textarea(`notice.${index}.text`, "내용", notice.text || "", 2)}
+      <label class="field"><span>내용</span><textarea name="notice.${index}.text" rows="2" placeholder="${escapeAdminHtml(noticeContentPlaceholders[notice.title] || "")}">${escapeAdminHtml(notice.text || "")}</textarea></label>
       <label class="consent"><input type="checkbox" name="notice.${index}.hidden" ${notice.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
     </div>`;
 }
 
 function noticeManager(notices = []) {
+  const editableNotices = notices.length ? notices.slice(0, 3) : venueGuideTemplate;
   return `
     <section class="editor-subsection"><div class="editor-subsection-head"><strong>식장 안내</strong><span>식사, 주차, 촬영 등 하객에게 알릴 내용을 관리합니다.</span></div>
+    <p class="admin-message micro-help">내용을 입력하지 않으면 청첩장에서 숨김처리됩니다.</p>
     <div class="notice-manager" data-notice-manager>
-      <div class="notice-manager-list" data-notice-list>${notices.slice(0, 3).map(noticeEditor).join("")}</div>
+      <div class="notice-manager-list" data-notice-list>${editableNotices.map(noticeEditor).join("")}</div>
       <div class="notice-ai-actions">
         <button class="btn ai-generate-btn" type="button" data-ai-venue-guide>AI로 식장안내 생성</button>
         <button class="btn notice-add" type="button" data-notice-add>＋ 식장 안내 추가</button>
@@ -1932,7 +1944,7 @@ function renderEditor(message = "", focus = "") {
               <span class="copy-frame-toggle-state" data-copy-frame-toggle-state>OFF</span>
             </button>
             <div class="copy-editor-frame-scroll" data-copy-frame-scroll>
-              <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260614-scroll1" title="공개 청첩장 문구 수정 미리보기" scrolling="no" data-copy-editor-frame></iframe>
+              <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20260614-scroll3" title="공개 청첩장 문구 수정 미리보기" scrolling="yes" data-copy-editor-frame></iframe>
             </div>
             <aside class="copy-editor-drawer" data-copy-editor-drawer>
             <section class="copy-editor-section copy-editor-intro-settings">
@@ -2168,6 +2180,12 @@ function bindEditor() {
   let syncFrameScrollHeight = () => {};
   const resetPreviewInteractionState = () => {
     frameDocumentRef?.querySelector("[data-copy-inline-editor]")?.dispatchEvent(new Event("blur"));
+    frameDocumentRef?.querySelectorAll("[data-copy-edit-handle]").forEach((item) => item.remove());
+    frameDocumentRef?.querySelectorAll(".copy-editable-target").forEach((item) => {
+      item.classList.remove("copy-editable-target");
+      item.removeAttribute("data-edit-label");
+      delete item.dataset.editTargetIndex;
+    });
     activeProfileTarget = "";
     activeTextTarget = null;
     activeInlineEditor = null;
@@ -2187,7 +2205,8 @@ function bindEditor() {
     frameToggle.classList.toggle("is-on", nextEnabled);
     frameToggle.setAttribute("aria-pressed", String(nextEnabled));
     if (frameToggleState) frameToggleState.textContent = nextEnabled ? "ON" : "OFF";
-    if (!nextEnabled) resetPreviewInteractionState();
+    if (nextEnabled) refreshEditHandles();
+    else resetPreviewInteractionState();
   });
   const previewDraft = () => {
     try {
@@ -2222,7 +2241,7 @@ function bindEditor() {
         .map((item) => `<div><strong>${escapeAdminHtml(item.title)}</strong>${escapeAdminHtml(item.text).replace(/\n/g, "<br>")}</div>`)
         .join("");
     }
-    const notices = (draft.notices || []).filter((notice) => !notice.hidden);
+    const notices = (draft.notices || []).filter((notice) => !notice.hidden && notice.text?.trim());
     const informationSlide = frameDocument.querySelector("[data-information-slide]");
     if (informationSlide) {
       informationSlide.innerHTML = notices.length
@@ -2234,6 +2253,8 @@ function bindEditor() {
       dot.classList.toggle("is-active", index === 0);
     });
     frameDocument.querySelector(".information-slider")?.setAttribute("data-information-index", "0");
+    const informationSection = frameDocument.querySelector("#information");
+    if (informationSection) informationSection.hidden = notices.length === 0;
     frameDocument.querySelectorAll(".transport, .information-slider").forEach((item) => item.classList.add("copy-editable-target"));
     refreshEditHandles();
   };
@@ -2676,6 +2697,15 @@ function bindEditor() {
     if (!frameDocument) return;
     frameDocumentRef = frameDocument;
     frameElement.classList.add("is-editor-ready");
+    frameDocument.addEventListener("wheel", (wheelEvent) => {
+      const frameWindow = frameElement.contentWindow;
+      if (!frameWindow) return;
+      const beforeY = frameWindow.scrollY;
+      const maxY = Math.max(0, frameDocument.documentElement.scrollHeight - frameWindow.innerHeight);
+      frameWindow.scrollBy({ left: wheelEvent.deltaX, top: wheelEvent.deltaY, behavior: "auto" });
+      const afterY = frameWindow.scrollY;
+      if ((beforeY !== afterY) || (beforeY > 0 && beforeY < maxY)) wheelEvent.preventDefault();
+    }, { passive: false });
     syncFrameScrollHeight = () => {
       const doc = frameElement.contentDocument;
       if (!doc?.documentElement || !doc.body) return;
@@ -2715,14 +2745,22 @@ function bindEditor() {
     };
     const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-slider, .information-slide, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve";
     let isMarkingEditableAreas = false;
-    const markEditableAreas = () => {
-      isMarkingEditableAreas = true;
+    const clearEditableAreas = () => {
       frameDocument.querySelectorAll("[data-copy-edit-handle]").forEach((item) => item.remove());
       frameDocument.querySelectorAll(".copy-editable-target").forEach((item) => {
         item.classList.remove("copy-editable-target");
         item.removeAttribute("data-edit-label");
         delete item.dataset.editTargetIndex;
       });
+    };
+    const markEditableAreas = () => {
+      isMarkingEditableAreas = true;
+      clearEditableAreas();
+      if (!copyEditor.classList.contains("is-frame-interaction-enabled")) {
+        isMarkingEditableAreas = false;
+        requestAnimationFrame(syncFrameScrollHeight);
+        return;
+      }
       const invitationSection = frameDocument.querySelector("#invitation");
       if (invitationSection && !invitationSection.querySelector(".invitation-copy-group")) {
         const paragraphs = [...invitationSection.querySelectorAll(":scope > .invitation-copy")];
@@ -2855,6 +2893,7 @@ function bindEditor() {
       }, 80);
     };
     frameDocument.addEventListener("click", (clickEvent) => {
+      if (!copyEditor.classList.contains("is-frame-interaction-enabled")) return;
       const detailButton = clickEvent.target.closest("[data-preview-detail-edit]");
       if (detailButton) {
         clickEvent.preventDefault();
@@ -3179,6 +3218,22 @@ function bindEditor() {
   });
   noticeManagerElement.addEventListener("input", (event) => {
     if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
+    const titleField = event.target.closest('input[name*=".title"]');
+    if (titleField) {
+      const textField = titleField.closest("[data-notice-editor]")?.querySelector('textarea[name*=".text"]');
+      if (textField && !textField.value.trim()) textField.placeholder = noticeContentPlaceholders[titleField.value.trim()] || "";
+    }
+  });
+  noticeManagerElement.addEventListener("focusin", (event) => {
+    const field = event.target.closest('textarea[name*=".text"]');
+    if (!field || field.value.trim()) return;
+    field.dataset.placeholderText = field.placeholder;
+    field.placeholder = "";
+  });
+  noticeManagerElement.addEventListener("focusout", (event) => {
+    const field = event.target.closest('textarea[name*=".text"]');
+    if (!field || field.value.trim()) return;
+    field.placeholder = field.dataset.placeholderText || noticeContentPlaceholders[field.closest("[data-notice-editor]")?.querySelector('input[name*=".title"]')?.value] || "";
   });
   noticeManagerElement.addEventListener("input", refreshFrameLists);
   noticeManagerElement.addEventListener("change", refreshFrameLists);
@@ -3190,6 +3245,7 @@ function bindEditor() {
     const editor = preset.closest("[data-notice-editor]");
     editor.querySelector('input[name*=".title"]').value = selected.title;
     editor.querySelector('textarea[name*=".text"]').value = selected.text;
+    editor.querySelector('textarea[name*=".text"]').placeholder = noticeContentPlaceholders[selected.title] || "";
     refreshFrameLists();
   });
   renderNoticeItems(noticeItems());
@@ -3217,23 +3273,9 @@ function bindEditor() {
     date: form.elements["wedding.date"]?.value || invitationData.wedding?.date || "",
     notices: noticeItems(),
   });
-  const generateVenueGuide = async (button) => {
-    if (!window.AI_DESIGN_SERVICE?.generateVenueGuide) return alert("AI 서비스 스크립트를 불러오지 못했습니다.");
-    button.disabled = true;
-    const original = button.textContent;
-    button.textContent = "AI 생성 중...";
-    try {
-      const result = await window.AI_DESIGN_SERVICE.generateVenueGuide(aiGuideContext());
-      const notices = (result.notices || []).slice(0, 3).map((notice) => ({ title: notice.title || "", text: notice.text || "", hidden: false }));
-      if (!notices.length) throw new Error("생성된 식장 안내가 없습니다.");
-      renderNoticeItems(notices);
-      alert([result.fallbackReason || "", result.caution || "", "식장 안내 초안을 생성했습니다. 확인 후 저장해 주세요."].filter(Boolean).join("\n"));
-    } catch (error) {
-      alert(`식장 안내를 생성하지 못했습니다.\n${error.message || "AI 설정을 확인해 주세요."}`);
-    } finally {
-      button.disabled = false;
-      button.textContent = original;
-    }
+  const generateVenueGuide = () => {
+    renderNoticeItems(venueGuideTemplate.map((item) => ({ ...item, hidden: false })));
+    alert("주차 안내 / 연회장 이용 안내 / 2부 예식안내 항목을 불러왔습니다.\n각 항목에 내용을 입력해 주세요. 입력하지 않으면 청첩장에서 숨겨집니다.");
   };
   const generateTransportGuide = async (button) => {
     if (!window.AI_DESIGN_SERVICE?.generateTransportGuide) return alert("AI 서비스 스크립트를 불러오지 못했습니다.");
