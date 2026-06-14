@@ -83,8 +83,7 @@ body[data-admin-area="general"] .quick-input-grid input[type="datetime-local"] {
 
 /* Sticky basic-page secondary navigation */
 body[data-admin-area="general"] .admin-editor-view.view-basic .admin-quick-actions.guided-progress {
-  position: sticky !important;
-  top: calc(72px + env(safe-area-inset-top)) !important;
+  position: static !important;
   right: auto !important;
   left: auto !important;
   z-index: 91;
@@ -100,6 +99,15 @@ body[data-admin-area="general"] .admin-editor-view.view-basic .admin-quick-actio
   box-shadow: 0 10px 24px rgba(70,85,93,0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+body[data-admin-area="general"] .admin-editor-view.view-basic.is-guided-progress-pinned .admin-quick-actions.guided-progress {
+  position: fixed !important;
+  top: calc(64px + env(safe-area-inset-top)) !important;
+  left: 50% !important;
+  width: min(calc(100% - 16px), 464px);
+  margin: 0 !important;
+  transform: translateX(-50%);
 }
 
 body[data-admin-area="general"] .admin-quick-actions.guided-progress button {

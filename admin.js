@@ -2098,6 +2098,8 @@ function bindEditor() {
     const host = document.querySelector(".admin-editor-view.view-basic");
     if (!host) return;
     const steps = [...form.querySelectorAll("[data-guided-step]")];
+    const progressNav = host.querySelector(".admin-quick-actions.guided-progress");
+    const firstStep = form.querySelector("#couple-settings");
     const saveButtons = [...document.querySelectorAll('#editor-save, .admin-floating-save[form="invitation-editor"]')];
     const requiredByStep = {
       core: ["couple.groom.name", "couple.bride.name", "wedding.venue", "wedding.date"],
@@ -2140,6 +2142,20 @@ function bindEditor() {
     form.addEventListener("input", update);
     form.addEventListener("change", update);
     update();
+    const syncProgressPin = () => {
+      if (!progressNav || !firstStep) return;
+      const topLimit = 72 + (Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sat")) || 0);
+      const shouldPin = firstStep.getBoundingClientRect().bottom <= topLimit;
+      host.classList.toggle("is-guided-progress-pinned", shouldPin);
+    };
+    if (window.__weddingBasicProgressPin) {
+      window.removeEventListener("scroll", window.__weddingBasicProgressPin);
+      window.removeEventListener("resize", window.__weddingBasicProgressPin);
+    }
+    window.__weddingBasicProgressPin = syncProgressPin;
+    window.addEventListener("scroll", syncProgressPin, { passive: true });
+    window.addEventListener("resize", syncProgressPin);
+    syncProgressPin();
   };
   bindGuidedBasicFlow();
   const updateIntroDesignPreview = () => {
