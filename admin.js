@@ -2911,7 +2911,13 @@ function bindEditor() {
       }, 80);
     };
     frameDocument.addEventListener("click", (clickEvent) => {
-      if (!copyEditor.classList.contains("is-frame-interaction-enabled")) return;
+      if (!copyEditor.classList.contains("is-frame-interaction-enabled")) {
+        if (clickEvent.target.closest("a, button, input, select, textarea, label")) {
+          clickEvent.preventDefault();
+          clickEvent.stopImmediatePropagation();
+        }
+        return;
+      }
       const detailButton = clickEvent.target.closest("[data-preview-detail-edit]");
       if (detailButton) {
         clickEvent.preventDefault();

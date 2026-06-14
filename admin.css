@@ -335,7 +335,7 @@ body[data-admin-area="general"] .copy-editor-frame-scroll {
   height: min(58svh, 430px);
   min-height: 360px;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   border-radius: 18px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -345,10 +345,10 @@ body[data-admin-area="general"] .copy-editor-frame-scroll {
 body[data-admin-area="general"] .copy-editor-public-frame {
   display: block;
   width: 100%;
-  height: var(--copy-frame-document-height, 2600px);
+  height: 100% !important;
   min-height: 100%;
   border-radius: 18px;
-  pointer-events: none;
+  pointer-events: auto;
   touch-action: auto;
 }
 
@@ -526,7 +526,7 @@ body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame
     height: min(58svh, 430px);
     min-height: 360px;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     border-radius: 18px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -536,10 +536,10 @@ body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame
   body[data-admin-area="general"] .copy-editor-public-frame {
     display: block;
     width: 100%;
-    height: var(--copy-frame-document-height, 2600px);
+    height: 100% !important;
     min-height: 100%;
     border-radius: 18px;
-    pointer-events: none;
+    pointer-events: auto;
     touch-action: auto;
   }
 
