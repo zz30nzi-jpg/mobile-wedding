@@ -2709,23 +2709,41 @@ function bindEditor() {
     syncFrameScrollHeight = () => {
       const doc = frameElement.contentDocument;
       if (!doc?.documentElement || !doc.body) return;
+      const appRoot = doc.querySelector("#app");
+      const invitation = doc.querySelector(".invitation");
+      const ending = doc.querySelector(".ending");
+      const lastSection = [...doc.querySelectorAll(".section, .ending")].at(-1);
+      const bottomOf = (element) => element ? Math.ceil(element.getBoundingClientRect().bottom + (frameElement.contentWindow?.scrollY || 0)) : 0;
       const height = Math.max(
         doc.documentElement.scrollHeight,
         doc.body.scrollHeight,
         doc.documentElement.offsetHeight,
         doc.body.offsetHeight,
-        1200
+        appRoot?.scrollHeight || 0,
+        invitation?.scrollHeight || 0,
+        bottomOf(ending),
+        bottomOf(lastSection),
+        2600
       );
       frameElement.style.setProperty("--copy-frame-document-height", `${height}px`);
+      frameElement.style.height = `${height}px`;
     };
     frameElement._copyPreviewResizeObserver?.disconnect?.();
     try {
       frameElement._copyPreviewResizeObserver = new frameElement.contentWindow.ResizeObserver(syncFrameScrollHeight);
       frameElement._copyPreviewResizeObserver.observe(frameDocument.documentElement);
       frameElement._copyPreviewResizeObserver.observe(frameDocument.body);
+      frameDocument.querySelectorAll("#app, .invitation, .section, .ending").forEach((item) => {
+        frameElement._copyPreviewResizeObserver.observe(item);
+      });
     } catch (error) {
       console.warn("[copy preview resize observer]", error);
     }
+    syncFrameScrollHeight();
+    frameElement.contentWindow?.requestAnimationFrame?.(syncFrameScrollHeight);
+    setTimeout(syncFrameScrollHeight, 250);
+    setTimeout(syncFrameScrollHeight, 900);
+    setTimeout(syncFrameScrollHeight, 1800);
     const logFrameSetupError = (error) => console.error("copy editor preview setup failed", error);
     try {
       refreshFrameAppearance();

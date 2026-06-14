@@ -345,7 +345,7 @@ body[data-admin-area="general"] .copy-editor-frame-scroll {
 body[data-admin-area="general"] .copy-editor-public-frame {
   display: block;
   width: 100%;
-  height: var(--copy-frame-document-height, 2200px);
+  height: var(--copy-frame-document-height, 2600px);
   min-height: 100%;
   border-radius: 18px;
   pointer-events: none;
@@ -353,6 +353,8 @@ body[data-admin-area="general"] .copy-editor-public-frame {
 }
 
 body[data-admin-area="general"] .copy-pane.is-frame-interaction-enabled .copy-editor-public-frame {
+  height: 100% !important;
+  min-height: 100%;
   pointer-events: auto;
   touch-action: auto;
 }
@@ -534,7 +536,7 @@ body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame
   body[data-admin-area="general"] .copy-editor-public-frame {
     display: block;
     width: 100%;
-    height: var(--copy-frame-document-height, 2200px);
+    height: var(--copy-frame-document-height, 2600px);
     min-height: 100%;
     border-radius: 18px;
     pointer-events: none;
@@ -542,6 +544,8 @@ body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame
   }
 
   body[data-admin-area="general"] .copy-pane.is-frame-interaction-enabled .copy-editor-public-frame {
+    height: 100% !important;
+    min-height: 100%;
     pointer-events: auto;
     touch-action: auto;
   }
