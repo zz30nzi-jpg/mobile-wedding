@@ -49,23 +49,23 @@ window.createWeddingAIService = function createWeddingAIService() {
     instruction: context.instruction || "",
     ...extras,
   });
-  const normalizeGuideText = (value = "") => {
+  const normalizeGuideText = (value = "", maxLines = 3) => {
     const text = String(value || "").trim();
     if (!text) return "";
-    if (text.includes("\n")) return text.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 3).join("\n");
+    if (text.includes("\n")) return text.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, maxLines).join("\n");
     return text
       .replace(/\s+/g, " ")
       .replace(/(다\.|요\.|니다\.|[.!?。])\s+/g, "$1\n")
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)
-      .slice(0, 3)
+      .slice(0, maxLines)
       .join("\n");
   };
-  const normalizeGuideItems = (items = []) => items.map((item) => ({
+  const normalizeGuideItems = (items = [], maxLines = 3) => items.map((item) => ({
     ...item,
     title: String(item.title || "").trim(),
-    text: normalizeGuideText(item.text),
+    text: normalizeGuideText(item.text, maxLines),
   })).filter((item) => item.title || item.text);
   const request = async (type, context, mock) => {
     const current = settings(context);
@@ -100,7 +100,7 @@ window.createWeddingAIService = function createWeddingAIService() {
   };
   const generateTransportGuide = async (context = {}) => request("transportGuide", context, () => result("transportGuide", context, {
     items: [
-      { title: "대중교통", text: `가까운 역/정류장 기준 경로를 확인해 주세요.\n하차 후 도보 20분 이상이면 차량 이동을 권장합니다.\n정확한 배차 간격은 당일 다시 확인해 주세요.` },
+      { title: "대중교통", text: `가까운 역(확인 필요) 또는 정류장에서 하차해 주세요.\n도보 20분 이내면 표지판을 따라 이동해 주세요.\n도보 20분 이상이면 버스(번호 확인 필요)를 이용해 예식장 근처에서 하차해 주세요.\n정확한 역/정류장명과 배차 간격은 당일 다시 확인해 주세요.` },
       { title: "자가용", text: `${context.venue || "예식장"} 주소를 내비게이션에 입력해 주세요.\n도착 후에는 예식장 안내 표지나 주차 요원의 안내를 따라 이동해 주세요.\n주차장 입구와 혼잡 시간은 식장 안내를 확인해 주세요.` },
     ],
     caution: "Mock Mode 결과입니다.",
@@ -113,13 +113,13 @@ window.createWeddingAIService = function createWeddingAIService() {
     ],
     caution: "Mock Mode 결과입니다.",
   }));
-  const wrap = (service, key) => async (context = {}) => {
+  const wrap = (service, key, maxLines = 3) => async (context = {}) => {
     const response = await service(context);
-    if (key === "items") return { ...response, items: normalizeGuideItems(response.items || []) };
-    return { ...response, notices: normalizeGuideItems(response.notices || []) };
+    if (key === "items") return { ...response, items: normalizeGuideItems(response.items || [], maxLines) };
+    return { ...response, notices: normalizeGuideItems(response.notices || [], maxLines) };
   };
   return {
-    generateTransportGuide: wrap(generateTransportGuide, "items"),
+    generateTransportGuide: wrap(generateTransportGuide, "items", 5),
     generateVenueGuide: wrap(generateVenueGuide, "notices"),
   };
 };

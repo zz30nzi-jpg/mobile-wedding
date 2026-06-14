@@ -754,6 +754,15 @@ function rangeInput(name, label, value, min, max, step = 1) {
   return `<label class="field range-field"><span>${label}</span><input name="${name}" type="range" min="${min}" max="${max}" step="${step}" value="${escapeAdminHtml(value)}"><output>${escapeAdminHtml(value)}</output></label>`;
 }
 
+function autoResizeTextarea(el) {
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
+function autoResizeTextareas(root) {
+  root?.querySelectorAll("textarea").forEach(autoResizeTextarea);
+}
+
 function select(name, label, value, options) {
   return `<label class="field"><span>${label}</span><select name="${name}">${options.map(([optionValue, text]) => `<option value="${escapeAdminHtml(optionValue)}" ${String(value) === optionValue ? "selected" : ""}>${text}</option>`).join("")}</select></label>`;
 }
@@ -2436,6 +2445,8 @@ function bindEditor() {
     toolPanel.querySelectorAll("[data-tooldock-items]").forEach((item) => {
       item.hidden = item.dataset.tooldockItems !== context;
     });
+    if (context === "information") autoResizeTextareas(noticeList);
+    if (context === "location") autoResizeTextareas(transportList);
     updateFloatingSaveForToolDock();
   };
   const keepTextToolDockOpen = () => {
@@ -3128,6 +3139,7 @@ function bindEditor() {
   const renderNoticeItems = (items) => {
     noticeList.innerHTML = items.slice(0, 3).map(noticeEditor).join("");
     noticeAdd.disabled = items.length >= 3;
+    autoResizeTextareas(noticeList);
     refreshFrameLists();
   };
   noticeManagerElement.addEventListener("click", (event) => {
@@ -3146,6 +3158,9 @@ function bindEditor() {
     const index = [...noticeList.querySelectorAll("[data-notice-editor]")].indexOf(removeButton.closest("[data-notice-editor]"));
     items.splice(index, 1);
     renderNoticeItems(items);
+  });
+  noticeManagerElement.addEventListener("input", (event) => {
+    if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
   });
   noticeManagerElement.addEventListener("input", refreshFrameLists);
   noticeManagerElement.addEventListener("change", refreshFrameLists);
@@ -3169,8 +3184,10 @@ function bindEditor() {
   }));
   const renderTransportItems = (items) => {
     transportList.innerHTML = items.map(transportEditor).join("");
+    autoResizeTextareas(transportList);
     refreshFrameLists();
   };
+  autoResizeTextareas(transportList);
   const aiGuideContext = () => ({
     venue: form.elements["wedding.venue"]?.value?.trim() || invitationData.wedding?.venue || "",
     hall: form.elements["wedding.hall"]?.value?.trim() || invitationData.wedding?.hall || "",
@@ -3227,6 +3244,9 @@ function bindEditor() {
     const items = transportItems();
     items.splice([...transportList.querySelectorAll("[data-transport-editor]")].indexOf(removeButton.closest("[data-transport-editor]")), 1);
     renderTransportItems(items);
+  });
+  transportManagerElement.addEventListener("input", (event) => {
+    if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
   });
   transportManagerElement.addEventListener("input", refreshFrameLists);
   transportManagerElement.addEventListener("change", refreshFrameLists);

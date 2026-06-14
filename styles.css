@@ -2350,6 +2350,7 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .editor-tooldock-manager .notice-editor { flex: 0 0 250px; }
 .editor-tooldock-manager [data-transport-list] { display: grid; overflow: visible; }
 .editor-tooldock-manager [data-transport-list] .notice-editor { width: 100%; min-width: 0; }
+.notice-editor textarea { overflow: hidden; resize: none; }
 .editor-detail-fields { display: grid; min-width: 320px; gap: 9px; padding-bottom: 6px; }
 .editor-detail-fields .field textarea { min-height: 88px; }
 .guided-step { scroll-margin-top: 132px; }
