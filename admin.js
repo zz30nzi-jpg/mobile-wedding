@@ -1335,9 +1335,9 @@ const venuePresets = [
     names: ["그랜드 머큐어 앰배서더 창원", "창원 그랜드머큐어 호텔웨딩", "그랜드머큐어 창원"],
     address: "경상남도 창원시 성산구 원이대로 332",
     transport: [
-      { title: "지하철", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요.\n역에서 호텔까지 택시로 약 10분입니다." },
-      { title: "버스", text: "창원고속버스터미널에서 하차해 주세요.\n터미널에서 호텔까지 택시로 약 10분입니다." },
-      { title: "자가용", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요.\n주차 안내는 예식 전 호텔에 확인해 주세요." },
+      { title: "지하철", lines: [{ icon: "🚆", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요." }, { icon: "📍", text: "역에서 호텔까지 택시로 약 10분입니다." }] },
+      { title: "버스", lines: [{ icon: "🚏", text: "창원고속버스터미널에서 하차해 주세요." }, { icon: "📍", text: "터미널에서 호텔까지 택시로 약 10분입니다." }] },
+      { title: "자가용", lines: [{ icon: "🛣️", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요." }, { icon: "🅿️", text: "주차 안내는 예식 전 호텔에 확인해 주세요." }] },
     ],
   },
 ];
@@ -1628,15 +1628,27 @@ function noticeManager(notices = []) {
     </div></section>`;
 }
 
+function transportLineEditor(line = {}, itemIndex = 0, lineIndex = 0) {
+  return `
+    <div class="transport-line-editor" data-transport-line>
+      <input class="transport-line-icon-input" name="transport.${itemIndex}.lines.${lineIndex}.icon" value="${escapeAdminHtml(line.icon || "")}" maxlength="4" aria-label="줄 ${lineIndex + 1} 아이콘">
+      <textarea name="transport.${itemIndex}.lines.${lineIndex}.text" rows="2" aria-label="줄 ${lineIndex + 1} 내용">${escapeAdminHtml(line.text || "")}</textarea>
+      <button class="icon-btn" type="button" data-transport-line-remove aria-label="줄 ${lineIndex + 1} 삭제">×</button>
+    </div>`;
+}
+
 function transportEditor(item = {}, index = 0) {
   const transportTypes = adminUtils.TRANSPORT_TYPES || [];
   const normalizeTransportTitle = adminUtils.normalizeTransportTitle || ((title = "") => title);
+  const normalizeTransportLines = adminUtils.normalizeTransportLines || (() => []);
   const selected = transportTypes.length ? normalizeTransportTitle(item.title) : item.title || "";
+  const lines = normalizeTransportLines(item);
   return `
     <div class="notice-editor" data-transport-editor>
       <div class="notice-editor-head"><strong>교통 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-transport-remove aria-label="교통 안내 ${index + 1} 삭제">×</button></div>
       ${select(`transport.${index}.title`, "교통수단", selected, transportTypes.map((type) => [type.label, `${type.icon} ${type.label}`]))}
-      ${textarea(`transport.${index}.text`, "내용 (줄바꿈으로 줄을 나누면 각 줄 앞에 아이콘이 자동으로 붙습니다. 줄을 추가/삭제하며 자유롭게 수정할 수 있습니다)", item.text || "", 2)}
+      <div class="transport-line-list" data-transport-line-list>${lines.map((line, lineIndex) => transportLineEditor(line, index, lineIndex)).join("")}</div>
+      <button class="btn notice-add transport-line-add" type="button" data-transport-line-add>＋ 줄 추가</button>
       <label class="consent"><input type="checkbox" name="transport.${index}.hidden" ${item.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
     </div>`;
 }
@@ -1644,7 +1656,7 @@ function transportEditor(item = {}, index = 0) {
 function transportManager(items = []) {
   return `
     <section class="editor-subsection"><div class="editor-subsection-head"><strong>교통 안내</strong><span>가까운 역·정류장 기준으로 경로와 소요시간을 항목별로 관리합니다.</span></div>
-    <p class="admin-message micro-help">교통수단을 선택하고 내용을 2줄로 작성하면, 청첩장에 아이콘과 함께 표시됩니다. AI 연결 시에는 식장 주소 기준 가장 가까운 기차/지하철역과 버스정류장을 찾아 차량·버스·지하철·도보 안내를 생성합니다. 도보는 20분 이하일 때만 표시하는 기준으로 작성해 주세요.</p>
+    <p class="admin-message micro-help">교통수단을 선택하고, 각 줄의 아이콘과 내용을 입력해 주세요. 줄을 추가/삭제할 수 있고, 한 줄 안에서도 줄바꿈으로 여러 문장을 적을 수 있습니다. AI 연결 시에는 식장 주소 기준 가장 가까운 기차/지하철역과 버스정류장을 찾아 안내를 생성합니다.</p>
     <div class="notice-manager" data-transport-manager>
       <div class="notice-manager-list" data-transport-list>${items.map(transportEditor).join("")}</div>
       <div class="notice-ai-actions">
@@ -2015,9 +2027,12 @@ function editorData(form) {
   })).filter((notice) => notice.title || notice.text);
   next.transport = [...form.querySelectorAll("[data-transport-editor]")].map((editor) => ({
     title: editor.querySelector('[name*=".title"]').value.trim(),
-    text: editor.querySelector('textarea[name*=".text"]').value.trim(),
+    lines: [...editor.querySelectorAll("[data-transport-line]")].map((line) => ({
+      icon: line.querySelector('input').value.trim(),
+      text: line.querySelector('textarea').value.trim(),
+    })).filter((line) => line.icon || line.text),
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
-  })).filter((item) => item.title || item.text);
+  })).filter((item) => item.title || item.lines.length);
   next.couple.groom.tags = fields.getAll("couple.groom.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
   next.couple.bride.tags = fields.getAll("couple.bride.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
   const quickValue = (key) => form.querySelector(`[data-quick="${key}"]`)?.value?.trim?.() || "";
@@ -3182,7 +3197,10 @@ function bindEditor() {
   const transportList = transportManagerElement.querySelector("[data-transport-list]");
   const transportItems = () => [...transportList.querySelectorAll("[data-transport-editor]")].map((editor) => ({
     title: editor.querySelector('[name*=".title"]').value,
-    text: editor.querySelector('textarea[name*=".text"]').value,
+    lines: [...editor.querySelectorAll("[data-transport-line]")].map((line) => ({
+      icon: line.querySelector('input').value,
+      text: line.querySelector('textarea').value,
+    })),
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   }));
   const renderTransportItems = (items) => {
@@ -3224,7 +3242,7 @@ function bindEditor() {
     button.textContent = "AI 생성 중...";
     try {
       const result = await window.AI_DESIGN_SERVICE.generateTransportGuide(aiGuideContext());
-      const items = (result.items || []).map((item) => ({ title: item.title || "", text: item.text || "", hidden: false }));
+      const items = (result.items || []).map((item) => ({ title: item.title || "", lines: adminUtils.normalizeTransportLines({ title: item.title, text: item.text }), hidden: false }));
       if (!items.length) throw new Error("생성된 교통 안내가 없습니다.");
       renderTransportItems(items);
       alert([result.fallbackReason || "", result.caution || "", "교통 안내 초안을 생성했습니다. 확인 후 저장해 주세요."].filter(Boolean).join("\n"));
@@ -3241,11 +3259,35 @@ function bindEditor() {
       generateTransportGuide(aiButton);
       return;
     }
-    if (event.target.closest("[data-transport-add]")) renderTransportItems([...transportItems(), { title: "", text: "", hidden: false }]);
+    const editors = [...transportList.querySelectorAll("[data-transport-editor]")];
+    if (event.target.closest("[data-transport-add]")) {
+      const defaultType = adminUtils.TRANSPORT_TYPES?.find((type) => type.label === adminUtils.normalizeTransportTitle("")) || adminUtils.TRANSPORT_TYPES?.[0];
+      const defaultLines = (defaultType?.lines || ["", ""]).map((icon) => ({ icon, text: "" }));
+      renderTransportItems([...transportItems(), { title: "", lines: defaultLines, hidden: false }]);
+      return;
+    }
+    const lineAddButton = event.target.closest("[data-transport-line-add]");
+    if (lineAddButton) {
+      const items = transportItems();
+      const itemIndex = editors.indexOf(lineAddButton.closest("[data-transport-editor]"));
+      items[itemIndex].lines.push({ icon: "", text: "" });
+      renderTransportItems(items);
+      return;
+    }
+    const lineRemoveButton = event.target.closest("[data-transport-line-remove]");
+    if (lineRemoveButton) {
+      const editor = lineRemoveButton.closest("[data-transport-editor]");
+      const itemIndex = editors.indexOf(editor);
+      const lineIndex = [...editor.querySelectorAll("[data-transport-line]")].indexOf(lineRemoveButton.closest("[data-transport-line]"));
+      const items = transportItems();
+      items[itemIndex].lines.splice(lineIndex, 1);
+      renderTransportItems(items);
+      return;
+    }
     const removeButton = event.target.closest("[data-transport-remove]");
     if (!removeButton) return;
     const items = transportItems();
-    items.splice([...transportList.querySelectorAll("[data-transport-editor]")].indexOf(removeButton.closest("[data-transport-editor]")), 1);
+    items.splice(editors.indexOf(removeButton.closest("[data-transport-editor]")), 1);
     renderTransportItems(items);
   });
   transportManagerElement.addEventListener("input", (event) => {

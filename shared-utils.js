@@ -35,6 +35,16 @@
     if (value.includes("자가용") || value.includes("주차") || value.includes("차량")) return "자가용";
     return "버스";
   };
+  const normalizeTransportLines = (item = {}) => {
+    if (Array.isArray(item.lines) && item.lines.length) {
+      return item.lines.map((line) => ({ icon: line?.icon || "", text: line?.text || "" }));
+    }
+    const type = TRANSPORT_TYPES.find((entry) => entry.label === normalizeTransportTitle(item.title)) || TRANSPORT_TYPES[0];
+    return String(item.text || "").split("\n").map((line) => line.trim()).filter(Boolean).map((text, index) => ({
+      icon: type.lines[index] || type.lines[type.lines.length - 1],
+      text,
+    }));
+  };
 
   window.WEDDING_UTILS = {
     escapeHtml,
@@ -46,5 +56,6 @@
     addDays,
     TRANSPORT_TYPES,
     normalizeTransportTitle,
+    normalizeTransportLines,
   };
 })();

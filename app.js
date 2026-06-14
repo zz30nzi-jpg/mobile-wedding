@@ -38,12 +38,13 @@ const escapeHtml = sharedUtils.escapeHtml || ((value = "") =>
 const escapeLineHtml = sharedUtils.escapeLineHtml || ((value = "") => escapeHtml(value).replace(/\n/g, "<br>"));
 const TRANSPORT_TYPES = sharedUtils.TRANSPORT_TYPES || [];
 const normalizeTransportTitle = sharedUtils.normalizeTransportTitle || ((title = "") => title);
+const normalizeTransportLines = sharedUtils.normalizeTransportLines || (() => []);
 const transportType = (title) => TRANSPORT_TYPES.find((type) => type.label === normalizeTransportTitle(title)) || TRANSPORT_TYPES[0];
 const transportPanelHtml = (item) => {
   const type = transportType(item.title);
-  const lines = String(item.text || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const lines = normalizeTransportLines(item);
   return `<div class="transport-head"><span class="transport-icon" aria-hidden="true">${type.icon}</span><strong>${escapeHtml(type.label)}</strong></div>
-    <ul class="transport-lines">${lines.map((line, index) => `<li><span class="transport-line-icon" aria-hidden="true">${type.lines[index] || type.lines[type.lines.length - 1]}</span><span>${escapeHtml(line)}</span></li>`).join("")}</ul>`;
+    <ul class="transport-lines">${lines.map((line) => `<li><span class="transport-line-icon" aria-hidden="true">${escapeHtml(line.icon)}</span><span>${escapeLineHtml(line.text)}</span></li>`).join("")}</ul>`;
 };
 const mediaUrl = (src = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(src) || src || "";
 const mediaStyle = (src) => mediaUrl(src) ? `style="background-image:url('${escapeHtml(mediaUrl(src))}')"` : "";
