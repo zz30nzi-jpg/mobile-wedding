@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20260614-refactor1">
-    <link rel="stylesheet" href="./admin.css?v=20260614-scroll4">
+    <link rel="stylesheet" href="./styles.css?v=20260614-cache1">
+    <link rel="stylesheet" href="./admin.css?v=20260614-cache1">
   </head>
   <body data-admin-area="general" data-theme="white">
     <main class="admin-page">
@@ -66,14 +66,14 @@
           .catch(function () { return loadScript("https://unpkg.com/@supabase/supabase-js@2", 9000); })
           .catch(function () { return null; });
         loadScript("https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js", 9000).catch(function () {});
-        await loadScript("./invitation-data.js?v=20260610-v45", 12000);
-        await loadScript("./shared-utils.js?v=20260614-refactor1", 12000);
-        await loadScript("./section-registry.js?v=20260614-refactor1", 12000);
-        await loadScript("./design-system.js?v=20260612-v57", 12000);
-        await loadScript("./supabase-config.js", 12000);
-        await loadScript("./rsvp-storage.js?v=20260613-v52", 12000);
-        await loadScript("./admin-ai-service.js?v=20260614-refactor1", 12000);
-        await loadScript("./admin.js?v=20260614-scroll4", 12000);
+        await loadScript("./invitation-data.js?v=20260614-cache1", 12000);
+        await loadScript("./shared-utils.js?v=20260614-cache1", 12000);
+        await loadScript("./section-registry.js?v=20260614-cache1", 12000);
+        await loadScript("./design-system.js?v=20260614-cache1", 12000);
+        await loadScript("./supabase-config.js?v=20260614-cache1", 12000);
+        await loadScript("./rsvp-storage.js?v=20260614-cache1", 12000);
+        await loadScript("./admin-ai-service.js?v=20260614-cache1", 12000);
+        await loadScript("./admin.js?v=20260614-cache1", 12000);
       }
       bootAdminScripts().catch(function (error) {
         showAdminLoadError("필수 스크립트 로딩에 실패했습니다. 네트워크를 바꾸거나 새로고침해 주세요. (" + String(error.message || error).replace(/[<>&]/g, "") + ")");

@@ -14,8 +14,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20260614-scroll1">
-    <link rel="stylesheet" href="./public.css?v=20260614-refactor1">
+    <link rel="stylesheet" href="./styles.css?v=20260614-cache1">
+    <link rel="stylesheet" href="./public.css?v=20260614-cache1">
   </head>
   <body>
     <main id="app"></main>
@@ -84,28 +84,28 @@
             return null;
           })
           .then(function () {
-            return loadScript("./invitation-data.js?v=20260610-v45", 9000);
+            return loadScript("./invitation-data.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./shared-utils.js?v=20260614-refactor1", 9000);
+            return loadScript("./shared-utils.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./section-registry.js?v=20260614-refactor1", 9000);
+            return loadScript("./section-registry.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./design-system.js?v=20260612-v57", 9000);
+            return loadScript("./design-system.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./supabase-config.js", 9000);
+            return loadScript("./supabase-config.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./rsvp-storage.js?v=20260613-v52", 9000);
+            return loadScript("./rsvp-storage.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./kakao-config.js?v=20260602-ux8", 9000);
+            return loadScript("./kakao-config.js?v=20260614-cache1", 9000);
           })
           .then(function () {
-            return loadScript("./app.js?v=20260614-scroll1", 9000);
+            return loadScript("./app.js?v=20260614-cache1", 9000);
           })
           .then(function () {
             clearTimeout(delayedMessageTimer);
