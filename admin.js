@@ -879,10 +879,9 @@ function imageField(name, label, value = "") {
       </div>
       <div class="image-field-controls">
         <strong>${label}</strong>
-        <span class="micro-help">휴대폰 갤러리에서 한 장을 선택해 주세요.</span>
+        <span class="micro-help">${isProfile ? "사진을 누르면 보여질 영역을 다시 맞출 수 있습니다." : "휴대폰 갤러리에서 한 장을 선택해 주세요."}</span>
         <div class="image-actions">
           <label class="btn image-upload">${value ? "변경" : "＋ 선택"}<input type="file" accept="image/*" data-image-target="${name}"></label>
-          ${isProfile ? `<button class="btn" type="button" data-image-crop-edit="${name}">영역 맞추기</button>` : ""}
           <button class="btn" type="button" data-image-remove="${name}">× 제거</button>
         </div>
       </div>
@@ -2099,7 +2098,8 @@ function bindEditor() {
     if (!host) return;
     const steps = [...form.querySelectorAll("[data-guided-step]")];
     const progressNav = host.querySelector(".admin-quick-actions.guided-progress");
-    const firstStep = form.querySelector("#couple-settings");
+    const progressPlaceholder = document.createElement("div");
+    progressPlaceholder.className = "guided-progress-placeholder";
     const saveButtons = [...document.querySelectorAll('#editor-save, .admin-floating-save[form="invitation-editor"]')];
     const requiredByStep = {
       core: ["couple.groom.name", "couple.bride.name", "wedding.venue", "wedding.date"],
@@ -2142,11 +2142,18 @@ function bindEditor() {
     form.addEventListener("input", update);
     form.addEventListener("change", update);
     update();
+    if (progressNav && !progressNav.previousElementSibling?.classList.contains("guided-progress-placeholder")) {
+      progressNav.before(progressPlaceholder);
+    }
     const syncProgressPin = () => {
-      if (!progressNav || !firstStep) return;
+      if (!progressNav) return;
       const topLimit = 72 + (Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sat")) || 0);
-      const shouldPin = firstStep.getBoundingClientRect().bottom <= topLimit;
+      const anchor = progressNav.previousElementSibling?.classList.contains("guided-progress-placeholder")
+        ? progressNav.previousElementSibling
+        : progressNav;
+      const shouldPin = anchor.getBoundingClientRect().top <= topLimit;
       host.classList.toggle("is-guided-progress-pinned", shouldPin);
+      anchor.style.height = shouldPin ? `${progressNav.offsetHeight + 18}px` : "0px";
     };
     if (window.__weddingBasicProgressPin) {
       window.removeEventListener("scroll", window.__weddingBasicProgressPin);
@@ -2655,7 +2662,7 @@ function bindEditor() {
         if (action === "profile-photo" && activeProfileTarget) triggerFileInput(`[data-image-target="${activeProfileTarget}"]`);
         if (action === "profile-crop" && activeProfileTarget) {
           toolPanel.classList.add("is-collapsed");
-          triggerButton(`[data-image-crop-edit="${activeProfileTarget}"]`);
+          openProfileCropEditor(activeProfileTarget, null);
         }
         if (action === "profile-remove" && activeProfileTarget) triggerButton(`[data-image-remove="${activeProfileTarget}"]`);
       });
@@ -3562,14 +3569,26 @@ function bindEditor() {
       }
     });
   });
+  form.querySelectorAll('.image-field-profile [data-image-preview]').forEach((preview) => {
+    preview.addEventListener("click", () => {
+      const target = preview.dataset.imagePreview;
+      if (!form.elements[target]?.value) return;
+      const cropButton = form.querySelector(`[data-image-crop-edit="${target}"]`);
+      if (cropButton) cropButton.click();
+      else openProfileCropEditor(target, preview);
+    });
+  });
   form.querySelectorAll("[data-image-crop-edit]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const target = button.dataset.imageCropEdit;
+    button.addEventListener("click", () => openProfileCropEditor(button.dataset.imageCropEdit, button));
+  });
+  const openProfileCropEditor = async (target, trigger) => {
       const originalUrl = form.elements[`${target}Original`]?.value || "";
       const currentUrl = adminMediaUrl(originalUrl || form.elements[target].value);
       if (!currentUrl) return;
-      button.disabled = true;
-      button.textContent = "불러오는 중...";
+      if (trigger?.tagName === "BUTTON") {
+        trigger.disabled = true;
+        trigger.textContent = "불러오는 중...";
+      }
       try {
         const response = await fetch(currentUrl);
         if (!response.ok) throw new Error("등록된 사진을 불러오지 못했습니다.");
@@ -3592,11 +3611,12 @@ function bindEditor() {
       } catch (error) {
         alert(`대표사진 영역을 적용하지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
       } finally {
-        button.disabled = false;
-        button.textContent = "영역 맞추기";
+        if (trigger?.tagName === "BUTTON") {
+          trigger.disabled = false;
+          trigger.textContent = "영역 맞추기";
+        }
       }
-    });
-  });
+  };
   form.querySelectorAll("[data-video-target]").forEach((fileInput) => {
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
@@ -4059,30 +4079,29 @@ async function downloadGuestPhotos(photos, button) {
   if (!photos.length) return alert("저장할 파일이 없습니다.");
   button.disabled = true;
   const original = button.textContent;
-  button.textContent = `${photos.length}개 묶는 중...`;
+  button.textContent = `${photos.length}개 다운로드 준비 중...`;
   try {
-    const files = [];
     for (let index = 0; index < photos.length; index += 1) {
-      button.textContent = `${photos.length}개 중 ${index + 1}개 준비 중...`;
-      const response = await fetch(photos[index].signedUrl);
-      if (!response.ok) throw new Error("파일을 불러오지 못했습니다.");
-      files.push({ name: safeZipName(photos[index], index), bytes: new Uint8Array(await response.arrayBuffer()), date: new Date(photos[index].created_at || Date.now()) });
+      button.textContent = `${photos.length}개 중 ${index + 1}개 다운로드 열기...`;
+      const link = document.createElement("a");
+      link.href = photos[index].signedUrl;
+      link.download = safeZipName(photos[index], index);
+      link.target = "_blank";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      await new Promise((resolve) => setTimeout(resolve, 260));
     }
-    const zipBlob = await createZipBlob(files);
-    const url = URL.createObjectURL(zipBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `guest-files-${new Date().toISOString().slice(0, 10)}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    button.disabled = false;
+    button.textContent = original;
+    if (!confirm("파일 저장을 완료했나요?\n저장 완료를 누르면 해당 파일이 '이미 저장한 파일'로 이동합니다.\n저장을 취소했다면 [취소]를 눌러 주세요.")) return;
     rememberSavedGuestPhotos(photos);
     await renderGuestPhotos();
   } catch (error) {
     button.disabled = false;
     button.textContent = original;
-    alert(`파일을 묶어서 저장하지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
+    alert(`파일 다운로드를 열지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
   }
 }
 
@@ -4154,9 +4173,11 @@ async function renderGuestbookEntries() {
       <div class="response-list">${entries.length ? entries.map((entry) => `
         <article class="response-card ${entry.hidden ? "is-muted" : ""}">
           <h3>${escapeAdminHtml(entry.guest_name)} ${entry.hidden ? '<span class="badge">숨김</span>' : ""}</h3>
-          <p>${escapeAdminHtml(entry.message)}</p>
+          <div class="response-message-row">
+            <p>${escapeAdminHtml(entry.message)}</p>
+            <button class="btn" type="button" data-toggle-guestbook="${escapeAdminHtml(entry.id)}" data-hidden="${entry.hidden ? "true" : "false"}">${entry.hidden ? "다시 보이기" : "숨기기"}</button>
+          </div>
           <p class="response-meta">${escapeAdminHtml(formatDate(entry.created_at))}</p>
-          <button class="btn" type="button" data-toggle-guestbook="${escapeAdminHtml(entry.id)}" data-hidden="${entry.hidden ? "true" : "false"}">${entry.hidden ? "다시 보이기" : "숨기기"}</button>
         </article>`).join("") : '<p class="admin-message">등록된 방명록이 없습니다.</p>'}</div>
     </section>`;
     bindAdminNavigation();

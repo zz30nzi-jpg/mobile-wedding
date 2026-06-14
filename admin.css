@@ -44,6 +44,28 @@ body[data-admin-area="general"] .field :is(input, select) {
   font-size: 13px;
 }
 
+body[data-admin-area="general"] .image-field-profile .image-preview {
+  cursor: pointer;
+}
+
+body[data-admin-area="general"] .image-field-profile .image-actions {
+  grid-template-columns: repeat(2, minmax(0, 92px));
+  justify-content: center;
+  gap: 6px;
+}
+
+body[data-admin-area="general"] .image-field-profile .image-actions .btn {
+  min-width: 0 !important;
+  min-height: 30px !important;
+  padding: 4px 7px;
+  border-radius: 9px;
+  font-size: 10px;
+}
+
+body[data-admin-area="general"] .image-field-profile .micro-help {
+  text-align: center;
+}
+
 body[data-admin-area="general"] .field textarea {
   padding: 7px 10px;
   font-size: 13px;
@@ -82,6 +104,10 @@ body[data-admin-area="general"] .quick-input-grid input[type="datetime-local"] {
 }
 
 /* Sticky basic-page secondary navigation */
+body[data-admin-area="general"] .guided-progress-placeholder {
+  height: 0;
+}
+
 body[data-admin-area="general"] .admin-editor-view.view-basic .admin-quick-actions.guided-progress {
   position: static !important;
   right: auto !important;
@@ -107,7 +133,25 @@ body[data-admin-area="general"] .admin-editor-view.view-basic.is-guided-progress
   left: 50% !important;
   width: min(calc(100% - 16px), 464px);
   margin: 0 !important;
+  padding: 9px 8px 8px;
+  border-radius: 16px;
   transform: translateX(-50%);
+}
+
+body[data-admin-area="general"] .admin-editor-view.view-basic.is-guided-progress-pinned .admin-quick-actions.guided-progress button {
+  min-height: 36px;
+  border-radius: 11px;
+  padding: 8px 4px 6px;
+  font-size: 11px;
+}
+
+body[data-admin-area="general"] .admin-editor-view.view-basic.is-guided-progress-pinned .admin-quick-actions.guided-progress button .tab-icon {
+  display: none;
+}
+
+body[data-admin-area="general"] .admin-editor-view.view-basic.is-guided-progress-pinned .admin-quick-actions.guided-progress button span {
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 body[data-admin-area="general"] .admin-quick-actions.guided-progress button {
@@ -127,6 +171,26 @@ body[data-admin-area="general"] .admin-quick-actions.guided-progress button .tab
 body[data-admin-area="general"] .admin-quick-actions.guided-progress button span {
   font-size: 13px;
   line-height: 1.15;
+}
+
+body[data-admin-area="general"] .response-message-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+body[data-admin-area="general"] .response-message-row p {
+  margin: 0;
+}
+
+body[data-admin-area="general"] .response-message-row .btn {
+  min-height: 30px;
+  padding: 5px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 /* Account cards */
@@ -249,20 +313,36 @@ body[data-admin-area="general"] .copy-frame-interaction-toggle {
 /* Section order controls */
 .section-order-actions {
   display: flex;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 6px;
   align-items: center;
 }
 
+body[data-admin-area="general"] .section-order-editor {
+  gap: 6px;
+  padding: 8px;
+}
+
+body[data-admin-area="general"] .section-order-editor strong {
+  font-size: 12px;
+}
+
+body[data-admin-area="general"] .section-order-item label {
+  font-size: 11px;
+}
+
 body[data-admin-area="general"] .section-order-head {
-  gap: 12px;
+  display: grid;
+  gap: 6px;
 }
 
 body[data-admin-area="general"] .section-order-list {
-  gap: 9px;
+  gap: 4px;
 }
 
 body[data-admin-area="general"] .section-order-item {
-  min-height: 52px;
+  min-height: 38px;
+  padding: 6px 8px;
   cursor: grab;
   user-select: none;
 }
@@ -273,28 +353,32 @@ body[data-admin-area="general"] .section-order-item.is-dragging {
 }
 
 body[data-admin-area="general"] .section-drag-handle {
-  width: 44px;
-  height: 44px;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
   border: 0;
-  border-radius: 12px;
+  border-radius: 9px;
   background: var(--soft-bg);
   color: var(--accent-dark);
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1;
 }
 
 body[data-admin-area="general"] .section-icon-action {
   display: inline-grid !important;
-  width: 44px !important;
-  height: 44px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
   place-items: center;
   padding: 0 !important;
-  border-radius: 12px !important;
+  border-radius: 9px !important;
 }
 
 body[data-admin-area="general"] .section-icon-action .tab-icon {
-  width: 17px;
-  height: 17px;
+  width: 13px;
+  height: 13px;
 }
 
 body[data-admin-area="general"] .section-preview-actions {
