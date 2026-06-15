@@ -856,8 +856,8 @@ function attendanceForm() {
           <button type="button" data-value="X">X</button>
         </div>
       </section>
-      <label class="consent"><input type="checkbox" id="attendance-consent" required> <span>개인정보 수집 및 활용 동의 <button type="button" class="consent-detail" data-consent-detail>[자세히보기]</button></span></label>
-      <p class="consent-detail-text" id="attendance-consent-detail" hidden>입력하신 정보는 결혼식 참석 인원 확인 목적으로만 사용되며, 행사 종료 후 파기됩니다.</p>
+      <label class="consent"><input type="checkbox" id="attendance-consent" required> <span>개인정보 수집 및 이용 동의 <button type="button" class="consent-detail" data-consent-detail>[자세히보기]</button></span></label>
+      <p class="consent-detail-text" id="attendance-consent-detail" hidden>수집 항목: 성함, 신랑측·신부측 구분, 참석 여부, 식사 여부, 응답 등록 일시. 이용 목적: 결혼식 참석 인원 확인, 좌석·식사 준비, 신랑·신부의 하객 응답 관리. 보유 및 이용 기간: 행사 종료 후 정리 목적에 필요한 기간 동안 보관한 뒤 삭제하며, 청첩장 관리자가 먼저 삭제하거나 이용 종료를 요청하는 경우 지체 없이 삭제합니다. 동의를 거부할 권리가 있으며, 필수 항목 동의 거부 시 참석 의사 전달 기능을 이용할 수 없습니다.</p>
       <div class="modal-actions"><button class="btn btn-primary" id="attendance-submit" type="submit" disabled>전달하기</button></div>
     </form>`;
 }
@@ -871,6 +871,8 @@ function guestbookForm() {
     <form class="form-grid" id="guestbook-form">
       <label class="field"><span>성함 <b class="req">*</b></span><input name="guest_name" required maxlength="30" autocomplete="name" placeholder="성함을 입력해 주세요."></label>
       <label class="field"><span>축하 메시지 <b class="req">*</b></span><textarea name="message" required maxlength="300" rows="4" placeholder="축하 메시지를 남겨 주세요."></textarea></label>
+      <label class="consent"><input type="checkbox" required> <span>방명록 개인정보 수집 및 이용 동의 <button type="button" class="consent-detail" data-guestbook-consent-detail>[자세히보기]</button></span></label>
+      <p class="consent-detail-text" id="guestbook-consent-detail" hidden>수집 항목: 성함, 축하 메시지, 작성 일시. 이용 목적: 청첩장 방명록 게시, 신랑·신부의 축하 메시지 확인 및 관리. 보유 및 이용 기간: 청첩장 운영 기간 동안 보관하며, 청첩장 관리자가 삭제하거나 이용 종료를 요청하는 경우 지체 없이 삭제합니다. 동의를 거부할 권리가 있으며, 동의 거부 시 방명록 작성 기능을 이용할 수 없습니다.</p>
       <div class="modal-actions"><button class="btn btn-primary" id="guestbook-submit" type="submit">메시지 남기기</button></div>
     </form>`;
 }
@@ -974,7 +976,8 @@ function guestPhotoForm() {
     </div>
     <form class="form-grid snap-upload-form" id="guest-photo-form">
       <label class="field"><span>이름(폴더명)</span><input name="guest_name" required maxlength="20" placeholder="예: 홍길동"></label>
-      <label class="consent"><input type="checkbox" required> <span>신랑 신부에게 사진과 영상을 전달하기 위해 파일을 업로드하는 것에 동의합니다.</span></label>
+      <label class="consent"><input type="checkbox" required> <span>사진·영상 파일 수집 및 이용 동의 <button type="button" class="consent-detail" data-photo-consent-detail>[자세히보기]</button></span></label>
+      <p class="consent-detail-text" id="guest-photo-consent-detail" hidden>수집 항목: 업로드 이름, 사진·영상 파일, 파일명·형식·용량, 업로드 일시, 브라우저별 업로드 식별 정보. 이용 목적: 신랑·신부에게 하객 사진과 영상을 전달하고, 관리자가 파일을 확인·다운로드·삭제할 수 있도록 하기 위함. 보유 및 이용 기간: 하객 앨범 운영 기간 동안 보관하며, 청첩장 관리자 또는 업로드 사용자가 삭제하거나 이용 종료를 요청하는 경우 지체 없이 삭제합니다. 동의를 거부할 권리가 있으며, 동의 거부 시 사진·영상 업로드 기능을 이용할 수 없습니다.</p>
       <section class="snap-upload-box">
         <strong>사진·영상 업로드</strong>
         <p class="upload-selection" id="guest-photo-selection">예식 당일 함께한 사진과 영상을 업로드해 주세요.</p>
@@ -1120,6 +1123,7 @@ function bindEvents() {
     const files = document.querySelector("#guest-photo-files");
     const selection = document.querySelector("#guest-photo-selection");
     const selectionGrid = document.querySelector("#guest-photo-selection-grid");
+    const photoConsentDetail = document.querySelector("#guest-photo-consent-detail");
     let selectedPhotos = [];
     const renderSelectedPhotos = () => {
       const checkedCount = selectedPhotos.filter((photo) => photo.checked).length;
@@ -1143,6 +1147,9 @@ function bindEvents() {
       selectedPhotos[Number(checkbox.dataset.guestPhotoChoice)].checked = checkbox.checked;
       renderSelectedPhotos();
     });
+    form.querySelector("[data-photo-consent-detail]")?.addEventListener("click", () => {
+      if (photoConsentDetail) photoConsentDetail.hidden = !photoConsentDetail.hidden;
+    });
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const uploadFiles = selectedPhotos.filter((photo) => photo.checked).map((photo) => photo.file);
@@ -1164,6 +1171,10 @@ function bindEvents() {
   document.querySelector("#guestbook-open")?.addEventListener("click", () => {
     openModal(guestbookForm());
     const form = document.querySelector("#guestbook-form");
+    const guestbookConsentDetail = document.querySelector("#guestbook-consent-detail");
+    form.querySelector("[data-guestbook-consent-detail]")?.addEventListener("click", () => {
+      if (guestbookConsentDetail) guestbookConsentDetail.hidden = !guestbookConsentDetail.hidden;
+    });
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const button = document.querySelector("#guestbook-submit");

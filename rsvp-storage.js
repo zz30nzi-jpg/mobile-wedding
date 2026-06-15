@@ -594,7 +594,7 @@ async function saveInvitationData(content) {
   if (siteError) throw siteError;
 }
 
-async function signUpInvitationAdmin({ email, password, groomName = "", brideName = "", groomBirthday = "", brideBirthday = "", weddingDate = "", weddingVenue = "", weddingHall = "", publicOpenDate = "", publicCloseDate = "", agreeTerms, agreePrivacy, agreeMarketing = false }) {
+async function signUpInvitationAdmin({ email, loginId = "", password, groomName = "", brideName = "", groomBirthday = "", brideBirthday = "", weddingDate = "", weddingVenue = "", weddingHall = "", publicOpenDate = "", publicCloseDate = "", agreeTerms, agreePrivacy, agreeMarketing = false }) {
   const client = getSupabaseClient();
   if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
   if (!agreeTerms || !agreePrivacy) throw new Error("필수 약관에 동의해 주세요.");
@@ -605,6 +605,7 @@ async function signUpInvitationAdmin({ email, password, groomName = "", brideNam
     options: {
       data: {
         role: "general_admin",
+        login_id: loginId,
         groom_name: groomName,
         bride_name: brideName,
         groom_birthday: groomBirthday,
@@ -625,28 +626,6 @@ async function signUpInvitationAdmin({ email, password, groomName = "", brideNam
   if (!data.session) return { needsConfirmation: true, slug };
   const site = await ensureInvitationForCurrentUser();
   return { needsConfirmation: false, slug: site?.slug || slug };
-}
-
-async function signInWithProvider(provider) {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const redirectTo = `${location.origin}/admin.html`;
-  try { await client.auth.signOut({ scope: "local" }); } catch (error) { console.warn("[oauth local signout]", error); }
-  clearStoredSupabaseAuth();
-  const queryParams = provider === "kakao"
-    ? { prompt: "login" }
-    : provider === "custom:naver"
-      ? { auth_type: "reauthenticate" }
-      : {};
-  const { data, error } = await client.auth.signInWithOAuth({
-    provider,
-    options: { redirectTo, skipBrowserRedirect: true, queryParams },
-  });
-  if (error) throw error;
-  if (!data?.url) throw new Error("소셜 로그인 이동 URL을 받지 못했습니다.");
-  const authUrl = new URL(data.url);
-  authUrl.searchParams.set("redirect_to", redirectTo);
-  location.assign(authUrl.toString());
 }
 
 async function findAdminLoginId({ recoveryName = "", recoveryPhone = "" } = {}) {
@@ -970,7 +949,6 @@ window.RSVP_STORAGE = {
   ensureInvitationForCurrentUser,
   signUpInvitationAdmin,
   findAdminLoginId,
-  signInWithProvider,
   loadInvitationData,
   loadDesignLibrary,
   loadGuestbookEntries,

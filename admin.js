@@ -30,6 +30,7 @@ let passwordRecoveryListenerBound = false;
 const GALLERY_MAX = 30;
 const SAVED_LOGIN_EMAIL_KEY = "wedding-admin-remembered-email";
 const GENERAL_ADMIN_VIEW_KEY = "wedding-general-admin-active-view";
+const LOGIN_ID_EMAIL_DOMAIN = "admin.local";
 const defaultWelcomeOverlay = {
   eyebrow: "Vivid Vows",
   text: "결혼을 축하드립니다!\n커스텀하여 청첩장을 꾸며보세요.",
@@ -55,6 +56,29 @@ function hasPasswordRecoveryContext() {
   const params = new URLSearchParams(location.search);
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
   return params.get("type") === "recovery" || hashParams.get("type") === "recovery";
+}
+
+function normalizeLoginId(value = "") {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9._-]/g, "");
+}
+
+function loginIdToAuthEmail(value = "") {
+  const loginId = normalizeLoginId(value);
+  return loginId ? `${loginId}@${LOGIN_ID_EMAIL_DOMAIN}` : "";
+}
+
+function loginInputToAuthEmail(value = "") {
+  const input = String(value || "").trim();
+  if (input.includes("@")) return input.toLowerCase();
+  return loginIdToAuthEmail(input);
+}
+
+function authEmailToLoginId(value = "") {
+  return String(value || "").replace(new RegExp(`@${LOGIN_ID_EMAIL_DOMAIN}$`, "i"), "");
 }
 
 function clearAuthUrlState() {
@@ -297,14 +321,10 @@ function contentBackBar(title) {
 }
 
 function renderLogin(message = "") {
-  const rememberedEmail = localStorage.getItem(SAVED_LOGIN_EMAIL_KEY) || "";
+  const rememberedLoginId = authEmailToLoginId(localStorage.getItem(SAVED_LOGIN_EMAIL_KEY) || "");
   const generalSignup = `
       <div class="admin-signup-panel">
         <button class="btn btn-secondary signup-open" type="button" data-signup-open>회원가입</button>
-        <div class="oauth-grid">
-          <button class="btn btn-kakao" type="button" data-oauth-provider="kakao"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.48 3 2 6.48 2 10.74c0 2.7 1.78 5.07 4.46 6.43-.2.73-.71 2.6-.81 3-.13.5.18.49.38.36.16-.1 2.5-1.7 3.52-2.39.78.11 1.59.17 2.45.17 5.52 0 10-3.48 10-7.74S17.52 3 12 3z"/></svg> 카카오로 시작</button>
-          <button class="btn btn-naver" type="button" data-oauth-provider="custom:naver"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14.6 3v8.2L9.4 3H3v18h6.4v-8.2L14.6 21H21V3z"/></svg> 네이버로 시작</button>
-        </div>
       </div>
       <div class="signup-modal-backdrop" data-signup-modal hidden>
         <form class="form-grid signup-form signup-modal" id="admin-signup-form">
@@ -318,16 +338,17 @@ function renderLogin(message = "") {
             <p class="admin-message micro-help">가입하면 계정별 청첩장 페이지와 일반관리자 페이지가 각각 생성됩니다.</p>
             <div class="signup-consents">
               <label class="consent"><input name="agreeTerms" type="checkbox" required> <span>서비스 이용약관에 동의합니다.</span></label>
-              <label class="consent"><input name="agreePrivacy" type="checkbox" required> <span>개인정보 수집 및 이용에 동의합니다.</span></label>
+              <label class="consent"><input name="agreePrivacy" type="checkbox" required> <span>개인정보 수집 및 이용에 동의합니다. <button type="button" class="consent-detail" data-signup-consent-detail>[자세히보기]</button></span></label>
+              <p class="consent-detail-text" data-signup-consent-text hidden>수집 항목: 로그인 ID, 비밀번호, 신랑·신부 및 혼주 이름, 연락처, 생년월일, 예식 일시와 장소, 계좌 정보, 청첩장에 등록한 사진·영상·문구·지도 정보, 참석 의사 응답의 성함·참석 여부·구분·식사 여부, 방명록의 성함·메시지, 하객 앨범 업로드 이름·사진·영상 파일 및 업로드 기록. 이용 목적: 청첩장 제작·공개·관리, 관리자 본인 확인, 참석 인원 확인, 방명록 및 하객 앨범 운영, 고객 문의 대응, 서비스 안정성 유지. 보유 및 이용 기간: 서비스 이용 기간 동안 보관하며, 청첩장 삭제 또는 이용 종료 요청 시 지체 없이 삭제합니다. 단, 관계 법령상 보관이 필요한 정보는 해당 기간 동안 보관할 수 있습니다. 동의를 거부할 권리가 있으며, 필수 항목 동의 거부 시 관리자 가입 및 청첩장 생성·운영 기능 이용이 제한될 수 있습니다.</p>
               <label class="consent"><input name="agreeMarketing" type="checkbox"> <span>업데이트 및 혜택 안내 수신에 동의합니다. 선택 항목입니다.</span></label>
             </div>
             <button class="btn btn-primary" type="button" data-signup-next>다음</button>
           </section>
           <section class="signup-step" data-signup-step="1">
             <h2>로그인 계정 만들기</h2>
-            <label class="field"><span>가입 이메일</span><input name="email" type="email" required autocomplete="email"></label>
+            <label class="field"><span>로그인 ID</span><input name="loginId" type="text" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]{3,32}" autocomplete="username" placeholder="예: vividvows"></label>
             <label class="field"><span>비밀번호</span><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
-            <p class="admin-message micro-help">가입 후 기본정보를 입력하면 전용 청첩장과 일반관리자 페이지가 생성됩니다.</p>
+            <p class="admin-message micro-help">영문, 숫자, 마침표, 밑줄, 하이픈만 사용할 수 있습니다. 이메일 주소는 받지 않습니다.</p>
             <div class="signup-actions"><button class="btn" type="button" data-signup-prev>이전</button><button class="btn btn-primary" type="submit">회원가입 완료</button></div>
           </section>
         </form>
@@ -338,13 +359,12 @@ function renderLogin(message = "") {
       <h1>청첩장 일반관리자</h1>
       <p class="admin-message">${escapeAdminHtml(message || "등록된 관리자 계정으로 로그인해 주세요.")}</p>
       <form class="form-grid" id="admin-login-form">
-        <label class="field"><span>이메일</span><input name="email" type="email" required autocomplete="username" value="${escapeAdminHtml(rememberedEmail)}"></label>
+        <label class="field"><span>로그인 ID</span><input name="loginId" type="text" required autocomplete="username" value="${escapeAdminHtml(rememberedLoginId)}"></label>
         <label class="field"><span>비밀번호</span><input name="password" type="password" required autocomplete="current-password"></label>
-        <label class="consent remember-login"><input name="rememberEmail" type="checkbox" ${rememberedEmail ? "checked" : ""}> <span>아이디 저장</span></label>
+        <label class="consent remember-login"><input name="rememberEmail" type="checkbox" ${rememberedLoginId ? "checked" : ""}> <span>아이디 저장</span></label>
         <button class="btn btn-primary">로그인</button>
         <div class="login-help-actions">
           <button class="link-button" type="button" data-find-email>아이디 찾기</button>
-          <button class="link-button" type="button" data-reset-password>비밀번호 찾기</button>
         </div>
       </form>
       ${generalSignup}
@@ -368,6 +388,11 @@ function renderLogin(message = "") {
     if (event.target === signupModal) signupModal.hidden = true;
   });
   signupForm?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-signup-consent-detail]")) {
+      const detail = signupForm.querySelector("[data-signup-consent-text]");
+      if (detail) detail.hidden = !detail.hidden;
+      return;
+    }
     if (event.target.closest("[data-signup-next]")) {
       const step = Number(signupForm.dataset.step || 0);
       const fields = [...signupForm.querySelectorAll(`[data-signup-step="${step}"] input[required]`)];
@@ -385,50 +410,10 @@ function renderLogin(message = "") {
   document.querySelector("[data-find-email]")?.addEventListener("click", () => {
     const saved = localStorage.getItem(SAVED_LOGIN_EMAIL_KEY);
     if (saved) {
-      alert(`저장된 아이디는 ${saved} 입니다.`);
+      alert(`저장된 아이디는 ${authEmailToLoginId(saved)} 입니다.`);
       return;
     }
     findAdminLoginId();
-  });
-  document.querySelector("[data-reset-password]")?.addEventListener("click", async () => {
-    const emailField = document.querySelector('#admin-login-form input[name="email"]');
-    const email = emailField?.value?.trim();
-    if (!email) {
-      emailField?.focus();
-      alert("비밀번호를 재설정할 이메일을 먼저 입력해 주세요.");
-      return;
-    }
-    const client = getAdminSupabaseClient();
-    if (!client) {
-      alert("Supabase 연결 후 비밀번호 찾기를 사용할 수 있습니다.");
-      return;
-    }
-    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}` });
-    alert(error ? `비밀번호 재설정 메일을 보내지 못했습니다.\n${error.message}` : "비밀번호 재설정 메일을 보냈습니다.");
-  });
-  const startOAuth = async (button, event) => {
-    event?.preventDefault();
-    if (button.dataset.oauthBusy === "true") return;
-    const label = button.textContent;
-    button.dataset.oauthBusy = "true";
-    button.disabled = true;
-    button.textContent = "연결 중...";
-    try {
-      await window.RSVP_STORAGE.signInWithProvider(button.dataset.oauthProvider);
-    } catch (error) {
-      renderLogin(`${label} 연동을 시작하지 못했습니다. ${error.message || "Provider 설정을 확인해 주세요."}`);
-    }
-  };
-  document.querySelectorAll("[data-oauth-provider]").forEach((button) => {
-    button.addEventListener("pointerup", (event) => startOAuth(button, event));
-    button.addEventListener("click", async (event) => {
-      if (button.dataset.oauthBusy === "true") return;
-      try {
-        await startOAuth(button, event);
-      } catch (error) {
-        renderLogin(`${button.textContent} 연동을 시작하지 못했습니다. ${error.message || "Provider 설정을 확인해 주세요."}`);
-      }
-    });
   });
 }
 
@@ -443,8 +428,9 @@ async function findAdminLoginId() {
   if (!recoveryPhone) return;
   try {
     const maskedEmail = await window.RSVP_STORAGE.findAdminLoginId({ recoveryName, recoveryPhone });
+    const loginId = authEmailToLoginId(maskedEmail);
     alert(maskedEmail
-      ? `가입 아이디는 ${maskedEmail} 입니다. 보안을 위해 일부만 표시합니다.`
+      ? `가입 아이디는 ${loginId} 입니다. 보안을 위해 일부만 표시합니다.`
       : "일치하는 관리자 아이디를 찾지 못했습니다. 입력값을 확인하거나 관리자에게 문의해 주세요.");
   } catch (error) {
     alert(`아이디를 찾지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
@@ -1786,6 +1772,8 @@ function accountManager(accounts = [], options = {}) {
 function renderEditor(message = "", focus = "") {
   const viewByFocus = { copy: "copy-editor", share: "share-settings", gallery: "gallery", sections: "sections" };
   rememberAdminView(viewByFocus[focus] || "editor");
+  const isCopyFocus = focus === "copy";
+  const isGalleryFocus = focus === "gallery" || focus === "copy";
   window.WEDDING_DESIGN?.normalize(invitationData);
   if (focus !== "copy") document.documentElement.style.removeProperty("--floating-save-bottom");
   if (!Array.isArray(invitationData.accounts)) {
@@ -1932,7 +1920,7 @@ function renderEditor(message = "", focus = "") {
           </div>
           <p class="admin-message micro-help">공개 종료일은 예식일 기준 이후 3일까지만 설정할 수 있습니다. 이 값들은 각 일반관리자 계정의 청첩장에만 적용됩니다.</p>
         </div></details>
-        <section class="copy-pane" data-copy-editor-panel>
+        ${isCopyFocus ? `<section class="copy-pane" data-copy-editor-panel>
           <div class="copy-editor-page">
             <div class="copy-editor-toolbar"><div><strong>편집 기능</strong><small>점선 영역을 누르면 아래 도구가 해당 영역에 맞게 바뀝니다.</small></div></div>
             ${editorDesignPanel()}
@@ -1967,12 +1955,12 @@ function renderEditor(message = "", focus = "") {
           ${imageField("ending.image", "마지막 사진", invitationData.ending.image)}
             </div>
           </div>
-        </section>
-        <section class="editor-details content-pane content-settings-card" id="gallery-settings"><div class="editor-details-title">갤러리<button class="btn btn-secondary gallery-modal-close" type="button" data-gallery-modal-close hidden>닫기</button></div><div class="editor-details-body">
+        </section>` : '<section class="copy-pane" data-copy-editor-panel hidden></section>'}
+        ${isGalleryFocus ? `<section class="editor-details content-pane content-settings-card" id="gallery-settings"><div class="editor-details-title">갤러리<button class="btn btn-secondary gallery-modal-close" type="button" data-gallery-modal-close hidden>닫기</button></div><div class="editor-details-body">
           <p class="admin-message">최대 ${GALLERY_MAX}장까지 등록할 수 있습니다. 공개 화면에는 접속할 때마다 등록 사진 중 무작위 6장이 미리보기로 표시됩니다.</p>
           ${select("galleryDisplayMode", "사진 확대 화면 표시 방식", invitationData.galleryDisplayMode || "portrait", [["portrait", "세로형 화면에 맞추기"], ["original", "원본 사진 비율 유지"]])}
           ${galleryManager(gallery, galleryThumbs)}
-        </div></section>
+        </div></section>` : '<section class="editor-details content-pane content-settings-card" id="gallery-settings" hidden></section>'}
         <details class="editor-details section-pane" open data-guided-step="sections" data-step-requires="wedding"><summary>섹션 순서와 노출 설정</summary><div class="editor-details-body">
           <p class="admin-message">표시할 섹션을 체크하고 화살표 버튼으로 순서를 정해 주세요.</p>
           <div class="section-order-columns">
@@ -2071,16 +2059,18 @@ function editorData(form) {
     next.appearance.design.presetId = selectedPreset.id;
   }
   next.appearance.design = next.appearance.design || {};
-  next.appearance.design.heroEyebrowEnabled = fields.get("appearance.design.heroEyebrowEnabled") === "on";
-  next.appearance.design.heroNamesEnabled = fields.get("appearance.design.heroNamesEnabled") === "on";
-  next.appearance.design.heroDateEnabled = fields.get("appearance.design.heroDateEnabled") === "on";
-  next.appearance.design.heroTextXPercent = Number(fields.get("appearance.design.heroTextXPercent") || next.appearance.design.heroTextXPercent || 50);
-  next.appearance.design.heroTextYPercent = Number(fields.get("appearance.design.heroTextYPercent") || next.appearance.design.heroTextYPercent || 76);
-  if (fields.get("appearance.design.heroDecoration")) next.appearance.design.heroDecoration = fields.get("appearance.design.heroDecoration");
-  if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
-  next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
-  next.appearance.design.heroDecorationStrokeWidth = Number(fields.get("appearance.design.heroDecorationStrokeWidth") || next.appearance.design.heroDecorationStrokeWidth || 3);
-  next.appearance.design.heroDecorationYPercent = Number(fields.get("appearance.design.heroDecorationYPercent") || next.appearance.design.heroDecorationYPercent || 0);
+  if (form.elements["appearance.design.heroEyebrowEnabled"]) {
+    next.appearance.design.heroEyebrowEnabled = fields.get("appearance.design.heroEyebrowEnabled") === "on";
+    next.appearance.design.heroNamesEnabled = fields.get("appearance.design.heroNamesEnabled") === "on";
+    next.appearance.design.heroDateEnabled = fields.get("appearance.design.heroDateEnabled") === "on";
+    next.appearance.design.heroTextXPercent = Number(fields.get("appearance.design.heroTextXPercent") || next.appearance.design.heroTextXPercent || 50);
+    next.appearance.design.heroTextYPercent = Number(fields.get("appearance.design.heroTextYPercent") || next.appearance.design.heroTextYPercent || 76);
+    if (fields.get("appearance.design.heroDecoration")) next.appearance.design.heroDecoration = fields.get("appearance.design.heroDecoration");
+    if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
+    next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
+    next.appearance.design.heroDecorationStrokeWidth = Number(fields.get("appearance.design.heroDecorationStrokeWidth") || next.appearance.design.heroDecorationStrokeWidth || 3);
+    next.appearance.design.heroDecorationYPercent = Number(fields.get("appearance.design.heroDecorationYPercent") || next.appearance.design.heroDecorationYPercent || 0);
+  }
   const displayFormat = form.elements["wedding.displayDateFormat"]?.value || "long_ko";
   const displayCustom = form.elements["wedding.displayDateCustom"]?.value.trim() || "";
   next.wedding.displayDate = displayFormat === "custom"
@@ -2283,8 +2273,8 @@ function bindEditor() {
   };
   const refreshFrameGallery = () => {
     if (!frameDocumentRef) return;
-    const images = Array.from({ length: GALLERY_MAX }, (_, index) => form.elements[`gallery.${index}`]?.value || "");
-    const thumbs = Array.from({ length: GALLERY_MAX }, (_, index) => form.elements[`galleryThumb.${index}`]?.value || "");
+    const images = Array.from({ length: GALLERY_MAX }, (_, index) => form.elements[`gallery.${index}`]?.value ?? invitationData.gallery?.[index] ?? "");
+    const thumbs = Array.from({ length: GALLERY_MAX }, (_, index) => form.elements[`galleryThumb.${index}`]?.value ?? invitationData.galleryThumbs?.[index] ?? "");
     const photos = images.map((image, index) => ({ image, thumb: thumbs[index] || image })).filter((photo) => photo.image);
     const galleryGrid = frameDocumentRef.querySelector(".gallery-grid");
     if (!galleryGrid) return;
@@ -3647,10 +3637,11 @@ function bindEditor() {
       refreshFrameMedia(target, "");
     });
   });
-  const galleryPairs = () => Array.from({ length: GALLERY_MAX }, (_, index) => ({
+  const hasGalleryFields = Boolean(form.elements["gallery.0"]);
+  const galleryPairs = () => hasGalleryFields ? Array.from({ length: GALLERY_MAX }, (_, index) => ({
     image: form.elements[`gallery.${index}`].value,
     thumb: form.elements[`galleryThumb.${index}`]?.value || "",
-  })).filter((pair) => pair.image);
+  })).filter((pair) => pair.image) : [];
   const galleryValues = () => galleryPairs().map((pair) => pair.image);
   const galleryThumbValues = () => galleryPairs().map((pair) => pair.thumb);
   const updateGallery = (images, thumbs = []) => {
@@ -3666,7 +3657,10 @@ function bindEditor() {
     refreshFrameGallery();
   };
   const galleryStatus = form.querySelector("[data-gallery-status]");
-  form.querySelector("[data-gallery-upload]").addEventListener("change", async (event) => {
+  const galleryUpload = form.querySelector("[data-gallery-upload]");
+  const galleryClear = form.querySelector("[data-gallery-clear]");
+  const galleryPreview = form.querySelector("[data-gallery-editor-preview]");
+  galleryUpload?.addEventListener("change", async (event) => {
     const files = [...event.currentTarget.files];
     if (!files.length) return;
     if (files.length > GALLERY_MAX) {
@@ -3699,12 +3693,12 @@ function bindEditor() {
     }
     event.currentTarget.value = "";
   });
-  form.querySelector("[data-gallery-clear]").addEventListener("click", () => {
+  galleryClear?.addEventListener("click", () => {
     if (galleryValues().length && !confirm("갤러리 사진을 모두 비울까요?")) return;
     updateGallery([]);
     galleryStatus.textContent = "갤러리를 비웠습니다. 아래 저장 버튼을 눌러 완료해 주세요.";
   });
-  form.querySelector("[data-gallery-editor-preview]").addEventListener("click", (event) => {
+  galleryPreview?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-gallery-remove]");
     if (!button) return;
     const images = galleryValues();
@@ -3714,7 +3708,7 @@ function bindEditor() {
     updateGallery(images, thumbs);
     galleryStatus.textContent = "사진을 삭제했습니다. 아래 저장 버튼을 눌러 완료해 주세요.";
   });
-  form.querySelector("[data-gallery-editor-preview]").addEventListener("change", async (event) => {
+  galleryPreview?.addEventListener("change", async (event) => {
     const input = event.target.closest("[data-gallery-replace]");
     if (!input) return;
     const file = input.files?.[0];
@@ -3851,17 +3845,19 @@ async function login(event) {
   }
   if (!client) return renderLogin("로그인 서버 연결이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
   const form = new FormData(event.currentTarget);
-  const email = String(form.get("email") || "").trim();
+  const loginId = String(form.get("loginId") || "").trim();
+  const email = loginInputToAuthEmail(loginId);
+  if (!email) return renderLogin("로그인 ID를 입력해 주세요.");
   if (form.get("rememberEmail") === "on") localStorage.setItem(SAVED_LOGIN_EMAIL_KEY, email);
   else localStorage.removeItem(SAVED_LOGIN_EMAIL_KEY);
   const { error } = await client.auth.signInWithPassword({
     email,
     password: form.get("password"),
   });
-  if (error) return renderLogin("가입되지 않은 이메일이거나 이메일/비밀번호가 일치하지 않습니다. 가입은 회원가입, 카카오로 시작, 네이버로 시작 버튼을 이용해 주세요.");
+  if (error) return renderLogin("가입되지 않은 ID이거나 ID/비밀번호가 일치하지 않습니다. 처음 이용하신다면 회원가입을 진행해 주세요.");
   try {
     currentInvitationSite = await window.RSVP_STORAGE.getCurrentInvitationSite();
-    if (!currentInvitationSite?.slug) return renderLogin("가입이 완료되지 않은 계정입니다. 회원가입, 카카오로 시작, 네이버로 시작 버튼으로 다시 진행해 주세요.");
+    if (!currentInvitationSite?.slug) return renderLogin("가입이 완료되지 않은 계정입니다. 회원가입으로 다시 진행해 주세요.");
     if (currentInvitationSite.disabled) return renderLogin("비활성화된 일반관리자입니다. 사이트 관리자에게 문의해 주세요.");
   } catch (siteError) {
     return renderLogin(`계정 전용 청첩장을 준비하지 못했습니다. ${siteError.message || "Supabase 설정을 확인해 주세요."}`);
@@ -3896,20 +3892,24 @@ async function signup(event) {
   }
   status.textContent = "계정을 만들고 전용 청첩장을 준비하고 있습니다.";
   try {
+    const loginId = normalizeLoginId(form.get("loginId"));
+    const email = loginIdToAuthEmail(loginId);
+    if (!email) throw new Error("로그인 ID를 입력해 주세요.");
     const result = await window.RSVP_STORAGE.signUpInvitationAdmin({
-      email: String(form.get("email") || "").trim(),
+      email,
+      loginId,
       password: form.get("password"),
       agreeTerms: form.get("agreeTerms") === "on",
       agreePrivacy: form.get("agreePrivacy") === "on",
       agreeMarketing: form.get("agreeMarketing") === "on",
     });
     if (result.needsConfirmation) {
-      const message = "가입 확인 메일을 보냈습니다. Supabase 이메일 인증이 켜져 있어서 메일 인증 전에는 자동 로그인할 수 없습니다.";
+      const message = "현재 Supabase 이메일 인증이 켜져 있어 ID 가입 방식으로 자동 로그인할 수 없습니다. Supabase Auth 설정에서 이메일 인증을 꺼 주세요.";
       alert(message);
       renderLogin(message);
       return;
     }
-    localStorage.setItem(SAVED_LOGIN_EMAIL_KEY, String(form.get("email") || "").trim());
+    localStorage.setItem(SAVED_LOGIN_EMAIL_KEY, email);
     renderBasicInfoOnboarding("회원가입이 완료되었습니다. 기본정보를 입력하면 전용 청첩장과 일반관리자 페이지가 생성됩니다.");
   } catch (error) {
     if (submitButton) {

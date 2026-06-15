@@ -1962,13 +1962,6 @@ body[data-layout="garden_doodle"] .notice h3 { color: var(--accent-dark); }
 .signup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .signup-consents { display: grid; gap: 7px; }
 .signup-consents .consent { align-items: flex-start; border: 1px solid var(--line); border-radius: 13px; padding: 10px; background: var(--card); }
-.oauth-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.oauth-grid .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; touch-action: manipulation; }
-.oauth-grid .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-.admin-page .btn.btn-kakao, .btn-kakao { border-color: #FEE500; background: #FEE500; color: #191600; }
-.admin-page .btn.btn-kakao:hover, .btn-kakao:hover { border-color: #fada00; background: #fada00; color: #191600; }
-.admin-page .btn.btn-naver, .btn-naver { border-color: #03C75A; background: #03C75A; color: #fff; }
-.admin-page .btn.btn-naver:hover, .btn-naver:hover { border-color: #02b350; background: #02b350; color: #fff; }
 .remember-login { justify-content: flex-start; border: 0; padding: 0; background: transparent; }
 .login-help-actions { display: flex; justify-content: center; gap: 12px; }
 .link-button { border: 0; background: transparent; color: var(--accent-dark); font-size: 12px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
@@ -2569,7 +2562,6 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
   .member-card { grid-template-columns: 1fr; }
   .member-card-actions { justify-content: stretch; }
   .member-card-actions .btn { flex: 1 1 0; }
-  .oauth-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -2812,14 +2804,14 @@ body[data-admin-area="general"] .admin-menu-group .admin-tabs .btn {
 }
 
 /* Palette-driven contrast fixes for public invitation controls. */
-body .btn:not(.btn-primary):not(.btn-kakao):not(.btn-naver),
+body .btn:not(.btn-primary),
 body .map-actions a,
 body .quick-nav a,
 body .upload-actions .btn:not(.btn-primary) {
   background: var(--accent) !important;
   color: var(--button-text, var(--ink)) !important;
 }
-body .btn:not(.btn-primary):not(.btn-kakao):not(.btn-naver):hover,
+body .btn:not(.btn-primary):hover,
 body .map-actions a:hover,
 body .quick-nav a:hover,
 body .upload-actions .btn:not(.btn-primary):hover {
