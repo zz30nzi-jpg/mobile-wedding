@@ -740,6 +740,20 @@ function rangeInput(name, label, value, min, max, step = 1) {
   return `<label class="field range-field"><span>${label}</span><input name="${name}" type="range" min="${min}" max="${max}" step="${step}" value="${escapeAdminHtml(value)}"><output>${escapeAdminHtml(value)}</output></label>`;
 }
 
+function frameStepControl(name, label, value, min, max, step = 1) {
+  const safeName = escapeAdminHtml(name);
+  const safeValue = escapeAdminHtml(value);
+  return `<label class="frame-step-control">
+    <span>${label}</span>
+    <input name="${safeName}" type="range" min="${min}" max="${max}" step="${step}" value="${safeValue}">
+    <div class="frame-stepper">
+      <button type="button" data-frame-range-step="${safeName}:${-step}" aria-label="${label} 줄이기">−</button>
+      <output>${safeValue}</output>
+      <button type="button" data-frame-range-step="${safeName}:${step}" aria-label="${label} 늘리기">＋</button>
+    </div>
+  </label>`;
+}
+
 function autoResizeTextarea(el) {
   el.style.height = "auto";
   el.style.height = `${el.scrollHeight}px`;
@@ -1063,9 +1077,9 @@ function editorDesignPanel() {
         ${editorDesignFramePicker(system.assets.frames, design.heroDecoration || "inherit")}
         <div class="editor-frame-compact">
           <div class="editor-color-strip">${input("appearance.design.heroDecorationTint", "꾸밈 색상", design.heroDecorationTint || "#ffffff", "color")}</div>
-          ${rangeInput("appearance.design.heroDecorationSize", "크기", Number(design.heroDecorationSize) || 100, 70, 130, 5)}
-          ${rangeInput("appearance.design.heroDecorationStrokeWidth", "획 두께", Number(design.heroDecorationStrokeWidth) || 3, 1, 8, 0.5)}
-          ${rangeInput("appearance.design.heroDecorationYPercent", "하트 위치", Number(design.heroDecorationYPercent) || 0, -80, 80, 2)}
+          ${frameStepControl("appearance.design.heroDecorationSize", "크기", Number(design.heroDecorationSize) || 100, 70, 130, 5)}
+          ${frameStepControl("appearance.design.heroDecorationStrokeWidth", "선 두께", Number(design.heroDecorationStrokeWidth) || 3, 1, 8, 0.5)}
+          ${frameStepControl("appearance.design.heroDecorationYPercent", "위치", Number(design.heroDecorationYPercent) || 0, -80, 80, 2)}
         </div>
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="text">
@@ -2574,9 +2588,20 @@ function bindEditor() {
         if (field.hasAttribute("data-preview-text-size") || field.hasAttribute("data-preview-text-y") || field.hasAttribute("data-preview-text-x")) {
           refreshSelectedTextStyle();
         } else {
-          field.nextElementSibling.textContent = field.value;
+          field.parentElement?.querySelector("output")?.replaceChildren(document.createTextNode(field.value));
           refreshFrameAppearance();
         }
+      });
+    });
+    copyEditor.querySelectorAll("[data-frame-range-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [name, amount] = button.dataset.frameRangeStep.split(":");
+        const field = name ? form.elements[name] : null;
+        if (!field) return;
+        const step = Number(amount || field.step || 1);
+        const next = Math.max(Number(field.min), Math.min(Number(field.max), Number(field.value || 0) + step));
+        field.value = String(Number.isInteger(next) ? next : Number(next.toFixed(2)));
+        field.dispatchEvent(new Event("input", { bubbles: true }));
       });
     });
     copyEditor.querySelectorAll("[data-preview-text-step]").forEach((button) => {
@@ -3223,80 +3248,84 @@ function bindEditor() {
   };
   bindAccountManager();
   const noticeManagerElement = form.querySelector("[data-notice-manager]");
-  const noticeList = noticeManagerElement.querySelector("[data-notice-list]");
-  const noticeAdd = noticeManagerElement.querySelector("[data-notice-add]");
-  const noticeItems = () => [...noticeList.querySelectorAll("[data-notice-editor]")].map((editor) => ({
+  const noticeList = noticeManagerElement?.querySelector("[data-notice-list]");
+  const noticeAdd = noticeManagerElement?.querySelector("[data-notice-add]");
+  const noticeItems = () => noticeList ? [...noticeList.querySelectorAll("[data-notice-editor]")].map((editor) => ({
     title: editor.querySelector('input[name*=".title"]').value,
     text: editor.querySelector('textarea[name*=".text"]').value,
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
-  }));
+  })) : [];
   const renderNoticeItems = (items) => {
+    if (!noticeList || !noticeAdd) return;
     noticeList.innerHTML = items.slice(0, 3).map(noticeEditor).join("");
     noticeAdd.disabled = items.length >= 3;
     autoResizeTextareas(noticeList);
     refreshFrameLists();
   };
-  noticeManagerElement.addEventListener("click", (event) => {
-    const aiButton = event.target.closest("[data-ai-venue-guide]");
-    if (aiButton) {
-      generateVenueGuide(aiButton);
-      return;
-    }
-    if (event.target.closest("[data-notice-add]")) {
+  if (noticeManagerElement) {
+    noticeManagerElement.addEventListener("click", (event) => {
+      const aiButton = event.target.closest("[data-ai-venue-guide]");
+      if (aiButton) {
+        generateVenueGuide(aiButton);
+        return;
+      }
+      if (event.target.closest("[data-notice-add]")) {
+        const items = noticeItems();
+        if (items.length < 3) renderNoticeItems([...items, { title: "", text: "" }]);
+      }
+      const removeButton = event.target.closest("[data-notice-remove]");
+      if (!removeButton) return;
       const items = noticeItems();
-      if (items.length < 3) renderNoticeItems([...items, { title: "", text: "" }]);
-    }
-    const removeButton = event.target.closest("[data-notice-remove]");
-    if (!removeButton) return;
-    const items = noticeItems();
-    const index = [...noticeList.querySelectorAll("[data-notice-editor]")].indexOf(removeButton.closest("[data-notice-editor]"));
-    items.splice(index, 1);
-    renderNoticeItems(items);
-  });
-  noticeManagerElement.addEventListener("input", (event) => {
-    if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
-    const titleField = event.target.closest('input[name*=".title"]');
-    if (titleField) {
-      const textField = titleField.closest("[data-notice-editor]")?.querySelector('textarea[name*=".text"]');
-      if (textField && !textField.value.trim()) textField.placeholder = noticeContentPlaceholders[titleField.value.trim()] || "";
-    }
-  });
-  noticeManagerElement.addEventListener("focusin", (event) => {
-    const field = event.target.closest('textarea[name*=".text"]');
-    if (!field || field.value.trim()) return;
-    field.dataset.placeholderText = field.placeholder;
-    field.placeholder = "";
-  });
-  noticeManagerElement.addEventListener("focusout", (event) => {
-    const field = event.target.closest('textarea[name*=".text"]');
-    if (!field || field.value.trim()) return;
-    field.placeholder = field.dataset.placeholderText || noticeContentPlaceholders[field.closest("[data-notice-editor]")?.querySelector('input[name*=".title"]')?.value] || "";
-  });
-  noticeManagerElement.addEventListener("input", refreshFrameLists);
-  noticeManagerElement.addEventListener("change", refreshFrameLists);
-  noticeManagerElement.addEventListener("change", (event) => {
-    const preset = event.target.closest('select[name^="noticePreset."]');
-    if (!preset) return;
-    const selected = noticePresetValues[preset.value];
-    if (!selected) return;
-    const editor = preset.closest("[data-notice-editor]");
-    editor.querySelector('input[name*=".title"]').value = selected.title;
-    editor.querySelector('textarea[name*=".text"]').value = selected.text;
-    editor.querySelector('textarea[name*=".text"]').placeholder = noticeContentPlaceholders[selected.title] || "";
-    refreshFrameLists();
-  });
-  renderNoticeItems(noticeItems());
+      const index = [...noticeList.querySelectorAll("[data-notice-editor]")].indexOf(removeButton.closest("[data-notice-editor]"));
+      items.splice(index, 1);
+      renderNoticeItems(items);
+    });
+    noticeManagerElement.addEventListener("input", (event) => {
+      if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
+      const titleField = event.target.closest('input[name*=".title"]');
+      if (titleField) {
+        const textField = titleField.closest("[data-notice-editor]")?.querySelector('textarea[name*=".text"]');
+        if (textField && !textField.value.trim()) textField.placeholder = noticeContentPlaceholders[titleField.value.trim()] || "";
+      }
+    });
+    noticeManagerElement.addEventListener("focusin", (event) => {
+      const field = event.target.closest('textarea[name*=".text"]');
+      if (!field || field.value.trim()) return;
+      field.dataset.placeholderText = field.placeholder;
+      field.placeholder = "";
+    });
+    noticeManagerElement.addEventListener("focusout", (event) => {
+      const field = event.target.closest('textarea[name*=".text"]');
+      if (!field || field.value.trim()) return;
+      field.placeholder = field.dataset.placeholderText || noticeContentPlaceholders[field.closest("[data-notice-editor]")?.querySelector('input[name*=".title"]')?.value] || "";
+    });
+    noticeManagerElement.addEventListener("input", refreshFrameLists);
+    noticeManagerElement.addEventListener("change", refreshFrameLists);
+    noticeManagerElement.addEventListener("change", (event) => {
+      const preset = event.target.closest('select[name^="noticePreset."]');
+      if (!preset) return;
+      const selected = noticePresetValues[preset.value];
+      if (!selected) return;
+      const editor = preset.closest("[data-notice-editor]");
+      editor.querySelector('input[name*=".title"]').value = selected.title;
+      editor.querySelector('textarea[name*=".text"]').value = selected.text;
+      editor.querySelector('textarea[name*=".text"]').placeholder = noticeContentPlaceholders[selected.title] || "";
+      refreshFrameLists();
+    });
+    renderNoticeItems(noticeItems());
+  }
   const transportManagerElement = form.querySelector("[data-transport-manager]");
-  const transportList = transportManagerElement.querySelector("[data-transport-list]");
-  const transportItems = () => [...transportList.querySelectorAll("[data-transport-editor]")].map((editor) => ({
+  const transportList = transportManagerElement?.querySelector("[data-transport-list]");
+  const transportItems = () => transportList ? [...transportList.querySelectorAll("[data-transport-editor]")].map((editor) => ({
     title: editor.querySelector('[name*=".title"]').value,
     lines: [...editor.querySelectorAll("[data-transport-line]")].map((line) => ({
       icon: line.querySelector('input').value,
       text: line.querySelector('textarea').value,
     })),
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
-  }));
+  })) : [];
   const renderTransportItems = (items) => {
+    if (!transportList) return;
     transportList.innerHTML = items.map(transportEditor).join("");
     autoResizeTextareas(transportList);
     refreshFrameLists();
@@ -3332,7 +3361,7 @@ function bindEditor() {
       button.textContent = original;
     }
   };
-  transportManagerElement.addEventListener("click", (event) => {
+  transportManagerElement?.addEventListener("click", (event) => {
     const aiButton = event.target.closest("[data-ai-transport-guide]");
     if (aiButton) {
       generateTransportGuide(aiButton);
@@ -3369,11 +3398,11 @@ function bindEditor() {
     items.splice(editors.indexOf(removeButton.closest("[data-transport-editor]")), 1);
     renderTransportItems(items);
   });
-  transportManagerElement.addEventListener("input", (event) => {
+  transportManagerElement?.addEventListener("input", (event) => {
     if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
   });
-  transportManagerElement.addEventListener("input", refreshFrameLists);
-  transportManagerElement.addEventListener("change", refreshFrameLists);
+  transportManagerElement?.addEventListener("input", refreshFrameLists);
+  transportManagerElement?.addEventListener("change", refreshFrameLists);
   const updateDisplayDate = (force = false) => {
     const format = form.elements["wedding.displayDateFormat"].value;
     if (format === "custom") return;
@@ -3579,7 +3608,7 @@ function bindEditor() {
         });
         if (!cropResult) return;
         const file = cropResult.file;
-        button.textContent = "업로드 중...";
+        if (trigger?.tagName === "BUTTON") trigger.textContent = "업로드 중...";
         const url = await window.RSVP_STORAGE.uploadInvitationImage(file, target.replace(/\./g, "-"));
         form.elements[target].value = url;
         if (!originalUrl && form.elements[`${target}Original`]) form.elements[`${target}Original`].value = currentUrl;

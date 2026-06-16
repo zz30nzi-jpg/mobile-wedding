@@ -1130,6 +1130,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 3px s
   display: inline-grid;
   width: 24px;
   height: 24px;
+  min-width: 24px;
+  max-width: 24px;
   min-height: 0;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
@@ -1142,7 +1144,21 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 3px s
   box-shadow: 0 4px 10px rgba(30,42,48,0.12);
 }
 .gallery-image-action.btn-danger { color: #a34d4d; }
-.gallery-manager-item-actions .image-upload { min-width: 0; cursor: pointer; }
+.gallery-manager-item-actions .icon-btn.gallery-image-action,
+.gallery-manager-item-actions .icon-btn.gallery-image-action.image-upload,
+.gallery-manager-item-actions .icon-btn.gallery-image-action.btn-danger {
+  width: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0;
+  place-items: center;
+  font-size: 12px;
+  line-height: 1;
+}
+.gallery-manager-item-actions .image-upload { cursor: pointer; }
 .content-settings-card.is-gallery-modal { position: fixed; z-index: 34; inset: 14px; display: grid !important; max-width: 520px; margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; padding: 14px; background: var(--card); box-shadow: 0 24px 70px rgba(70,85,93,0.18); }
 .content-settings-card.is-gallery-modal::before { position: fixed; z-index: -1; inset: 0; background: color-mix(in srgb, var(--paper) 82%, transparent); content: ""; }
 .content-settings-card.is-gallery-modal .editor-details-title { position: sticky; z-index: 2; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 14px; padding: 10px; background: color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter: blur(12px); }
@@ -2297,9 +2313,40 @@ body.copy-editor-public-preview .gallery-preview { pointer-events: none; }
   font-weight: 900;
   text-align: center;
 }
+.editor-frame-compact { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; align-items: stretch; }
+.frame-step-control {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  border-radius: 12px;
+  padding: 7px;
+  background: var(--soft-bg);
+  color: var(--ink);
+}
+.frame-step-control > span { overflow: hidden; color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.frame-step-control > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.frame-stepper { display: grid; grid-template-columns: 24px minmax(24px, 1fr) 24px; align-items: center; gap: 3px; }
+.frame-stepper button {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--card);
+  color: var(--accent-dark);
+  font-size: 15px;
+  font-weight: 900;
+}
+.frame-stepper output { color: var(--accent-dark); font-size: 12px; font-weight: 900; text-align: center; }
 .editor-color-strip .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 12px; padding: 8px 10px; background: var(--soft-bg); }
+.editor-frame-compact .editor-color-strip .field { height: 100%; min-height: 58px; flex-direction: column; justify-content: center; gap: 5px; padding: 7px; }
 .editor-color-strip .field > span { display: block; font-size: 12px; font-weight: 800; }
+.editor-frame-compact .editor-color-strip .field > span { overflow: hidden; max-width: 100%; font-size: 10px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .editor-color-strip input[type="color"] { width: 44px; min-height: 44px; border: 2px solid var(--line); border-radius: 12px; background: transparent; }
+.editor-frame-compact .editor-color-strip input[type="color"] { width: 30px; min-height: 30px; border-radius: 999px; padding: 3px; }
 .editor-tooldock-empty { margin: 0; border-radius: 12px; padding: 12px; background: var(--soft-bg); color: var(--muted); text-align: center; }
 body.copy-editor-public-preview::before { position: fixed; z-index: 1; inset: 0; background: rgba(70,85,93,0.26); content: ""; pointer-events: none; }
 body.copy-editor-public-preview .copy-editable-target { position: relative; z-index: 12; outline: 2px dashed var(--accent-dark); outline-offset: 5px; border-radius: 10px; background: color-mix(in srgb, var(--card) 84%, transparent); box-shadow: 0 0 0 9999px rgba(255,255,255,0.01), 0 8px 22px rgba(70,85,93,0.16); cursor: pointer; pointer-events: auto; }

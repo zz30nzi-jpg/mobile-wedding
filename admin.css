@@ -405,15 +405,24 @@ body[data-admin-area="general"] .gallery-manager-item {
 }
 
 body[data-admin-area="general"] .gallery-manager-item-actions {
-  top: 8px;
-  right: 8px;
-  gap: 8px;
+  top: 6px;
+  right: 6px;
+  gap: 4px;
 }
 
-body[data-admin-area="general"] .gallery-image-action {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+body[data-admin-area="general"] .gallery-manager-item-actions .icon-btn.gallery-image-action,
+body[data-admin-area="general"] .gallery-manager-item-actions .icon-btn.gallery-image-action.image-upload,
+body[data-admin-area="general"] .gallery-manager-item-actions .icon-btn.gallery-image-action.btn-danger {
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  border-radius: 999px;
+  padding: 0 !important;
+  font-size: 12px;
+  line-height: 1;
 }
 
 body[data-admin-area="general"] .gallery-manager-item .btn,
