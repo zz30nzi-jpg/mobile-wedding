@@ -268,10 +268,24 @@ function bindAdminNavigation() {
   document.querySelectorAll("[data-admin-view]").forEach((button) => {
     button.addEventListener("click", () => {
       renderAdminView(button.dataset.adminView);
+      resetAdminPageScroll();
     });
   });
-  document.querySelector("[data-content-back]")?.addEventListener("click", () => renderAdminView("content"));
+  document.querySelector("[data-content-back]")?.addEventListener("click", () => {
+    renderAdminView("content");
+    resetAdminPageScroll();
+  });
   decorateRangeDefaults(adminApp);
+}
+
+function resetAdminPageScroll() {
+  const root = document.documentElement;
+  const previousBehavior = root.style.scrollBehavior;
+  root.style.scrollBehavior = "auto";
+  window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  requestAnimationFrame(() => {
+    root.style.scrollBehavior = previousBehavior;
+  });
 }
 
 function rememberAdminView(view) {
@@ -310,6 +324,7 @@ function renderContentHub() {
   bindAdminNavigation();
   document.querySelectorAll("[data-content-open]").forEach((button) => button.addEventListener("click", () => {
     renderAdminView(button.dataset.contentOpen);
+    resetAdminPageScroll();
   }));
 }
 
