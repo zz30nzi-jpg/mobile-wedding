@@ -3,7 +3,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://djjspxgkdinimcpkdxme.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+const ANTHROPIC_MODEL = normalizeAnthropicModel(process.env.ANTHROPIC_MODEL || process.env.CLAUDE_MODEL || "claude-haiku-4-5");
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://mobile-wedding-ecru.vercel.app",
   "http://localhost:3000",
@@ -170,6 +170,15 @@ async function callOpenAI(prompt, responseSchema) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function normalizeAnthropicModel(model = "") {
+  const normalized = String(model || "")
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/^~+/, "")
+    .trim();
+  return normalized || "claude-haiku-4-5";
+}
+
 async function callOpenAIWithRetry(prompt, responseSchema) {
   let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -242,12 +251,22 @@ function stripUnsupportedSchema(schema) {
   return schema;
 }
 
-function claudeText(payload) {
+function parseJsonText(text = "") {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) throw new Error("Claude 응답 본문이 없습니다.");
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1].trim() : trimmed;
+  return JSON.parse(candidate);
+}
+
+function claudeResult(payload) {
   if (payload.stop_reason === "refusal") throw new Error(payload.stop_details?.explanation || "요청이 거절되었습니다.");
+  const textBlocks = [];
   for (const block of payload.content || []) {
-    if (block.type === "text" && block.text) return block.text;
+    if (block.type === "tool_use" && block.name === "write_wedding_guide" && block.input) return block.input;
+    if (block.type === "text" && block.text) textBlocks.push(block.text);
   }
-  throw new Error("Claude 응답 본문이 없습니다.");
+  return parseJsonText(textBlocks.join("\n"));
 }
 
 function isClaudeBusy(status, message = "") {
@@ -262,7 +281,12 @@ async function callClaudeModel(prompt, responseSchema) {
       model: ANTHROPIC_MODEL,
       max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
-      output_config: { format: { type: "json_schema", schema: stripUnsupportedSchema(responseSchema) } },
+      tools: [{
+        name: "write_wedding_guide",
+        description: "Return the wedding guest guide as structured JSON.",
+        input_schema: stripUnsupportedSchema(responseSchema),
+      }],
+      tool_choice: { type: "tool", name: "write_wedding_guide" },
     }),
   });
   const payload = await claude.json();
@@ -271,7 +295,7 @@ async function callClaudeModel(prompt, responseSchema) {
     error.retryable = isClaudeBusy(claude.status, error.message);
     throw error;
   }
-  return JSON.parse(claudeText(payload));
+  return claudeResult(payload);
 }
 
 async function callClaude(prompt, responseSchema) {
