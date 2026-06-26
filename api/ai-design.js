@@ -4,6 +4,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
 const ANTHROPIC_MODEL = normalizeAnthropicModel(process.env.ANTHROPIC_MODEL || process.env.CLAUDE_MODEL || "claude-haiku-4-5");
+const ANTHROPIC_WEB_SEARCH_ENABLED = process.env.ANTHROPIC_WEB_SEARCH !== "false";
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://mobile-wedding-ecru.vercel.app",
   "http://localhost:3000",
@@ -107,13 +108,26 @@ async function registeredOwner(request) {
 function guidePrompt(type, context) {
   const settings = context.settings || {};
   const prompts = settings.prompts || {};
+  const research = String(context.research || "").trim();
+  const researchError = String(context.researchError || "").trim();
+  const researchBlock = research
+    ? `
+조사된 참고정보:
+${research}
+
+위 참고정보를 우선 사용하세요. 참고정보에 없는 노선명, 버스 번호, 셔틀 시간, 주차 조건은 추측하지 말고 "확인 필요"로 남기세요.`
+    : researchError
+      ? `
+조사 상태: ${researchError}
+실제 노선명, 버스 번호, 셔틀 시간, 주차 조건을 단정하지 말고 확인 필요로 남기세요.`
+      : "";
   const header = `${prompts.base || ""}
 모바일 청첩장의 하객 안내 문구를 작성하세요.
 예식장명: ${context.venue || ""}
 홀 정보: ${context.hall || ""}
 주소: ${context.address || ""}
 공식홈페이지 URL: ${context.officialUrl || ""}
-예식일시: ${context.date || ""}`;
+예식일시: ${context.date || ""}${researchBlock}`;
   if (type === "transportGuide") {
     return `${header}
 ${prompts.transport || ""}
@@ -273,6 +287,66 @@ function isClaudeBusy(status, message = "") {
   return status === 429 || status === 503 || status === 529 || status >= 500 || /overloaded|high demand|rate|temporarily/i.test(message);
 }
 
+function researchPrompt(type, context) {
+  const target = `${context.venue || ""} ${context.hall || ""} ${context.address || ""}`.replace(/\s+/g, " ").trim();
+  const official = context.officialUrl ? `\n공식홈페이지: ${context.officialUrl}` : "";
+  const common = `다음 예식장의 하객 안내문 작성을 위한 사실 정보만 조사하세요.
+예식장: ${target || "이름/주소 없음"}${official}
+
+규칙:
+- 검색 결과에서 확인한 정보와 확인하지 못한 정보를 분리하세요.
+- 출처 페이지 이름이나 URL을 함께 적으세요.
+- 확실하지 않은 내용은 추측하지 말고 "확인 필요"라고 적으세요.
+- 한국어로 간결하게 정리하세요.`;
+  if (type === "transportGuide") {
+    return `${common}
+
+필요한 정보:
+- 가장 가까운 지하철역/기차역과 도보 또는 차량 소요시간
+- 예식장 인근 버스정류장명과 이용 가능한 버스 번호
+- 셔틀버스가 있으면 운행 구간, 간격, 탑승 위치
+- 자가용 주차장 위치와 무료 주차/정산 조건`;
+  }
+  return `${common}
+
+필요한 정보:
+- 연회장/피로연장 위치
+- 주차장 위치
+- 무료 주차 시간, 주차권, 차량번호 등록 등 정산 방식`;
+}
+
+function shouldResearch(type, context = {}) {
+  if (!ANTHROPIC_WEB_SEARCH_ENABLED) return false;
+  if (!["transportGuide", "venueGuide"].includes(type)) return false;
+  return Boolean(context.venue || context.address || context.officialUrl);
+}
+
+async function callClaudeResearch(type, context) {
+  if (!shouldResearch(type, context)) return { ...context };
+  const claude = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 2048,
+      messages: [{ role: "user", content: researchPrompt(type, context) }],
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: type === "transportGuide" ? 6 : 4 }],
+    }),
+  });
+  const payload = await claude.json();
+  if (!claude.ok) {
+    const error = new Error(payload.error?.message || "Claude 검색 호출에 실패했습니다.");
+    error.retryable = isClaudeBusy(claude.status, error.message);
+    throw error;
+  }
+  const research = (payload.content || [])
+    .filter((block) => block.type === "text" && block.text)
+    .map((block) => block.text.trim())
+    .join("\n\n")
+    .trim();
+  return research ? { ...context, research } : { ...context, researchError: "검색 결과를 확인하지 못했습니다." };
+}
+
 async function callClaudeModel(prompt, responseSchema) {
   const claude = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -345,7 +419,15 @@ module.exports = async function aiDesign(request, response) {
   if (!configured) return response.status(503).json({ error: configError });
 
   try {
-    const prompt = guidePrompt(type, context);
+    let promptContext = context;
+    if (isClaudeProvider(provider)) {
+      try {
+        promptContext = await callClaudeResearch(type, context);
+      } catch (researchError) {
+        promptContext = { ...context, researchError: `실시간 검색 실패 - ${researchError.message || "검색 결과 없음"}` };
+      }
+    }
+    const prompt = guidePrompt(type, promptContext);
     const result = isClaudeProvider(provider)
       ? await callClaude(prompt, responseSchema)
       : provider === "Gemini"
