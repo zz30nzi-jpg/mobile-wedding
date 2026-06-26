@@ -88,8 +88,9 @@ function weddingDisplayDateText(value, format = "long_ko") {
 function normalizeWeddingDisplayDate() {
   const wedding = data.wedding || {};
   const format = wedding.displayDateFormat || "long_ko";
-  if (format === "custom") {
-    data.wedding.displayDate = wedding.displayDateCustom || wedding.displayDate || weddingDisplayDateText(wedding.date);
+  const customDisplayDate = wedding.displayDateCustom?.trim?.() || "";
+  if (customDisplayDate) {
+    data.wedding.displayDate = customDisplayDate;
     return;
   }
   data.wedding.displayDate = weddingDisplayDateText(wedding.date, format) || wedding.displayDate || "";

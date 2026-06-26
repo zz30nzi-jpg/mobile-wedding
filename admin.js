@@ -2102,9 +2102,7 @@ function editorData(form) {
   }
   const displayFormat = form.elements["wedding.displayDateFormat"]?.value || "long_ko";
   const displayCustom = form.elements["wedding.displayDateCustom"]?.value.trim() || "";
-  next.wedding.displayDate = displayFormat === "custom"
-    ? displayCustom
-    : weddingDisplayDate(form.elements["wedding.date"]?.value, displayFormat);
+  next.wedding.displayDate = displayCustom || weddingDisplayDate(form.elements["wedding.date"]?.value, displayFormat);
   next.wedding.mapLinks = mapLinksFor(next.wedding.venue, next.wedding.address);
   return next;
 }

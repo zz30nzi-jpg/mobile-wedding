@@ -2,6 +2,8 @@ const API_URL = "https://api.openai.com/v1/responses";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://djjspxgkdinimcpkdxme.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://mobile-wedding-ecru.vercel.app",
   "http://localhost:3000",
@@ -225,29 +227,106 @@ async function callGemini(prompt, responseSchema) {
   throw new Error(`Gemini가 일시적으로 혼잡합니다. 잠시 후 다시 시도해 주세요. ${lastError?.message || ""}`.trim());
 }
 
+// Claude(Anthropic) 구조화 출력은 minItems/maxItems 등 일부 JSON 스키마 제약을 지원하지 않으므로 제거한다.
+function stripUnsupportedSchema(schema) {
+  if (Array.isArray(schema)) return schema.map(stripUnsupportedSchema);
+  if (schema && typeof schema === "object") {
+    const unsupported = new Set(["minItems", "maxItems", "minLength", "maxLength", "minimum", "maximum", "multipleOf"]);
+    const result = {};
+    for (const [key, value] of Object.entries(schema)) {
+      if (unsupported.has(key)) continue;
+      result[key] = stripUnsupportedSchema(value);
+    }
+    return result;
+  }
+  return schema;
+}
+
+function claudeText(payload) {
+  if (payload.stop_reason === "refusal") throw new Error(payload.stop_details?.explanation || "요청이 거절되었습니다.");
+  for (const block of payload.content || []) {
+    if (block.type === "text" && block.text) return block.text;
+  }
+  throw new Error("Claude 응답 본문이 없습니다.");
+}
+
+function isClaudeBusy(status, message = "") {
+  return status === 429 || status === 503 || status === 529 || status >= 500 || /overloaded|high demand|rate|temporarily/i.test(message);
+}
+
+async function callClaudeModel(prompt, responseSchema) {
+  const claude = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 2048,
+      messages: [{ role: "user", content: prompt }],
+      output_config: { format: { type: "json_schema", schema: stripUnsupportedSchema(responseSchema) } },
+    }),
+  });
+  const payload = await claude.json();
+  if (!claude.ok) {
+    const error = new Error(payload.error?.message || "Claude API 호출에 실패했습니다.");
+    error.retryable = isClaudeBusy(claude.status, error.message);
+    throw error;
+  }
+  return JSON.parse(claudeText(payload));
+}
+
+async function callClaude(prompt, responseSchema) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await callClaudeModel(prompt, responseSchema);
+    } catch (error) {
+      lastError = error;
+      if (!error.retryable) throw error;
+      await sleep(450 + attempt * 700);
+    }
+  }
+  throw new Error(`Claude가 일시적으로 혼잡합니다. 잠시 후 다시 시도해 주세요. ${lastError?.message || ""}`.trim());
+}
+
+const isClaudeProvider = (provider) => provider === "Claude" || provider === "Anthropic";
+
+function providerConfig(provider) {
+  if (isClaudeProvider(provider)) {
+    return { configured: Boolean(ANTHROPIC_API_KEY), error: ANTHROPIC_API_KEY ? "" : "ANTHROPIC_API_KEY 환경변수를 등록해 주세요." };
+  }
+  if (provider === "Gemini") {
+    return { configured: Boolean(GEMINI_API_KEY), error: GEMINI_API_KEY ? "" : "GEMINI_API_KEY 환경변수를 등록해 주세요." };
+  }
+  const ready = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL);
+  return { configured: ready, error: ready ? "" : "OPENAI_API_KEY와 OPENAI_MODEL 환경변수를 등록해 주세요." };
+}
+
 module.exports = async function aiDesign(request, response) {
   const corsAllowed = applyCors(request, response);
   if (request.method === "OPTIONS") return response.status(corsAllowed ? 204 : 403).end();
   if (!corsAllowed) return response.status(403).json({ error: "허용되지 않은 Origin입니다." });
   if (!await registeredOwner(request)) return response.status(401).json({ error: "일반관리자 로그인 후 이용해 주세요." });
 
-  const provider = request.method === "POST" ? request.body?.provider || "Gemini" : request.query?.provider || "Gemini";
+  const provider = request.method === "POST" ? request.body?.provider || "Claude" : request.query?.provider || "Claude";
   if (request.method === "GET") {
-    const configured = provider === "Gemini" ? Boolean(GEMINI_API_KEY) : Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL);
-    return response.status(configured ? 200 : 503).json({ configured, provider, error: configured ? "" : provider === "Gemini" ? "GEMINI_API_KEY 환경변수를 등록해 주세요." : "OPENAI_API_KEY와 OPENAI_MODEL 환경변수를 등록해 주세요." });
+    const { configured, error } = providerConfig(provider);
+    return response.status(configured ? 200 : 503).json({ configured, provider, error });
   }
   if (request.method !== "POST") return response.status(405).json({ error: "지원하지 않는 요청입니다." });
 
   const { type = "", context = {} } = request.body || {};
   const responseSchema = schemaFor(type);
   if (!responseSchema) return response.status(400).json({ error: "지원하지 않는 AI 요청입니다." });
-  if (provider === "Gemini" && !GEMINI_API_KEY) return response.status(503).json({ error: "GEMINI_API_KEY 환경변수를 등록해 주세요." });
-  if (provider !== "Gemini" && !process.env.OPENAI_API_KEY) return response.status(503).json({ error: "OPENAI_API_KEY 환경변수를 등록해 주세요." });
-  if (provider !== "Gemini" && !process.env.OPENAI_MODEL) return response.status(503).json({ error: "OPENAI_MODEL 환경변수를 등록해 주세요." });
+  const { configured, error: configError } = providerConfig(provider);
+  if (!configured) return response.status(503).json({ error: configError });
 
   try {
     const prompt = guidePrompt(type, context);
-    const result = provider === "Gemini" ? await callGemini(prompt, responseSchema) : await callOpenAIWithRetry(prompt, responseSchema);
+    const result = isClaudeProvider(provider)
+      ? await callClaude(prompt, responseSchema)
+      : provider === "Gemini"
+        ? await callGemini(prompt, responseSchema)
+        : await callOpenAIWithRetry(prompt, responseSchema);
     const payload = { ...result, createdAt: new Date().toISOString() };
     if (process.env.AI_DEBUG_PROMPT === "true") payload.prompt = prompt;
     return response.status(200).json(payload);

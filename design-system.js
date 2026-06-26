@@ -145,7 +145,7 @@
       transport: "예식장 기준 가장 가까운 기차역/지하철역과 버스정류장을 중심으로 안내한다. 하객이 그대로 따라 할 수 있도록 이동 방법, 하차/도착 지점, 소요시간, 확인할 내용을 2~3개의 친절한 문장으로 작성한다. '정류장 하차', '주차장 이용'처럼 명사형으로 끝나는 문장만 나열하지 말고, '이용해 주세요', '확인해 주세요'처럼 정중한 안내형으로 마무리한다. 도보는 20분 이하일 때만 적고, 불확실한 정보는 확인 필요라고 표시한다.",
       venue: "식장 공식홈페이지나 공식 안내 정보를 우선한다고 가정하고, 모르는 사실은 지어내지 않는다. 기본 안내사항은 주차와 식사다. 식사 안내에는 식권 받는 곳과 연회장 위치를 포함하고, 주차 안내에는 주차권 받는 곳, 주차권 필요 여부, 여러 주차장이 있으면 가능한 주차장을 정리한다.",
     };
-    system.aiSettings = { enabled: true, provider: "Gemini", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: defaultPrompts, referenceImages: "", ...(catalog.aiSettings || {}), mockMode: false };
+    system.aiSettings = { enabled: true, provider: "Claude", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: defaultPrompts, referenceImages: "", ...(catalog.aiSettings || {}), provider: "Claude", mockMode: false };
     system.aiSettings.prompts = { ...defaultPrompts, ...(system.aiSettings.prompts || {}) };
     const builtInLayouts = [
       { id: "classic", name: "클래식", description: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.", previewBg: "#f7f0e7", previewAccent: "#8d3440", builtIn: true },

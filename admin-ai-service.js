@@ -80,7 +80,7 @@ window.createWeddingAIService = function createWeddingAIService() {
       response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-        body: JSON.stringify({ type, provider: current.provider || "Gemini", context }),
+        body: JSON.stringify({ type, provider: current.provider || "Claude", context }),
       });
     } catch (error) {
       return fallback(`AI 서버에 연결하지 못해 임시 초안을 사용했습니다. (${error.message || "Failed to fetch"})`);
