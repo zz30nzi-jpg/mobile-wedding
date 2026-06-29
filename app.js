@@ -99,6 +99,7 @@ let weddingDate;
 let guestbookEntries = [];
 let guestbookVisibleCount = 3;
 let galleryPreviewImages = [];
+const galleryImagePreloads = new Set();
 let modalScrollY = 0;
 const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
 const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
@@ -307,6 +308,25 @@ function galleryImages() {
 
 function galleryThumbAt(index) {
   return data.galleryThumbs?.[index] || data.gallery[index] || "";
+}
+
+function preloadGalleryImage(url = "") {
+  const source = mediaUrl(url);
+  if (!source || galleryImagePreloads.has(source)) return;
+  galleryImagePreloads.add(source);
+  const image = new Image();
+  image.decoding = "async";
+  image.src = source;
+}
+
+function warmGalleryNeighbors(index = 0) {
+  const images = galleryImages();
+  if (!images.length) return;
+  const center = Number.isFinite(Number(index)) ? Number(index) : 0;
+  [center, center - 1, center + 1].forEach((candidate) => {
+    const next = (candidate + images.length) % images.length;
+    preloadGalleryImage(images[next]);
+  });
 }
 
 function shuffledGalleryPreview(images) {
@@ -922,6 +942,10 @@ function bindInformationSlider() {
 function gallerySlider(index = 0) {
   const images = galleryImages();
   const safeIndex = Math.max(0, Math.min(index, images.length - 1));
+  const fullSource = mediaUrl(images[safeIndex]);
+  const thumbSource = mediaUrl(galleryThumbAt(safeIndex));
+  const initialSource = thumbSource || fullSource;
+  const isLoadingFull = Boolean(fullSource && initialSource !== fullSource);
   return `
     <div class="gallery-slider" data-gallery-index="${safeIndex}">
       <div class="gallery-slider-head">
@@ -931,7 +955,7 @@ function gallerySlider(index = 0) {
       <div class="gallery-slide">
         <button class="gallery-nav gallery-prev" type="button" data-gallery-move="-1" aria-label="이전 사진">‹</button>
         <div class="gallery-slide-photo ${data.galleryDisplayMode === "original" ? "is-original" : "is-portrait"}">
-          <img src="${escapeHtml(mediaUrl(images[safeIndex]))}" alt="갤러리 사진 ${safeIndex + 1}" data-gallery-image decoding="async">
+          <img src="${escapeHtml(initialSource)}" alt="갤러리 사진 ${safeIndex + 1}" data-gallery-image class="${isLoadingFull ? "is-loading" : ""}" decoding="async" loading="eager" fetchpriority="high">
         </div>
         <button class="gallery-nav gallery-next" type="button" data-gallery-move="1" aria-label="다음 사진">›</button>
       </div>
@@ -939,22 +963,51 @@ function gallerySlider(index = 0) {
     </div>`;
 }
 
+function renderGallerySlide(slider, index = 0) {
+  const images = galleryImages();
+  if (!slider || !images.length) return;
+  const safeIndex = (index + images.length) % images.length;
+  const image = slider.querySelector("[data-gallery-image]");
+  const page = slider.querySelector("[data-gallery-page]");
+  const fullSource = mediaUrl(images[safeIndex]);
+  const thumbSource = mediaUrl(galleryThumbAt(safeIndex));
+  const previewSource = thumbSource || fullSource;
+  const token = `${safeIndex}-${Date.now()}`;
+  slider.dataset.galleryIndex = String(safeIndex);
+  slider.dataset.galleryLoadToken = token;
+  image.alt = `갤러리 사진 ${safeIndex + 1}`;
+  image.onload = null;
+  image.onerror = null;
+  if (previewSource && image.getAttribute("src") !== previewSource) image.src = previewSource;
+  image.classList.toggle("is-loading", Boolean(fullSource && previewSource !== fullSource));
+  page.textContent = `${safeIndex + 1} / ${images.length}`;
+  if (fullSource && previewSource !== fullSource) {
+    galleryImagePreloads.add(fullSource);
+    const fullImage = new Image();
+    fullImage.decoding = "async";
+    fullImage.onload = () => {
+      if (slider.dataset.galleryLoadToken !== token) return;
+      image.src = fullSource;
+      image.classList.remove("is-loading");
+    };
+    fullImage.onerror = () => {
+      if (slider.dataset.galleryLoadToken === token) image.classList.remove("is-loading");
+    };
+    fullImage.src = fullSource;
+  }
+  warmGalleryNeighbors(safeIndex);
+}
+
 function openGallerySlider(index = 0) {
   openModal(gallerySlider(index));
   const slider = document.querySelector(".gallery-slider");
+  renderGallerySlide(slider, Number(slider?.dataset.galleryIndex || index));
   let touchStartX = 0;
   const move = (step) => {
     const images = galleryImages();
     const current = Number(slider.dataset.galleryIndex);
     const next = (current + step + images.length) % images.length;
-    const image = slider.querySelector("[data-gallery-image]");
-    const page = slider.querySelector("[data-gallery-page]");
-    slider.dataset.galleryIndex = String(next);
-    image.classList.add("is-loading");
-    image.onload = () => image.classList.remove("is-loading");
-    image.src = mediaUrl(images[next]);
-    image.alt = `갤러리 사진 ${next + 1}`;
-    page.textContent = `${next + 1} / ${images.length}`;
+    renderGallerySlide(slider, next);
   };
   document.querySelectorAll("[data-gallery-move]").forEach((button) => {
     button.addEventListener("click", () => move(Number(button.dataset.galleryMove)));
@@ -1063,11 +1116,20 @@ function bindEvents() {
     }
     const galleryButton = event.target.closest("[data-gallery]");
     if (galleryButton) {
+      warmGalleryNeighbors(Number(galleryButton.dataset.gallery));
       openGallerySlider(Number(galleryButton.dataset.gallery));
     }
   });
 
-  document.querySelector("#gallery-more")?.addEventListener("click", () => openGallerySlider());
+  document.addEventListener("pointerover", (event) => {
+    const galleryButton = event.target.closest("[data-gallery]");
+    if (galleryButton) warmGalleryNeighbors(Number(galleryButton.dataset.gallery));
+  }, { passive: true });
+
+  document.querySelector("#gallery-more")?.addEventListener("click", () => {
+    warmGalleryNeighbors(0);
+    openGallerySlider();
+  });
 
   bindInformationSlider();
 
