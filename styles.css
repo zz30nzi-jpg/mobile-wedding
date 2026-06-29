@@ -371,7 +371,12 @@ body[data-movie-concept="you_are_the_apple"] .gallery-item:nth-child(odd) { tran
 body[data-movie-concept="you_are_the_apple"] .gallery-item:nth-child(even) { transform: rotate(0.8deg); }
 
 * { box-sizing: border-box; }
-html { max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; overscroll-behavior-x: none; }
+/* 더블탭 확대(double-tap zoom)만 차단하고 핀치 줌/스크롤은 유지합니다.
+   특히 갤러리 모달의 좌우 넘김 버튼을 빠르게 두 번 누를 때 페이지 전체가
+   확대되던 문제를 막습니다. */
+html { max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; overscroll-behavior-x: none; touch-action: manipulation; }
+/* iOS Safari 대비: 자주 빠르게 두 번 눌리는 인터랙티브 요소에도 명시 적용 */
+button, a, label, summary, [role="button"], .gallery-nav, .modal-backdrop, .modal, .gallery-item, .quick-nav button { touch-action: manipulation; }
 body {
   width: 100%;
   max-width: 100%;

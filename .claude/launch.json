@@ -5,7 +5,8 @@
       "name": "wedding",
       "runtimeExecutable": "node",
       "runtimeArgs": ["local-server.js"],
-      "port": 5599
+      "port": 5599,
+      "autoPort": true
     }
   ]
 }
