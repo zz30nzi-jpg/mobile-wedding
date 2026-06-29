@@ -3343,6 +3343,13 @@ function bindEditor() {
     autoResizeTextareas(transportList);
     refreshFrameLists();
   };
+  const uncertainTransportPattern = /확인\s*필요|확인\s*후|참고|문의|공식\s*홈페이지|홈페이지|블로그|blog|naver\.com|https?:\/\/|가능합니다|가능할\s*수|추정|예상|정확하지|불확실|미확인|또는|전화/i;
+  const hasUncertainTransportInfo = (item = {}) => {
+    const lines = Array.isArray(item.lines) ? item.lines : adminUtils.normalizeTransportLines({ title: item.title, text: item.text });
+    const texts = lines.map((line) => String(line?.text || "").trim()).filter(Boolean);
+    if (!texts.length) return true;
+    return texts.some((text) => uncertainTransportPattern.test(text));
+  };
   autoResizeTextareas(transportList);
   const aiGuideContext = () => ({
     venue: form.elements["wedding.venue"]?.value?.trim() || invitationData.wedding?.venue || "",
@@ -3363,7 +3370,10 @@ function bindEditor() {
     button.textContent = "AI 생성 중...";
     try {
       const result = await window.AI_DESIGN_SERVICE.generateTransportGuide(aiGuideContext());
-      const items = (result.items || []).map((item) => ({ title: item.title || "", lines: adminUtils.normalizeTransportLines({ title: item.title, text: item.text }), hidden: false }));
+      const items = (result.items || []).map((item) => {
+        const normalized = { title: item.title || "", lines: adminUtils.normalizeTransportLines({ title: item.title, text: item.text }), hidden: Boolean(item.hidden) };
+        return { ...normalized, hidden: normalized.hidden || hasUncertainTransportInfo(normalized) };
+      });
       if (!items.length) throw new Error("생성된 교통 안내가 없습니다.");
       renderTransportItems(items);
       alert([result.fallbackReason || "", result.caution || "", "교통 안내 초안을 생성했습니다. 확인 후 저장해 주세요."].filter(Boolean).join("\n"));
