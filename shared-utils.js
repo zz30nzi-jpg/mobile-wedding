@@ -23,14 +23,17 @@
   const TRANSPORT_TYPES = [
     { label: "셔틀버스", icon: "🚌", lines: ["⏰", "📍"] },
     { label: "버스", icon: "🚍", lines: ["🚏", "📍"] },
-    { label: "지하철", icon: "🚇", lines: ["🚆", "📍"] },
+    { label: "지하철", icon: "🚇", lines: ["🚇", "📍"] },
+    { label: "기차", icon: "🚆", lines: ["🚆", "📍"] },
     { label: "도보", icon: "🚶", lines: ["🚶", "📍"] },
     { label: "자가용", icon: "🚗", lines: ["🛣️", "🅿️"] },
   ];
   const normalizeTransportTitle = (title = "") => {
     const value = String(title || "");
     if (value.includes("셔틀")) return "셔틀버스";
-    if (value.includes("지하철") || value.includes("기차") || value.includes("전철") || value.includes("KTX")) return "지하철";
+    // 기차/KTX/SRT/철도는 지하철과 별도 카테고리로 분리합니다.
+    if (/KTX|SRT|기차|열차|철도|고속철/i.test(value)) return "기차";
+    if (value.includes("지하철") || value.includes("전철") || value.includes("메트로") || value.includes("호선")) return "지하철";
     if (value.includes("도보") || value.includes("걷기")) return "도보";
     if (value.includes("자가용") || value.includes("주차") || value.includes("차량")) return "자가용";
     return "버스";

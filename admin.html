@@ -67,13 +67,13 @@
           .catch(function () { return null; });
         loadScript("https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js", 9000).catch(function () {});
         await loadScript("./invitation-data.js?v=20260614-cache1", 12000);
-        await loadScript("./shared-utils.js?v=20260614-cache1", 12000);
+        await loadScript("./shared-utils.js?v=20260629-transport1", 12000);
         await loadScript("./section-registry.js?v=20260614-cache1", 12000);
         await loadScript("./design-system.js?v=20260614-cache1", 12000);
         await loadScript("./supabase-config.js?v=20260614-cache1", 12000);
         await loadScript("./rsvp-storage.js?v=20260629-music2", 12000);
-        await loadScript("./admin-ai-service.js?v=20260614-cache1", 12000);
-        await loadScript("./admin.js?v=20260629-music1", 12000);
+        await loadScript("./admin-ai-service.js?v=20260629-transport1", 12000);
+        await loadScript("./admin.js?v=20260629-transport2", 12000);
       }
       bootAdminScripts().catch(function (error) {
         showAdminLoadError("필수 스크립트 로딩에 실패했습니다. 네트워크를 바꾸거나 새로고침해 주세요. (" + String(error.message || error).replace(/[<>&]/g, "") + ")");

@@ -1352,7 +1352,7 @@ const venuePresets = [
     names: ["그랜드 머큐어 앰배서더 창원", "창원 그랜드머큐어 호텔웨딩", "그랜드머큐어 창원"],
     address: "경상남도 창원시 성산구 원이대로 332",
     transport: [
-      { title: "지하철", lines: [{ icon: "🚆", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요." }, { icon: "📍", text: "역에서 호텔까지 택시로 약 10분입니다." }] },
+      { title: "기차", lines: [{ icon: "🚆", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요." }, { icon: "📍", text: "역에서 호텔까지 택시로 약 10분입니다." }] },
       { title: "버스", lines: [{ icon: "🚏", text: "창원고속버스터미널에서 하차해 주세요." }, { icon: "📍", text: "터미널에서 호텔까지 택시로 약 10분입니다." }] },
       { title: "자가용", lines: [{ icon: "🛣️", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요." }, { icon: "🅿️", text: "주차 안내는 예식 전 호텔에 확인해 주세요." }] },
     ],
@@ -2053,19 +2053,27 @@ function editorData(form) {
       setNested(next, name, value.trim());
     }
   }
-  next.notices = [...form.querySelectorAll("[data-notice-editor]")].map((editor) => ({
-    title: editor.querySelector('input[name*=".title"]').value.trim(),
-    text: editor.querySelector('textarea[name*=".text"]').value.trim(),
-    hidden: editor.querySelector('input[name*=".hidden"]').checked,
-  })).filter((notice) => notice.title || notice.text);
-  next.transport = [...form.querySelectorAll("[data-transport-editor]")].map((editor) => ({
-    title: editor.querySelector('[name*=".title"]').value.trim(),
-    lines: [...editor.querySelectorAll("[data-transport-line]")].map((line) => ({
-      icon: line.querySelector('input').value.trim(),
-      text: line.querySelector('textarea').value.trim(),
-    })).filter((line) => line.icon || line.text),
-    hidden: editor.querySelector('input[name*=".hidden"]').checked,
-  })).filter((item) => item.title || item.lines.length);
+  // 안내사항/교통안내 편집기는 "편집 기능"(복사 에디터)의 툴독에만 존재합니다.
+  // 기본 에디터에서 저장할 때는 이 편집기들이 DOM에 없으므로, 무조건 덮어쓰면
+  // 저장돼 있던 notices/transport가 빈 배열로 지워집니다. 편집기가 실제로
+  // 렌더된 경우(=해당 매니저가 폼 안에 있을 때)에만 다시 수집합니다.
+  if (form.querySelector("[data-notice-manager]")) {
+    next.notices = [...form.querySelectorAll("[data-notice-editor]")].map((editor) => ({
+      title: editor.querySelector('input[name*=".title"]').value.trim(),
+      text: editor.querySelector('textarea[name*=".text"]').value.trim(),
+      hidden: editor.querySelector('input[name*=".hidden"]').checked,
+    })).filter((notice) => notice.title || notice.text);
+  }
+  if (form.querySelector("[data-transport-manager]")) {
+    next.transport = [...form.querySelectorAll("[data-transport-editor]")].map((editor) => ({
+      title: editor.querySelector('[name*=".title"]').value.trim(),
+      lines: [...editor.querySelectorAll("[data-transport-line]")].map((line) => ({
+        icon: line.querySelector('input').value.trim(),
+        text: line.querySelector('textarea').value.trim(),
+      })).filter((line) => line.icon || line.text),
+      hidden: editor.querySelector('input[name*=".hidden"]').checked,
+    })).filter((item) => item.title || item.lines.length);
+  }
   next.couple.groom.tags = fields.getAll("couple.groom.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
   next.couple.bride.tags = fields.getAll("couple.bride.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
   const quickValue = (key) => form.querySelector(`[data-quick="${key}"]`)?.value?.trim?.() || "";
@@ -3348,7 +3356,9 @@ function bindEditor() {
     autoResizeTextareas(transportList);
     refreshFrameLists();
   };
-  const uncertainTransportPattern = /확인\s*필요|확인\s*후|참고|문의|공식\s*홈페이지|홈페이지|블로그|blog|naver\.com|https?:\/\/|가능합니다|가능할\s*수|추정|예상|정확하지|불확실|미확인|또는|전화/i;
+  // "또는", "가능합니다", "예상" 등 정상 안내 문구까지 숨기던 항목은 제외하고,
+  // 실제로 불확실하거나 출처/URL 같은 군더더기일 때만 자동 숨김 처리합니다.
+  const uncertainTransportPattern = /확인\s*필요|확인\s*후|참고|문의|공식\s*홈페이지|홈페이지|블로그|blog|naver\.com|https?:\/\/|추정|불확실|미확인|정확하지|전화/i;
   const hasUncertainTransportInfo = (item = {}) => {
     const lines = Array.isArray(item.lines) ? item.lines : adminUtils.normalizeTransportLines({ title: item.title, text: item.text });
     const texts = lines.map((line) => String(line?.text || "").trim()).filter(Boolean);
