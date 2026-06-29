@@ -60,6 +60,11 @@ window.INVITATION_DATA = {
   media: {
     interludePhoto: "",
   },
+  music: {
+    enabled: true,
+    src: "",
+    volume: 0.45,
+  },
   hero: {
     eyebrow: "our wedding day",
     introEyebrow: "our wedding day",

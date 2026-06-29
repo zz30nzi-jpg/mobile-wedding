@@ -55,6 +55,9 @@ const heroMediaMarkup = () => heroActiveMedia() === "video"
   : "";
 const tel = (number) => `tel:${String(number).replace(/[^0-9+]/g, "")}`;
 const isVideoMedia = (value = "") => /\.(mp4|webm|mov)(?:$|[?#])/i.test(value);
+let invitationMusicAudio = null;
+let invitationMusicButton = null;
+let invitationMusicResumeBound = false;
 const tmapWebUrl = (query) => `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}`;
 const tmapAppUrl = (query) => `tmap://search?name=${query}`;
 const mapLinksForAddress = (address = "") => {
@@ -94,6 +97,83 @@ function normalizeWeddingDisplayDate() {
     return;
   }
   data.wedding.displayDate = weddingDisplayDateText(wedding.date, format) || wedding.displayDate || "";
+}
+
+function invitationMusicConfig() {
+  const music = data.music || {};
+  const src = String(music.src || "").trim();
+  if (!src || music.enabled === false) return null;
+  const rawVolume = Number(music.volume);
+  const volume = Number.isFinite(rawVolume) ? rawVolume : 0.45;
+  return { src: mediaUrl(src), volume: Math.max(0, Math.min(1, volume)) };
+}
+
+function givenName(name = "") {
+  const chars = Array.from(String(name || "").trim().replace(/\s+/g, ""));
+  return chars.length > 1 ? chars.slice(1).join("") : chars.join("");
+}
+
+function invitationMusicStoryLabel() {
+  const groom = givenName(data.couple?.groom?.name) || "groom";
+  const bride = givenName(data.couple?.bride?.name) || "bride";
+  return `${groom}♥${bride} story song`;
+}
+
+function updateInvitationMusicButton(isPlaying = false) {
+  if (!invitationMusicButton) return;
+  invitationMusicButton.classList.toggle("is-playing", isPlaying);
+  invitationMusicButton.setAttribute("aria-label", isPlaying ? "배경음악 끄기" : "배경음악 켜기");
+  invitationMusicButton.textContent = `${invitationMusicStoryLabel()} ${isPlaying ? "on" : "off"}`;
+}
+
+function showInvitationMusicToast() {
+  invitationMusicButton?.classList.add("is-visible");
+}
+
+function bindInvitationMusicResume() {
+  if (invitationMusicResumeBound) return;
+  invitationMusicResumeBound = true;
+  const resume = () => {
+    playInvitationMusic();
+    document.removeEventListener("pointerdown", resume);
+    document.removeEventListener("keydown", resume);
+    invitationMusicResumeBound = false;
+  };
+  document.addEventListener("pointerdown", resume, { once: true });
+  document.addEventListener("keydown", resume, { once: true });
+}
+
+function playInvitationMusic() {
+  if (!invitationMusicAudio) return;
+  invitationMusicAudio.play()
+    .then(() => updateInvitationMusicButton(true))
+    .catch(() => {
+      updateInvitationMusicButton(false);
+      bindInvitationMusicResume();
+    });
+}
+
+function setupInvitationMusic() {
+  const config = invitationMusicConfig();
+  if (!config) return;
+  invitationMusicAudio = new Audio(config.src);
+  invitationMusicAudio.loop = true;
+  invitationMusicAudio.preload = "auto";
+  invitationMusicAudio.volume = config.volume;
+  invitationMusicButton = document.createElement("button");
+  invitationMusicButton.type = "button";
+  invitationMusicButton.className = "music-toggle";
+  invitationMusicButton.setAttribute("aria-label", "배경음악 켜기");
+  invitationMusicButton.addEventListener("click", () => {
+    if (!invitationMusicAudio) return;
+    if (invitationMusicAudio.paused) playInvitationMusic();
+    else {
+      invitationMusicAudio.pause();
+      updateInvitationMusicButton(false);
+    }
+  });
+  document.body.appendChild(invitationMusicButton);
+  updateInvitationMusicButton(false);
 }
 let weddingDate;
 let guestbookEntries = [];
@@ -765,7 +845,11 @@ function shareWithKakaoTalk() {
 function playInvitationIntro() {
   const intro = document.querySelector("[data-invitation-intro]");
   const target = document.querySelector("[data-intro-name]");
-  if (!intro || !target) return;
+  if (!intro || !target) {
+    showInvitationMusicToast();
+    playInvitationMusic();
+    return;
+  }
   const scrollTop = window.scrollY;
   const preventIntroAction = (event) => event.preventDefault();
   const preventIntroKey = (event) => {
@@ -791,7 +875,11 @@ function playInvitationIntro() {
     if (index < text.length) setTimeout(typeNext, 95);
     else setTimeout(() => {
       intro.classList.add("is-finished");
-      setTimeout(unlock, 720);
+      setTimeout(() => {
+        unlock();
+        showInvitationMusicToast();
+        playInvitationMusic();
+      }, 720);
     }, 850);
   };
   setTimeout(typeNext, 350);
@@ -1345,6 +1433,7 @@ async function start() {
     document.body.style.touchAction = "pan-y";
     document.querySelector("[data-invitation-intro]")?.remove();
   } else {
+    setupInvitationMusic();
     playInvitationIntro();
   }
   applyResponsiveText();

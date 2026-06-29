@@ -800,6 +800,7 @@ function introRange(name, label, value, min, max) {
 
 function introDesignEditor(groom, bride) {
   const design = invitationData.hero.introDesign || {};
+  const music = invitationData.music || {};
   const defaultNames = `${groom.name} · ${bride.name}`;
   const introName = invitationData.hero.introName || defaultNames;
   const introNameValue = introName;
@@ -813,6 +814,10 @@ function introDesignEditor(groom, bride) {
     ${input("hero.introEyebrow", "진입 화면 영문 문구", invitationData.hero.introEyebrow || invitationData.hero.eyebrow || "")}
     ${input("hero.introName", "진입 화면 메인 문구", introNameValue)}
     ${input("hero.introDate", "진입 화면 날짜 문구 · 비우면 예식 일시 사용", invitationData.hero.introDate || "")}
+    <p class="admin-message micro-help">음악 파일은 <code>source/music</code> 폴더에 넣고, 예: <code>source/music/wedding.mp3</code> 형태로 입력해 주세요.</p>
+    ${visibilitySelect("music.enabled", "배경음악 사용", music.enabled !== false)}
+    ${input("music.src", "배경음악 파일 경로", music.src || "")}
+    ${rangeInput("music.volume", "배경음악 기본 음량", music.volume ?? 0.45, 0, 1, 0.05)}
     ${select("hero.introDesign.align", "문구 정렬", design.align || "center", [["left", "왼쪽"], ["center", "가운데"], ["right", "오른쪽"]])}
     <div class="text-layout-editor">
       ${introRange("eyebrowSize", "영문 문구 크기", design.eyebrowSize ?? 11, 8, 24)}
@@ -2027,8 +2032,10 @@ function editorData(form) {
     if (name === "appearance.preset" || name === "editorPresetId" || name.startsWith("notice.") || name.startsWith("noticePreset.") || name.startsWith("account.") || name.startsWith("transport.")) {
       continue;
     }
-    if (name === "guestPhotos.previewVisible" || name.startsWith("displaySettings.")) {
+    if (name === "guestPhotos.previewVisible" || name === "music.enabled" || name.startsWith("displaySettings.")) {
       setNested(next, name, value === "true");
+    } else if (name === "music.volume") {
+      setNested(next, name, Math.max(0, Math.min(1, Number(value) || 0)));
     } else if (name === "wedding.date") {
       setNested(next, name, weddingDateIso(value));
     } else if (name === "couple.groom.birthday" || name === "couple.bride.birthday") {
