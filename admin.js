@@ -293,7 +293,7 @@ function rememberAdminView(view) {
 }
 
 function renderAdminView(view = "") {
-  const generalViews = new Set(["editor", "copy-editor", "sections", "share-settings", "content", "gallery", "responses", "photos", "guestbook"]);
+  const generalViews = new Set(["editor", "copy-editor", "sections", "share-settings", "content", "gallery", "responses", "photos", "guestbook", "music"]);
   rememberAdminView(generalViews.has(view) ? view : "editor");
   if (view === "editor") renderEditor();
   else if (view === "design") renderEditor("", "copy");
@@ -305,6 +305,7 @@ function renderAdminView(view = "") {
   else if (view === "responses") renderResponses();
   else if (view === "photos") renderGuestPhotos();
   else if (view === "guestbook") renderGuestbookEntries();
+  else if (view === "music") renderMusicSettings();
   else renderResponses();
 }
 
@@ -319,6 +320,7 @@ function renderContentHub() {
         <button type="button" data-content-open="responses"><strong>참석 현황</strong><span>하객이 전달한 참석 여부와 동행 정보를 확인합니다.</span></button>
         <button type="button" data-content-open="photos"><strong>하객 사진·영상</strong><span>하객이 공유한 원본 파일을 저장하고 정리합니다.</span></button>
         <button type="button" data-content-open="guestbook"><strong>방명록</strong><span>축하 메시지를 확인하고 숨김 처리합니다.</span></button>
+        <button type="button" data-content-open="music"><strong>배경음악</strong><span>진입 화면 이후 재생할 배경음악을 설정합니다.</span></button>
       </div>
     </section>`;
   bindAdminNavigation();
@@ -800,7 +802,6 @@ function introRange(name, label, value, min, max) {
 
 function introDesignEditor(groom, bride) {
   const design = invitationData.hero.introDesign || {};
-  const music = invitationData.music || {};
   const defaultNames = `${groom.name} · ${bride.name}`;
   const introName = invitationData.hero.introName || defaultNames;
   const introNameValue = introName;
@@ -814,10 +815,7 @@ function introDesignEditor(groom, bride) {
     ${input("hero.introEyebrow", "진입 화면 영문 문구", invitationData.hero.introEyebrow || invitationData.hero.eyebrow || "")}
     ${input("hero.introName", "진입 화면 메인 문구", introNameValue)}
     ${input("hero.introDate", "진입 화면 날짜 문구 · 비우면 예식 일시 사용", invitationData.hero.introDate || "")}
-    <p class="admin-message micro-help">음악 파일은 <code>source/music</code> 폴더에 넣고, 예: <code>source/music/wedding.mp3</code> 형태로 입력해 주세요.</p>
-    ${visibilitySelect("music.enabled", "배경음악 사용", music.enabled !== false)}
-    ${input("music.src", "배경음악 파일 경로", music.src || "")}
-    ${rangeInput("music.volume", "배경음악 기본 음량", music.volume ?? 0.45, 0, 1, 0.05)}
+    <p class="admin-message micro-help">배경음악은 <strong>콘텐츠 관리 → 배경음악</strong>에서 설정할 수 있습니다.</p>
     ${select("hero.introDesign.align", "문구 정렬", design.align || "center", [["left", "왼쪽"], ["center", "가운데"], ["right", "오른쪽"]])}
     <div class="text-layout-editor">
       ${introRange("eyebrowSize", "영문 문구 크기", design.eyebrowSize ?? 11, 8, 24)}
@@ -4150,6 +4148,152 @@ async function downloadGuestPhotos(photos, button) {
     button.textContent = original;
     alert(`파일 다운로드를 열지 못했습니다.\n${error.message || "잠시 후 다시 시도해 주세요."}`);
   }
+}
+
+async function fetchMusicLibrary() {
+  try {
+    const response = await fetch("/api/music-list", { headers: { Accept: "application/json" } });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    return Array.isArray(payload.files) ? payload.files : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderMusicSettingsView(files) {
+  const music = invitationData.music || {};
+  const enabled = music.enabled !== false;
+  const currentSrc = String(music.src || "").trim();
+  const volume = Number.isFinite(Number(music.volume)) ? Number(music.volume) : 0.45;
+  const hasLibrary = files.length > 0;
+  const inLibrary = files.some((file) => file.src === currentSrc);
+  const options = [
+    `<option value="">사용 안 함 (선택 없음)</option>`,
+    ...files.map((file) => `<option value="${escapeAdminHtml(file.src)}" ${file.src === currentSrc ? "selected" : ""}>${escapeAdminHtml(file.name)}</option>`),
+    `<option value="__custom__" ${currentSrc && !inLibrary ? "selected" : ""}>직접 경로 입력…</option>`,
+  ].join("");
+  adminApp.innerHTML = `
+    ${adminHeader("content")}
+    ${contentBackBar("배경음악")}
+    <section class="admin-card">
+      <h2>배경음악</h2>
+      <p class="admin-message">진입 화면이 끝난 뒤 자동으로 재생됩니다. (브라우저 정책상 첫 화면 터치 후 소리가 켜질 수 있어요.)</p>
+      <p class="admin-message micro-help">음악 파일을 프로젝트의 <code>source/music</code> 폴더에 넣고 배포하면 아래 목록에 자동으로 나타납니다. 지원 형식: mp3, m4a, aac, ogg, wav.</p>
+      <form data-music-form>
+        <label class="toggle-row">
+          <input type="checkbox" name="music.enabled" ${enabled ? "checked" : ""}>
+          <span>배경음악 사용</span>
+        </label>
+        <label class="field">
+          <span>음악 파일 선택</span>
+          <select name="music.choice" data-music-choice>${options}</select>
+        </label>
+        ${hasLibrary ? "" : `<p class="admin-message micro-help">현재 <code>source/music</code> 폴더에서 음악 파일을 찾지 못했습니다. 파일을 넣고 배포하거나, 아래에 경로를 직접 입력해 주세요.</p>`}
+        <label class="field" data-music-custom-row ${currentSrc && !inLibrary ? "" : "hidden"}>
+          <span>직접 경로 입력</span>
+          <input type="text" name="music.src" data-music-src value="${escapeAdminHtml(currentSrc && !inLibrary ? currentSrc : "")}" placeholder="예: source/music/wedding.mp3">
+        </label>
+        <label class="field">
+          <span>기본 음량 (<output data-music-volume-output>${volume.toFixed(2)}</output>)</span>
+          <input type="range" name="music.volume" data-music-volume min="0" max="1" step="0.05" value="${volume}">
+        </label>
+        <div class="image-actions">
+          <button class="btn" type="button" data-music-preview>▶ 미리듣기</button>
+          <button class="btn btn-primary" type="submit">저장</button>
+        </div>
+        <audio data-music-audio preload="none"></audio>
+        <p class="admin-message micro-help" data-music-status></p>
+      </form>
+    </section>`;
+  bindAdminNavigation();
+  bindMusicSettings(files);
+}
+
+function bindMusicSettings(files) {
+  const form = adminApp.querySelector("[data-music-form]");
+  if (!form) return;
+  const choice = form.querySelector("[data-music-choice]");
+  const customRow = form.querySelector("[data-music-custom-row]");
+  const customInput = form.querySelector("[data-music-src]");
+  const volumeInput = form.querySelector("[data-music-volume]");
+  const volumeOutput = form.querySelector("[data-music-volume-output]");
+  const audio = form.querySelector("[data-music-audio]");
+  const previewButton = form.querySelector("[data-music-preview]");
+  const status = form.querySelector("[data-music-status]");
+
+  const resolveSrc = () => {
+    if (choice.value === "__custom__") return customInput.value.trim();
+    return choice.value;
+  };
+
+  choice.addEventListener("change", () => {
+    customRow.toggleAttribute("hidden", choice.value !== "__custom__");
+  });
+  volumeInput.addEventListener("input", () => {
+    volumeOutput.textContent = Number(volumeInput.value).toFixed(2);
+    if (audio) audio.volume = Math.max(0, Math.min(1, Number(volumeInput.value) || 0));
+  });
+
+  previewButton.addEventListener("click", () => {
+    const src = resolveSrc();
+    if (!src) {
+      status.textContent = "재생할 음악을 선택하거나 경로를 입력해 주세요.";
+      return;
+    }
+    if (!audio.paused && audio.dataset.src === src) {
+      audio.pause();
+      previewButton.textContent = "▶ 미리듣기";
+      return;
+    }
+    audio.src = adminMediaUrl(src);
+    audio.dataset.src = src;
+    audio.volume = Math.max(0, Math.min(1, Number(volumeInput.value) || 0));
+    audio.play()
+      .then(() => { previewButton.textContent = "⏸ 멈춤"; status.textContent = ""; })
+      .catch((error) => { status.textContent = `미리듣기를 재생하지 못했습니다. (${error?.message || "파일 경로 확인"})`; });
+  });
+  audio.addEventListener("ended", () => { previewButton.textContent = "▶ 미리듣기"; });
+  audio.addEventListener("pause", () => { previewButton.textContent = "▶ 미리듣기"; });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    const src = resolveSrc();
+    const next = {
+      enabled: form.querySelector('[name="music.enabled"]').checked,
+      src,
+      volume: Math.max(0, Math.min(1, Number(volumeInput.value) || 0)),
+    };
+    const previous = invitationData.music;
+    invitationData.music = { ...(invitationData.music || {}), ...next };
+    submitButton.disabled = true;
+    status.textContent = "저장 중…";
+    try {
+      await window.RSVP_STORAGE.saveInvitationData(invitationData);
+      status.textContent = "저장했습니다. 청첩장에서 진입 화면 이후 재생됩니다.";
+    } catch (error) {
+      invitationData.music = previous;
+      status.textContent = "";
+      notifySaveFailure(error, "배경음악을 저장");
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+}
+
+async function renderMusicSettings() {
+  rememberAdminView("music");
+  adminApp.innerHTML = `
+    ${adminHeader("content")}
+    ${contentBackBar("배경음악")}
+    <section class="admin-card">
+      <h2>배경음악</h2>
+      <p class="admin-message">음악 파일 목록을 불러오는 중입니다…</p>
+    </section>`;
+  bindAdminNavigation();
+  const files = await fetchMusicLibrary();
+  renderMusicSettingsView(files);
 }
 
 async function renderGuestPhotos() {

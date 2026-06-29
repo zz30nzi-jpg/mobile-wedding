@@ -123,7 +123,8 @@ function updateInvitationMusicButton(isPlaying = false) {
   if (!invitationMusicButton) return;
   invitationMusicButton.classList.toggle("is-playing", isPlaying);
   invitationMusicButton.setAttribute("aria-label", isPlaying ? "배경음악 끄기" : "배경음악 켜기");
-  invitationMusicButton.textContent = `${invitationMusicStoryLabel()} ${isPlaying ? "on" : "off"}`;
+  invitationMusicButton.setAttribute("title", `${invitationMusicStoryLabel()} ${isPlaying ? "on" : "off"}`);
+  invitationMusicButton.textContent = isPlaying ? "♪ ON" : "♪ OFF";
 }
 
 function showInvitationMusicToast() {
@@ -174,6 +175,8 @@ function setupInvitationMusic() {
   });
   document.body.appendChild(invitationMusicButton);
   updateInvitationMusicButton(false);
+  // 토스트처럼 잠깐 떴다 사라지지 않고, 우측 하단에 항상 작게 고정 표시합니다.
+  invitationMusicButton.classList.add("is-visible");
 }
 let weddingDate;
 let guestbookEntries = [];

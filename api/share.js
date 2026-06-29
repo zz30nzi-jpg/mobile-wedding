@@ -12,9 +12,13 @@ function escapeAttribute(value = "") {
 }
 
 function mediaPublicUrl(value = "") {
-  const path = String(value || "");
-  if (!/^invitations\/[^/]+\//.test(path)) return path;
-  return `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/invitation-media/${encodeURIComponent(path).replace(/%2F/g, "/")}`;
+  const raw = String(value || "");
+  // 캐시버스트용 ?v= 쿼리는 객체 키에서 분리한 뒤, 완성된 URL에 그대로 다시 붙입니다.
+  const queryIndex = raw.indexOf("?");
+  const clean = queryIndex >= 0 ? raw.slice(0, queryIndex) : raw;
+  const query = queryIndex >= 0 ? raw.slice(queryIndex) : "";
+  if (!/^invitations\/[^/]+\//.test(clean)) return raw;
+  return `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/invitation-media/${encodeURIComponent(clean).replace(/%2F/g, "/")}${query}`;
 }
 
 function normalizeSlug(value = "") {

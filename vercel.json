@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/music-list.js": { "includeFiles": "source/music/**" }
+  },
   "rewrites": [
     { "source": "/favicon.ico", "destination": "/favicon.svg" }
   ],

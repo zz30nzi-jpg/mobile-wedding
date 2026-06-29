@@ -1,5 +1,12 @@
 /* General admin overrides split from styles.css. Load after styles.css. */
 
+/* 배경음악 설정 폼 */
+[data-music-form] { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+[data-music-form] .toggle-row { display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
+[data-music-form] .toggle-row input { width: 18px; height: 18px; margin: 0; }
+[data-music-form] .image-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+[data-music-form] [data-music-status] { min-height: 1.2em; margin: 0; }
+
 /* Mobile scroll and shell */
 body[data-admin-area="general"] {
   position: static !important;

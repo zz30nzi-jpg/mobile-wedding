@@ -239,9 +239,14 @@ const isStoragePath = (value = "") => /^invitations\/[^/]+\//.test(String(value 
 
 function mediaPublicUrl(path = "") {
   const value = String(path || "");
-  if (!isStoragePath(value)) return value;
+  // 캐시버스트용 ?v= 쿼리는 객체 키에 포함되면 안 되므로 분리 후 결과 URL에 다시 붙입니다.
+  const queryIndex = value.indexOf("?");
+  const clean = queryIndex >= 0 ? value.slice(0, queryIndex) : value;
+  const query = queryIndex >= 0 ? value.slice(queryIndex) : "";
+  if (!isStoragePath(clean)) return value;
   const client = getSupabaseClient();
-  return client ? client.storage.from("invitation-media").getPublicUrl(value).data.publicUrl : "";
+  if (!client) return "";
+  return `${client.storage.from("invitation-media").getPublicUrl(clean).data.publicUrl}${query}`;
 }
 
 function mediaRoleFromSlot(slot = "") {
@@ -722,12 +727,15 @@ async function uploadInvitationImage(file, slot) {
   }
   const optimized = await optimizeInvitationImage(file);
   if (!client) return blobToDataUrl(optimized);
+  // 슬롯당 같은 파일명(og-image.webp 등)을 upsert로 덮어써 Storage 용량이 누적되지 않게 합니다.
+  // 대신 저장 경로 끝에 ?v=업로드시각 쿼리만 바꿔 CDN/카카오/브라우저 캐시를 무효화합니다.
+  // 1년 캐시는 그대로라, egress(전송량)는 이미지가 실제로 바뀔 때만 1회 더 발생합니다.
   const path = `invitations/${getStorageSlug()}/${role.folder}/${role.filename}`;
   const { error } = await client.storage
     .from("invitation-media")
     .upload(path, optimized, { cacheControl: "31536000", contentType: "image/webp", upsert: true });
   if (error) throw error;
-  return path;
+  return `${path}?v=${Date.now()}`;
 }
 
 async function uploadInvitationMedia(file, slot) {

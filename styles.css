@@ -419,8 +419,8 @@ body[data-layout="crimson_silk"] .invitation-intro-copy strong { color: var(--ca
 body[data-layout="navy_arch"] .invitation-intro-copy p,
 body[data-layout="navy_arch"] .invitation-intro-copy span { color: color-mix(in srgb, var(--card) 80%, transparent); }
 body.intro-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hidden; touch-action: none; }
-.music-toggle { position: fixed; z-index: 45; top: 14px; left: 50%; display: block; max-width: calc(100% - 28px); min-height: 36px; border: 1px solid color-mix(in srgb, var(--accent-dark) 22%, var(--line)); border-radius: 999px; padding: 8px 14px; background: color-mix(in srgb, var(--card) 90%, transparent); color: var(--accent-dark); box-shadow: 0 10px 26px rgba(24,32,36,0.16); font-size: 12px; font-weight: 800; line-height: 1.35; opacity: 0; pointer-events: none; text-align: center; transform: translate(-50%, -12px); backdrop-filter: blur(12px); transition: opacity 0.24s ease, transform 0.24s ease; }
-.music-toggle.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.music-toggle { position: fixed; z-index: 45; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); left: auto; top: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 30px; border: 1px solid color-mix(in srgb, var(--accent-dark) 22%, var(--line)); border-radius: 999px; padding: 5px 11px; background: color-mix(in srgb, var(--card) 90%, transparent); color: var(--accent-dark); box-shadow: 0 6px 18px rgba(24,32,36,0.16); font-size: 11px; font-weight: 800; line-height: 1; letter-spacing: 0.02em; opacity: 0; pointer-events: none; white-space: nowrap; transform: translateY(8px); backdrop-filter: blur(12px); transition: opacity 0.24s ease, transform 0.24s ease; }
+.music-toggle.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
 .music-toggle.is-playing { background: color-mix(in srgb, var(--accent) 18%, var(--card)); }
 .section { position: relative; padding: 82px 80px; text-align: center; }
 .section + .section { border-top: 0; }
