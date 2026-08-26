@@ -692,6 +692,7 @@ function render() {
       <nav class="bottom-tabbar" aria-label="주요 메뉴">
         <a href="#wedding-day"><span>일정</span></a>
         <a href="#location"><span>장소</span></a>
+        <a href="#information"><span>안내</span></a>
         <a href="#gallery"><span>사진</span></a>
         <a href="#attendance"><span>참석 여부</span></a>
         <a href="#guestbook"><span>방명록</span></a>
