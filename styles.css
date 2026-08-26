@@ -800,17 +800,16 @@ body.modal-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
 .guest-video-file strong { font-family: "Cormorant Garamond", Georgia, serif; font-size: 18px; letter-spacing: 0.12em; }
 .guest-video-file small { color: var(--muted); font-size: 10px; }
 .action-footnote { margin: 12px 0 0; color: var(--muted); font-size: 10px; }
-.information-slider { position: relative; text-align: center; }
-.information-dots { display: flex; justify-content: center; gap: 5px; margin-bottom: 14px; }
-.information-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
-.information-dots i.is-active { background: var(--accent-dark); }
-.information-slide-wrap { position: relative; padding: 0 26px; }
-.information-slide { min-height: 100px; padding: 16px 24px; background: color-mix(in srgb, var(--accent-dark) 9%, var(--card)); border-radius: 10px; }
-.information-slide h3 { margin: 18px 0 12px; color: var(--ink); font-size: 16px; font-weight: 500; }
-.information-slide p { color: var(--copy); font-size: 13px; line-height: 2; white-space: pre-line; }
-.information-arrow { position: absolute; top: 50%; border: 0; background: transparent; color: var(--ink); font-size: 36px; line-height: 1; transform: translateY(-50%); }
-.information-prev { left: -4px; }
-.information-next { right: -4px; }
+.information-tabs { position: relative; text-align: center; }
+.information-tablist { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.information-tab { min-height: 0; border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px; background: var(--card); color: var(--muted); font-size: 12px; }
+.information-tab[aria-selected="true"] { border-color: transparent; background: var(--accent-dark); color: var(--card); font-weight: 600; }
+.information-panel { min-height: 100px; border-radius: 14px; padding: 22px 20px; background: color-mix(in srgb, var(--accent-dark) 7%, var(--card)); text-align: left; }
+.information-row { display: flex; gap: 12px; }
+.information-row + .information-row { margin-top: 14px; border-top: 1px dashed color-mix(in srgb, var(--accent-dark) 22%, transparent); padding-top: 14px; }
+.information-num { display: grid; width: 22px; height: 22px; flex: none; margin-top: 2px; border: 1px solid color-mix(in srgb, var(--accent-dark) 40%, transparent); border-radius: 50%; color: var(--accent-dark); font-size: 11px; font-weight: 700; place-items: center; }
+.information-row p { margin: 0; color: var(--copy); font-size: 13px; line-height: 1.9; }
+.information-row p b { display: block; margin-bottom: 1px; color: var(--ink); font-weight: 600; }
 .snap-modal-hero { position: relative; min-height: 160px; overflow: hidden; border-radius: 12px; padding: 13px; background-position: center; background-size: cover; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 .snap-modal-hero::before { position: absolute; inset: 0; background: rgba(0,0,0,0.24); content: ""; }
 .snap-modal-hero > * { position: relative; z-index: 1; }
@@ -1450,9 +1449,9 @@ body[data-layout="editorial_red"] .section + .section::before { display: none; }
 /* 물결 섹션 구분 — accent-dark 색상으로 테마 연동 */
 body[data-layout="editorial_red"] .section::after { content: ""; display: block; margin: 24px 0 0; width: 56px; height: 12px; background-color: var(--accent-dark); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 18'%3E%3Cpath d='M4 9Q14 3 24 9Q34 15 44 9Q54 3 64 9Q74 15 84 9Q94 3 96 9' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 18'%3E%3Cpath d='M4 9Q14 3 24 9Q34 15 44 9Q54 3 64 9Q74 15 84 9Q94 3 96 9' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; opacity: 0.55; }
 /* 식장안내 슬라이드 카드 — 매거진 좌측정렬 통일 */
-body[data-layout="editorial_red"] .information-slider { text-align: left; }
-body[data-layout="editorial_red"] .information-slide { border-radius: 4px; }
-body[data-layout="editorial_red"] .information-dots { justify-content: flex-start; }
+body[data-layout="editorial_red"] .information-tabs { text-align: left; }
+body[data-layout="editorial_red"] .information-panel { border-radius: 4px; }
+body[data-layout="editorial_red"] .information-tablist { justify-content: flex-start; }
 
 /* ═══════════════════════════════════════════════════════════════
    TEMPLATE: garden_doodle  —  하트 사진 마스크 · 굵은 이름 · 낙서 테두리
@@ -2372,7 +2371,7 @@ body.copy-editor-public-preview .hero-media.copy-editable-target[data-edit-label
 body.copy-editor-public-preview .hero-content { z-index: 14; }
 body.copy-editor-public-preview .profile-card.copy-editable-target,
 body.copy-editor-public-preview .transport.copy-editable-target,
-body.copy-editor-public-preview .information-slider.copy-editable-target { z-index: 14; }
+body.copy-editor-public-preview .information-tabs.copy-editable-target { z-index: 14; }
 body.copy-editor-public-preview .copy-edit-handle { position: absolute; z-index: 24; top: -11px; right: -9px; display: grid; width: 24px; height: 24px; place-items: center; border: 0; border-radius: 50%; background: var(--accent-dark); color: var(--card); box-shadow: 0 6px 16px rgba(70,85,93,0.2); font-size: 12px; font-weight: 900; line-height: 1; pointer-events: auto; }
 body.copy-editor-public-preview .hero-media .copy-edit-handle { top: 16px; right: 16px; }
 /* 편집 타겟 표시 스타일(테두리/z-index)이 메인이미지 꾸밈(프레임) 모양을 가리지 않도록 보정 */

@@ -1,5 +1,5 @@
 (function () {
-  const defaultOrder = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
+  const defaultOrder = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"];
   const labels = {
     invitation: "초대글",
     "about-us": "두 사람 소개",

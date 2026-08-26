@@ -1,5 +1,6 @@
 ﻿const adminApp = document.querySelector("#admin-app");
 const adminUtils = window.WEDDING_UTILS || {};
+const adminNoticeRowsHtml = adminUtils.noticeRowsHtml || (() => "");
 const sectionRegistry = window.WEDDING_SECTIONS || {};
 const escapeAdminHtml = adminUtils.escapeHtml || ((value = "") =>
   String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]));
@@ -1328,8 +1329,8 @@ function parseList(value, fields) {
   });
 }
 
-const validSectionIds = sectionRegistry.ids || ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
-const defaultSectionOrder = sectionRegistry.defaultOrder || ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"];
+const validSectionIds = sectionRegistry.ids || ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"];
+const defaultSectionOrder = sectionRegistry.defaultOrder || ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"];
 const defaultSectionSettings = sectionRegistry.defaultSettings || {
   preWedding: [...defaultSectionOrder],
   weddingDay: [...defaultSectionOrder],
@@ -1353,8 +1354,8 @@ const venuePresets = [
     address: "경상남도 창원시 성산구 원이대로 332",
     transport: [
       { title: "기차", lines: [{ icon: "🚆", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요." }, { icon: "📍", text: "역에서 호텔까지 택시로 약 10분입니다." }] },
-      { title: "버스", lines: [{ icon: "🚏", text: "창원고속버스터미널에서 하차해 주세요." }, { icon: "📍", text: "터미널에서 호텔까지 택시로 약 10분입니다." }] },
-      { title: "자가용", lines: [{ icon: "🛣️", text: "내비게이션에 '그랜드머큐어 앰배서더 창원' 또는 주소를 입력해 주세요." }, { icon: "🅿️", text: "주차 안내는 예식 전 호텔에 확인해 주세요." }] },
+      { title: "버스", lines: [{ icon: "🚏", text: "시외버스 · 창원종합터미널 하차 후 시내버스 103번 또는 택시로 약 3km입니다." }, { icon: "📍", text: "시내버스 · 시티7 또는 창원컨벤션센터 정류장에서 하차해 주세요." }] },
+      { title: "자가용", lines: [{ icon: "🛣️", text: "내비게이션에 '그랜드머큐어 앰배서더 창원'을 입력해 주세요." }, { icon: "🅿️", text: "호텔 주차장은 3시간 무료입니다. 자세한 내용은 식장 안내를 확인해 주세요." }] },
     ],
   },
 ];
@@ -1648,6 +1649,7 @@ function noticeManager(notices = []) {
   return `
     <section class="editor-subsection"><div class="editor-subsection-head"><strong>식장 안내</strong><span>식사, 주차, 촬영 등 하객에게 알릴 내용을 관리합니다.</span></div>
     <p class="admin-message micro-help">내용을 입력하지 않으면 청첩장에서 숨김처리됩니다.</p>
+    <p class="admin-message micro-help">한 줄에 하나씩 적고 «라벨 · 내용» 형식으로 쓰면 번호가 붙은 항목으로 나뉩니다. 구분자 «·» 없는 줄은 바로 윗 항목에 이어집니다.</p>
     <div class="notice-manager" data-notice-manager>
       <div class="notice-manager-list" data-notice-list>${editableNotices.map(noticeEditor).join("")}</div>
       <div class="notice-ai-actions">
@@ -2295,20 +2297,23 @@ function bindEditor() {
         .join("");
     }
     const notices = (draft.notices || []).filter((notice) => !notice.hidden && notice.text?.trim());
-    const informationSlide = frameDocument.querySelector("[data-information-slide]");
-    if (informationSlide) {
-      informationSlide.innerHTML = notices.length
-        ? `<article class="information-slide"><h3>${escapeAdminHtml(notices[0].title)}</h3><p>${escapeAdminHtml(notices[0].text).replace(/\n/g, "<br>")}</p></article>`
-        : '<article class="information-slide"><p>표시할 식장 안내가 없습니다.</p></article>';
+    const informationTabs = frameDocument.querySelector(".information-tabs");
+    if (informationTabs) {
+      informationTabs.setAttribute("data-information-index", "0");
+      const tablist = informationTabs.querySelector(".information-tablist");
+      if (tablist) {
+        tablist.innerHTML = notices.map((notice, index) => `<button class="information-tab" type="button" role="tab" aria-selected="${index === 0}" data-information-tab="${index}">${escapeAdminHtml(notice.title)}</button>`).join("");
+      }
+      const informationPanel = informationTabs.querySelector("[data-information-panel]");
+      if (informationPanel) {
+        informationPanel.innerHTML = notices.length
+          ? adminNoticeRowsHtml(notices[0])
+          : '<div class="information-row"><p>표시할 식장 안내가 없습니다.</p></div>';
+      }
     }
-    frameDocument.querySelectorAll(".information-dots i").forEach((dot, index) => {
-      dot.hidden = index >= notices.length;
-      dot.classList.toggle("is-active", index === 0);
-    });
-    frameDocument.querySelector(".information-slider")?.setAttribute("data-information-index", "0");
     const informationSection = frameDocument.querySelector("#information");
     if (informationSection) informationSection.hidden = notices.length === 0;
-    frameDocument.querySelectorAll(".transport, .information-slider").forEach((item) => item.classList.add("copy-editable-target"));
+    frameDocument.querySelectorAll(".transport, .information-tabs").forEach((item) => item.classList.add("copy-editable-target"));
     refreshEditHandles();
   };
   const refreshFrameGallery = () => {
@@ -2825,7 +2830,7 @@ function bindEditor() {
       }
       fields.forEach((field) => { field.value = value; });
     };
-    const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-slider, .information-slide, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve";
+    const editableSelector = ".hero-media, .profile-card, .profile-photo, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, .transport div, #gallery, .gallery-item, .information-tabs, .information-panel, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve";
     let isMarkingEditableAreas = false;
     const clearEditableAreas = () => {
       frameDocument.querySelectorAll("[data-copy-edit-handle]").forEach((item) => item.remove());
@@ -2853,7 +2858,7 @@ function bindEditor() {
           paragraphs.forEach((paragraph) => group.appendChild(paragraph));
         }
       }
-      frameDocument.querySelectorAll(".hero-media, .profile-card, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, #gallery, .information-slider, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve").forEach((item) => {
+      frameDocument.querySelectorAll(".hero-media, .profile-card, .hero-eyebrow, .hero-names, .hero-date, .section-label, .section-title, .location-venue, .location-hall, .location-address, .transport, #gallery, .information-tabs, #wedding-snap .subtle, #attendance .subtle, #account .subtle, #guestbook .subtle, .invitation-copy-group, .ending-content .preserve").forEach((item) => {
         item.classList.add("copy-editable-target");
       });
       window.WEDDING_DESIGN?.applyTextStyles?.(invitationData, frameDocument);
@@ -2868,7 +2873,7 @@ function bindEditor() {
       frameDocument.querySelector(".location-address")?.setAttribute("data-edit-label", "주소");
       frameDocument.querySelector(".transport")?.setAttribute("data-edit-label", "교통 안내 항목");
       frameDocument.querySelector("#gallery")?.setAttribute("data-edit-label", "갤러리 사진");
-      frameDocument.querySelector(".information-slider")?.setAttribute("data-edit-label", "식장 안내 항목");
+      frameDocument.querySelector(".information-tabs")?.setAttribute("data-edit-label", "식장 안내 항목");
       frameDocument.querySelector("#wedding-snap .subtle")?.setAttribute("data-edit-label", "게스트앨범 안내 문구");
       frameDocument.querySelector("#attendance .subtle")?.setAttribute("data-edit-label", "참석 안내 문구");
       frameDocument.querySelector("#account .subtle")?.setAttribute("data-edit-label", "계좌 안내 문구");

@@ -39,6 +39,7 @@ const escapeLineHtml = sharedUtils.escapeLineHtml || ((value = "") => escapeHtml
 const TRANSPORT_TYPES = sharedUtils.TRANSPORT_TYPES || [];
 const normalizeTransportTitle = sharedUtils.normalizeTransportTitle || ((title = "") => title);
 const normalizeTransportLines = sharedUtils.normalizeTransportLines || (() => []);
+const noticeRowsHtml = sharedUtils.noticeRowsHtml || (() => "");
 const transportType = (title) => TRANSPORT_TYPES.find((type) => type.label === normalizeTransportTitle(title)) || TRANSPORT_TYPES[0];
 const transportPanelHtml = (item) => {
   const type = transportType(item.title);
@@ -189,8 +190,8 @@ const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
 const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
 const defaultSectionSettings = sectionRegistry.defaultSettings || {
-  preWedding: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
-  weddingDay: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "gallery", "wedding-snap", "information", "attendance", "account", "guestbook"],
+  preWedding: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"],
+  weddingDay: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"],
 };
 
 function applyTheme(theme) {
@@ -660,7 +661,7 @@ function render() {
 
       ${(data.notices || []).filter((notice) => !notice.hidden && notice.text?.trim()).length ? `<section class="section" id="information">
         ${sectionCopy("information", "Information", "식장 안내")}
-        ${informationSliderMarkup()}
+        ${informationTabsMarkup()}
       </section>` : ""}
 
       <section class="section" id="attendance">
@@ -989,45 +990,43 @@ function guestbookForm() {
     </form>`;
 }
 
-function informationSliderMarkup() {
-  const notices = data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
+function visibleNotices() {
+  return data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
+}
+
+function informationTabsMarkup() {
+  const notices = visibleNotices();
   return `
-    <div class="information-slider" data-information-index="0">
-      <div class="information-dots">${notices.map((_, index) => `<i class="${index === 0 ? "is-active" : ""}"></i>`).join("")}</div>
-      <div class="information-slide-wrap">
-        <div data-information-slide></div>
-        <button class="information-arrow information-prev" type="button" data-information-move="-1" aria-label="이전 안내">‹</button>
-        <button class="information-arrow information-next" type="button" data-information-move="1" aria-label="다음 안내">›</button>
-      </div>
+    <div class="information-tabs" data-information-index="0">
+      <div class="information-tablist" role="tablist">${notices.map((notice, index) => `<button class="information-tab" type="button" role="tab" aria-selected="${index === 0}" data-information-tab="${index}">${escapeHtml(notice.title)}</button>`).join("")}</div>
+      <div class="information-panel" role="tabpanel" data-information-panel></div>
     </div>`;
 }
 
-function bindInformationSlider() {
-  const slider = document.querySelector(".information-slider");
-  if (!slider) return;
-  const notices = data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
+function bindInformationTabs() {
+  const root = document.querySelector(".information-tabs");
+  if (!root) return;
+  const notices = visibleNotices();
   let touchStartX = 0;
-  const renderSlide = () => {
-    const index = Number(slider.dataset.informationIndex);
-    const notice = notices[index];
-    slider.querySelector("[data-information-slide]").innerHTML = `
-      <article class="information-slide">
-        <h3>${escapeHtml(notice.title)}</h3>
-        <p>${escapeLineHtml(notice.text)}</p>
-      </article>`;
-    slider.querySelectorAll(".information-dots i").forEach((dot, dotIndex) => dot.classList.toggle("is-active", dotIndex === index));
+  const draw = () => {
+    const index = Number(root.dataset.informationIndex);
+    root.querySelector("[data-information-panel]").innerHTML = noticeRowsHtml(notices[index]);
+    root.querySelectorAll("[data-information-tab]").forEach((tab, tabIndex) => tab.setAttribute("aria-selected", String(tabIndex === index)));
   };
   const move = (step) => {
-    slider.dataset.informationIndex = String((Number(slider.dataset.informationIndex) + step + notices.length) % notices.length);
-    renderSlide();
+    root.dataset.informationIndex = String((Number(root.dataset.informationIndex) + step + notices.length) % notices.length);
+    draw();
   };
-  slider.querySelectorAll("[data-information-move]").forEach((button) => button.addEventListener("click", () => move(Number(button.dataset.informationMove))));
-  slider.addEventListener("touchstart", (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
-  slider.addEventListener("touchend", (event) => {
+  root.querySelectorAll("[data-information-tab]").forEach((tab) => tab.addEventListener("click", () => {
+    root.dataset.informationIndex = tab.dataset.informationTab;
+    draw();
+  }));
+  root.addEventListener("touchstart", (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+  root.addEventListener("touchend", (event) => {
     const distance = event.changedTouches[0].clientX - touchStartX;
     if (Math.abs(distance) > 45) move(distance > 0 ? -1 : 1);
   }, { passive: true });
-  renderSlide();
+  draw();
 }
 
 function gallerySlider(index = 0) {
@@ -1222,7 +1221,7 @@ function bindEvents() {
     openGallerySlider();
   });
 
-  bindInformationSlider();
+  bindInformationTabs();
 
   document.querySelector("#attendance-open")?.addEventListener("click", () => {
     openModal(attendanceForm());

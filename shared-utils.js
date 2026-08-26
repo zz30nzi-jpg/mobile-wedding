@@ -49,6 +49,20 @@
     }));
   };
 
+  // 식장 안내 본문: "라벨 · 내용" 줄이 새 행을 열고, 구분자 없는 줄은 앞 행에 이어 붙습니다.
+  const parseNoticeRows = (text = "") => String(text).split("\n").map((line) => line.trim()).filter(Boolean).reduce((rows, line) => {
+    const divider = line.indexOf(" · ");
+    if (divider > 0) rows.push({ label: line.slice(0, divider).trim(), lines: [line.slice(divider + 3).trim()] });
+    else if (rows.length) rows[rows.length - 1].lines.push(line);
+    else rows.push({ label: "", lines: [line] });
+    return rows;
+  }, []);
+  const noticeRowsHtml = (notice = {}) => parseNoticeRows(notice.text).map((row, index) => `
+    <div class="information-row">
+      <span class="information-num">${index + 1}</span>
+      <p>${row.label ? `<b>${escapeHtml(row.label)}</b>` : ""}${escapeLineHtml(row.lines.join("\n"))}</p>
+    </div>`).join("");
+
   window.WEDDING_UTILS = {
     escapeHtml,
     escapeLineHtml,
@@ -60,5 +74,7 @@
     TRANSPORT_TYPES,
     normalizeTransportTitle,
     normalizeTransportLines,
+    parseNoticeRows,
+    noticeRowsHtml,
   };
 })();
