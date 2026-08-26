@@ -48,8 +48,8 @@ window.INVITATION_DATA = {
     displayDate: "2026. 10. 04. 일요일 오후 12시 20분",
     displayDateFormat: "long_ko",
     displayDateCustom: "",
-    venue: "그랜드 머큐어 앰배서더 창원",
-    hall: "2F 그랜드볼룸홀",
+    venue: "그랜드머큐어 앰배서더 창원 (구 풀만호텔)",
+    hall: "2F 그랜드볼룸",
     address: "경상남도 창원시 성산구 원이대로 332",
     mapLinks: [
       { label: "네이버 지도", url: "https://map.naver.com/p/search/%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%EC%B0%BD%EC%9B%90%EC%8B%9C%20%EC%84%B1%EC%82%B0%EA%B5%AC%20%EC%9B%90%EC%9D%B4%EB%8C%80%EB%A1%9C%20332" },
@@ -109,7 +109,7 @@ window.INVITATION_DATA = {
     guestbook: "따뜻한 마음을 짧게 남겨 주세요.",
   },
   transport: [
-    { title: "자가용", text: "내비게이션에 '그랜드 머큐어 앰배서더 창원' 또는 주소를 입력해 주세요.\n주차 안내는 예식 전 호텔에 확인해 주세요." },
+    { title: "자가용", text: "내비게이션에 '그랜드머큐어 앰배서더 창원' 또는 주소를 입력해 주세요.\n주차 안내는 예식 전 호텔에 확인해 주세요." },
     { title: "버스", text: "창원고속버스터미널에서 하차해 주세요.\n터미널에서 호텔까지 택시로 약 10분입니다." },
     { title: "지하철", text: "KTX 창원중앙역 또는 창원역에서 하차해 주세요.\n역에서 호텔까지 택시로 약 10분입니다." },
   ],
