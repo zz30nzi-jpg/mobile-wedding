@@ -407,7 +407,7 @@ function warmGalleryNeighbors(index = 0) {
   const images = galleryImages();
   if (!images.length) return;
   const center = Number.isFinite(Number(index)) ? Number(index) : 0;
-  [center, center - 1, center + 1].forEach((candidate) => {
+  [center, center + 1].forEach((candidate) => {
     const next = (candidate + images.length) % images.length;
     preloadGalleryImage(images[next]);
   });
@@ -595,7 +595,7 @@ function render() {
         <div class="profile-grid">
           ${[["신랑", groom], ["신부", bride]].map(([role, person]) => `
             <article class="profile-card">
-              <div class="media profile-photo" ${mediaStyle(person.photo)}></div>
+              <div class="media profile-photo" ${lazyMediaStyle(person.photo)}></div>
               <div class="profile-body">
                 <h3 class="profile-name single-line-fit"><span class="profile-role">${role}</span><span class="profile-person-name">${escapeHtml(person.name)}</span></h3>
                 ${displaySettings.showProfileParents !== false && parentDisplay(person) ? `<div class="profile-parents single-line-fit">${escapeHtml(parentDisplay(person))}</div>` : ""}
@@ -616,7 +616,7 @@ function render() {
       </section>
 
       <section class="section photo-interlude" id="photo-interlude">
-        <div class="photo-interlude-media media" ${mediaStyle(data.media?.interludePhoto)}></div>
+        <div class="photo-interlude-media media" ${lazyMediaStyle(data.media?.interludePhoto)}></div>
       </section>
 
       <section class="section" id="location">
@@ -685,7 +685,7 @@ function render() {
       </section>
 
       <section class="ending">
-        <div class="media" ${mediaStyle(data.ending.image)}></div>
+        <div class="media" ${lazyMediaStyle(data.ending.image)}></div>
         <div class="ending-content"><p class="preserve">${escapeHtml(data.ending.text)}</p><p class="ending-names">${escapeHtml(groom.name)} · ${escapeHtml(bride.name)}</p><button class="btn" id="share-button">청첩장 공유하기</button></div>
       </section>
       <footer class="footer"></footer>
