@@ -646,6 +646,21 @@ async function findAdminLoginId({ recoveryName = "", recoveryPhone = "" } = {}) 
   return data?.masked_email || "";
 }
 
+// canvas.toBlob은 브라우저가 해당 포맷의 손실 인코딩을 지원하지 않으면 예외 없이
+// 무손실 WebP나 PNG를 돌려주고 quality 인자를 무시합니다(구형 iOS Safari 등).
+// 이 경우 파일이 10배 이상 커지므로, 픽셀당 바이트가 과도하면 모든 브라우저가
+// quality를 지원하는 JPEG로 다시 인코딩합니다.
+const LOSSY_BYTES_PER_PIXEL_LIMIT = 0.6;
+
+async function encodeCanvasBlob(canvas, quality) {
+  const toBlob = (type) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  const limit = canvas.width * canvas.height * LOSSY_BYTES_PER_PIXEL_LIMIT;
+  const webp = await toBlob("image/webp");
+  if (webp && webp.type === "image/webp" && webp.size <= limit) return webp;
+  const jpeg = await toBlob("image/jpeg");
+  return jpeg && (!webp || jpeg.size < webp.size) ? jpeg : webp;
+}
+
 async function optimizeInvitationImage(file) {
   if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
     throw new Error("JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.");
@@ -660,8 +675,8 @@ async function optimizeInvitationImage(file) {
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.78));
-    if (!blob) throw new Error("이미지를 WebP로 변환하지 못했습니다.");
+    const blob = await encodeCanvasBlob(canvas, 0.78);
+    if (!blob) throw new Error("이미지를 변환하지 못했습니다.");
     return blob;
   } catch {
     throw new Error("이미지를 최적화하지 못했습니다. JPG, PNG, WEBP 이미지를 다시 선택해 주세요.");
@@ -690,11 +705,11 @@ async function createGalleryImageVariants(file) {
       canvas.width = Math.max(1, Math.round(bitmap.width * scale));
       canvas.height = Math.max(1, Math.round(bitmap.height * scale));
       canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      return new Promise((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+      return encodeCanvasBlob(canvas, quality);
     };
     const [display, thumb] = await Promise.all([renderVariant(1024, 0.7), renderVariant(480, 0.7)]);
     bitmap.close();
-    if (!display || !thumb) throw new Error("이미지를 WebP로 변환하지 못했습니다.");
+    if (!display || !thumb) throw new Error("이미지를 변환하지 못했습니다.");
     return { display, thumb };
   } catch {
     throw new Error("이미지를 최적화하지 못했습니다. JPG, PNG, WEBP 이미지를 다시 선택해 주세요.");
@@ -718,8 +733,8 @@ async function uploadInvitationImage(file, slot) {
     const path = `invitations/${getStorageSlug()}/${role.folder}/${base}-${ts}.webp`;
     const thumbPath = `invitations/${getStorageSlug()}/${role.folder}/${base}-${ts}-thumb.webp`;
     const [displayUpload, thumbUpload] = await Promise.all([
-      client.storage.from("invitation-media").upload(path, display, { cacheControl: "31536000", contentType: "image/webp", upsert: true }),
-      client.storage.from("invitation-media").upload(thumbPath, thumb, { cacheControl: "31536000", contentType: "image/webp", upsert: true }),
+      client.storage.from("invitation-media").upload(path, display, { cacheControl: "31536000", contentType: display.type, upsert: true }),
+      client.storage.from("invitation-media").upload(thumbPath, thumb, { cacheControl: "31536000", contentType: thumb.type, upsert: true }),
     ]);
     if (displayUpload.error) throw displayUpload.error;
     if (thumbUpload.error) throw thumbUpload.error;
@@ -733,7 +748,7 @@ async function uploadInvitationImage(file, slot) {
   const path = `invitations/${getStorageSlug()}/${role.folder}/${role.filename}`;
   const { error } = await client.storage
     .from("invitation-media")
-    .upload(path, optimized, { cacheControl: "31536000", contentType: "image/webp", upsert: true });
+    .upload(path, optimized, { cacheControl: "31536000", contentType: optimized.type, upsert: true });
   if (error) throw error;
   return `${path}?v=${Date.now()}`;
 }
@@ -814,7 +829,7 @@ async function createGuestPhotoThumb(file) {
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
-    return await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.58));
+    return await encodeCanvasBlob(canvas, 0.58);
   } catch {
     return null;
   }
@@ -851,7 +866,7 @@ async function uploadGuestPhotos(files, onProgress = () => {}) {
     if (thumb) {
       const { error: thumbError } = await client.storage
         .from("guest-photos")
-        .upload(guestPhotoThumbPath(path), thumb, { cacheControl: "604800", contentType: "image/webp", upsert: true });
+        .upload(guestPhotoThumbPath(path), thumb, { cacheControl: "604800", contentType: thumb.type, upsert: true });
       if (thumbError) console.warn("하객 사진 썸네일 업로드 실패", thumbError);
     }
     uploaded.push(path);
