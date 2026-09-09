@@ -707,7 +707,7 @@ async function createGalleryImageVariants(file) {
       canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       return encodeCanvasBlob(canvas, quality);
     };
-    const [display, thumb] = await Promise.all([renderVariant(1024, 0.7), renderVariant(480, 0.7)]);
+    const [display, thumb] = await Promise.all([renderVariant(1280, 0.82), renderVariant(480, 0.75)]);
     bitmap.close();
     if (!display || !thumb) throw new Error("이미지를 변환하지 못했습니다.");
     return { display, thumb };
