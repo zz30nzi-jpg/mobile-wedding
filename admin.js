@@ -294,7 +294,7 @@ function rememberAdminView(view) {
 }
 
 function renderAdminView(view = "") {
-  const generalViews = new Set(["editor", "copy-editor", "sections", "share-settings", "content", "gallery", "responses", "photos", "guestbook", "music"]);
+  const generalViews = new Set(["editor", "copy-editor", "sections", "share-settings", "content", "gallery", "responses", "photos", "guestbook", "music", "stickers"]);
   rememberAdminView(generalViews.has(view) ? view : "editor");
   if (view === "editor") renderEditor();
   else if (view === "design") renderEditor("", "copy");
@@ -307,6 +307,7 @@ function renderAdminView(view = "") {
   else if (view === "photos") renderGuestPhotos();
   else if (view === "guestbook") renderGuestbookEntries();
   else if (view === "music") renderMusicSettings();
+  else if (view === "stickers") renderStickerSettings();
   else renderResponses();
 }
 
@@ -322,6 +323,7 @@ function renderContentHub() {
         <button type="button" data-content-open="photos"><strong>하객 사진·영상</strong><span>하객이 공유한 원본 파일을 저장하고 정리합니다.</span></button>
         <button type="button" data-content-open="guestbook"><strong>방명록</strong><span>축하 메시지를 확인하고 숨김 처리합니다.</span></button>
         <button type="button" data-content-open="music"><strong>배경음악</strong><span>진입 화면 이후 재생할 배경음악을 설정합니다.</span></button>
+        <button type="button" data-content-open="stickers"><strong>스티커</strong><span>손그림 스티커를 원하는 섹션 모서리에 붙입니다.</span></button>
       </div>
     </section>`;
   bindAdminNavigation();
@@ -4309,6 +4311,165 @@ async function renderMusicSettings() {
   bindAdminNavigation();
   const files = await fetchMusicLibrary();
   renderMusicSettingsView(files);
+}
+
+function stickerSectionLabel(id) {
+  if (id === "ending") return "마지막 인사";
+  return window.WEDDING_SECTIONS?.labels?.[id] || id;
+}
+
+function stickerControlsMarkup(item) {
+  const stickers = window.WEDDING_STICKERS;
+  if (!item) return '<p class="admin-message micro-help">미리보기에서 스티커를 누르면 색상·크기·기울기를 바꿀 수 있어요.</p>';
+  const sticker = stickers.list.find((entry) => entry.id === item.sticker);
+  const isCustomColor = item.color && !stickers.colors.some((entry) => entry.id === item.color);
+  return `<div class="sticker-controls-head">
+      <span class="sticker-row-preview" style="color:${escapeAdminHtml(item.color || "var(--accent-dark)")};transform:rotate(${item.rotate}deg)">${sticker?.svg || ""}</span>
+      <div><strong>${escapeAdminHtml(sticker?.name || "")}</strong><small>${escapeAdminHtml(stickerSectionLabel(item.section))} 섹션</small></div>
+      <button class="btn sticker-row-remove" type="button" data-sticker-remove>삭제</button>
+    </div>
+    <div class="sticker-color-field"><span>색상</span><div class="sticker-swatches">
+      ${stickers.colors.map((entry) => `<button type="button" class="sticker-swatch ${entry.id === item.color ? "is-active" : ""}" data-sticker-color="${entry.id}" style="--swatch:${entry.id || "var(--accent-dark)"}" title="${escapeAdminHtml(entry.label)}" aria-label="${escapeAdminHtml(entry.label)}">${entry.id ? "" : "<small>테마</small>"}</button>`).join("")}
+      <label class="sticker-swatch sticker-swatch-custom ${isCustomColor ? "is-active" : ""}" style="--swatch:${escapeAdminHtml(item.color || "transparent")}" title="직접 고르기"><input type="color" data-sticker-field="color" value="${escapeAdminHtml(item.color || "#7b1f24")}" aria-label="색상 직접 고르기"></label>
+    </div></div>
+    <div class="sticker-row-fields">
+      <label class="field"><span>크기 (<output>${item.size}px</output>)</span><input type="range" data-sticker-field="size" min="40" max="160" step="4" value="${item.size}"></label>
+      <label class="field"><span>기울기 (<output>${item.rotate}°</output>)</span><input type="range" data-sticker-field="rotate" min="-30" max="30" step="1" value="${item.rotate}"></label>
+    </div>`;
+}
+
+function renderStickerSettings() {
+  rememberAdminView("stickers");
+  const stickers = window.WEDDING_STICKERS;
+  const draft = (Array.isArray(invitationData.stickers) ? invitationData.stickers : []).map(stickers.normalize);
+  let selectedId = draft[0]?.id || "";
+  adminApp.innerHTML = `
+    ${adminHeader("content")}
+    ${contentBackBar("스티커")}
+    <section class="admin-card sticker-settings">
+      <h2>스티커</h2>
+      <p class="admin-message">붙이고 싶은 위치까지 미리보기를 스크롤한 뒤 손그림을 누르면 화면 가운데에 붙어요. 스티커를 손가락으로 끌어 원하는 자리에 놓으세요.</p>
+      <div class="sticker-palette">
+        ${stickers.list.map((entry) => `<button type="button" data-sticker-add="${entry.id}" title="${escapeAdminHtml(entry.name)}"><span>${entry.svg}</span><small>${escapeAdminHtml(entry.name)}</small></button>`).join("")}
+      </div>
+      <div class="sticker-stage">
+        <iframe class="sticker-preview-frame" src="./index.html?copyEditorPreview=1&stickerEditor=1" title="스티커 배치 미리보기" data-sticker-frame></iframe>
+      </div>
+      <div class="sticker-chips" data-sticker-chips></div>
+      <div class="sticker-controls" data-sticker-controls></div>
+      <div class="image-actions">
+        <button class="btn btn-primary" type="button" data-sticker-save>저장</button>
+      </div>
+      <p class="admin-message micro-help" data-sticker-status></p>
+    </section>`;
+  bindAdminNavigation();
+
+  const frame = adminApp.querySelector("[data-sticker-frame]");
+  const chips = adminApp.querySelector("[data-sticker-chips]");
+  const controls = adminApp.querySelector("[data-sticker-controls]");
+  const status = adminApp.querySelector("[data-sticker-status]");
+  const selected = () => draft.find((item) => item.id === selectedId);
+  const markDirty = () => { status.textContent = "저장 버튼을 눌러야 청첩장에 반영됩니다."; };
+  const postFrame = (message) => frame.contentWindow?.postMessage({ source: "wedding-sticker-admin", ...message }, location.origin);
+  const syncFrame = () => postFrame({ type: "set", stickers: draft, selectedId });
+  const paintChips = () => {
+    chips.innerHTML = draft.map((item) => {
+      const sticker = stickers.list.find((entry) => entry.id === item.sticker);
+      return `<button type="button" class="sticker-chip ${item.id === selectedId ? "is-active" : ""}" data-sticker-select="${item.id}" style="color:${escapeAdminHtml(item.color || "var(--accent-dark)")}">${sticker?.svg || ""}<small>${escapeAdminHtml(stickerSectionLabel(item.section))}</small></button>`;
+    }).join("");
+  };
+  const paintControls = () => { controls.innerHTML = stickerControlsMarkup(selected()); };
+  const select = (id, { focus = false } = {}) => {
+    selectedId = id;
+    paintChips();
+    paintControls();
+    syncFrame();
+    if (focus) postFrame({ type: "focus", id });
+  };
+  const updateSelected = (patch, { repaint = true } = {}) => {
+    const index = draft.findIndex((item) => item.id === selectedId);
+    if (index < 0) return;
+    draft[index] = stickers.normalize({ ...draft[index], ...patch });
+    markDirty();
+    syncFrame();
+    if (repaint) { paintChips(); paintControls(); }
+    return draft[index];
+  };
+  paintChips();
+  paintControls();
+
+  const onMessage = (event) => {
+    if (event.origin !== location.origin || event.source !== frame.contentWindow || event.data?.source !== "wedding-sticker-editor") return;
+    const message = event.data;
+    if (message.type === "ready") syncFrame();
+    else if (message.type === "select") select(message.id);
+    else if (message.type === "moved") {
+      selectedId = message.id;
+      updateSelected({ section: message.section, x: message.x, y: message.y });
+    } else if (message.type === "placed") {
+      const item = stickers.normalize(message.item);
+      draft.push(item);
+      markDirty();
+      select(item.id);
+    }
+  };
+  window.addEventListener("message", onMessage);
+  // Drop the listener once this page is replaced by another admin view.
+  const observer = new MutationObserver(() => {
+    if (adminApp.contains(frame)) return;
+    window.removeEventListener("message", onMessage);
+    observer.disconnect();
+  });
+  observer.observe(adminApp, { childList: true });
+
+  adminApp.querySelectorAll("[data-sticker-add]").forEach((button) => button.addEventListener("click", () => {
+    postFrame({ type: "place", item: stickers.normalize({ sticker: button.dataset.stickerAdd }) });
+  }));
+  chips.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-sticker-select]");
+    if (chip) select(chip.dataset.stickerSelect, { focus: true });
+  });
+  controls.addEventListener("click", (event) => {
+    const swatch = event.target.closest("[data-sticker-color]");
+    if (swatch) updateSelected({ color: swatch.dataset.stickerColor });
+    if (event.target.closest("[data-sticker-remove]")) {
+      draft.splice(draft.findIndex((item) => item.id === selectedId), 1);
+      markDirty();
+      select(draft[draft.length - 1]?.id || "");
+    }
+  });
+  controls.addEventListener("input", (event) => {
+    const field = event.target.dataset.stickerField;
+    if (!field) return;
+    const item = updateSelected({ [field]: event.target.value }, { repaint: false });
+    if (!item) return;
+    const preview = controls.querySelector(".sticker-row-preview");
+    if (field === "color") preview.style.color = item.color;
+    if (field === "rotate") preview.style.transform = `rotate(${item.rotate}deg)`;
+    const output = event.target.closest(".field")?.querySelector("output");
+    if (output) output.textContent = field === "size" ? `${item.size}px` : `${item.rotate}°`;
+  });
+  controls.addEventListener("change", (event) => {
+    if (event.target.type === "color") { paintChips(); paintControls(); }
+  });
+
+  adminApp.querySelector("[data-sticker-save]").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const previous = invitationData.stickers;
+    invitationData.stickers = draft.map((item) => ({ ...item }));
+    button.disabled = true;
+    status.textContent = "저장 중…";
+    try {
+      await window.RSVP_STORAGE.saveInvitationData(invitationData);
+      status.textContent = `저장했습니다. 스티커 ${draft.length}개가 청첩장에 표시됩니다.`;
+    } catch (error) {
+      invitationData.stickers = previous;
+      status.textContent = "";
+      notifySaveFailure(error, "스티커를 저장");
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
 async function renderGuestPhotos() {

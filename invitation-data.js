@@ -56,6 +56,7 @@ window.INVITATION_DATA = {
   media: {
     interludePhoto: "",
   },
+  stickers: [],
   music: {
     enabled: true,
     src: "",

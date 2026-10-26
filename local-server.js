@@ -16,6 +16,13 @@ const types = {
   ".mp4": "video/mp4",
   ".mov": "video/quicktime",
   ".webm": "video/webm",
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".ogg": "audio/ogg",
+  ".oga": "audio/ogg",
+  ".wav": "audio/wav",
+  ".flac": "audio/flac",
 };
 
 const apiRoot = path.join(root, "api");
@@ -59,7 +66,23 @@ http.createServer((request, response) => {
     response.end("Not found");
     return;
   }
-  response.writeHead(200, { "Content-Type": types[path.extname(filePath).toLowerCase()] || "application/octet-stream" });
+  const contentType = types[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+  const size = fs.statSync(filePath).size;
+  // Audio/video players (Safari especially) require byte-range responses.
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.range || "");
+  if (range && (range[1] || range[2])) {
+    const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+    const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+    if (start >= size || start > end) {
+      response.writeHead(416, { "Content-Range": `bytes */${size}` });
+      response.end();
+      return;
+    }
+    response.writeHead(206, { "Content-Type": contentType, "Content-Length": end - start + 1, "Content-Range": `bytes ${start}-${end}/${size}`, "Accept-Ranges": "bytes" });
+    fs.createReadStream(filePath, { start, end }).pipe(response);
+    return;
+  }
+  response.writeHead(200, { "Content-Type": contentType, "Content-Length": size, "Accept-Ranges": "bytes" });
   fs.createReadStream(filePath).pipe(response);
 }).listen(port, "0.0.0.0", () => {
   console.log(`Wedding invitation server running on port ${port}`);

@@ -59,6 +59,7 @@ const isVideoMedia = (value = "") => /\.(mp4|webm|mov)(?:$|[?#])/i.test(value);
 let invitationMusicAudio = null;
 let invitationMusicButton = null;
 let invitationMusicResumeBound = false;
+let invitationMusicMuted = false;
 const tmapWebUrl = (query) => `https://www.tmap.co.kr/tmap2/mobile/route.jsp?name=${query}`;
 const tmapAppUrl = (query) => `tmap://search?name=${query}`;
 const mapLinksForAddress = (address = "") => {
@@ -132,21 +133,38 @@ function showInvitationMusicToast() {
   invitationMusicButton?.classList.add("is-visible");
 }
 
+// Mobile browsers only unlock audio on click/touchend/keydown (not pointerdown or scroll).
+const invitationMusicUnlockEvents = ["click", "touchend", "keydown"];
+
 function bindInvitationMusicResume() {
   if (invitationMusicResumeBound) return;
   invitationMusicResumeBound = true;
-  const resume = () => {
-    playInvitationMusic();
-    document.removeEventListener("pointerdown", resume);
-    document.removeEventListener("keydown", resume);
+  const resume = (event) => {
+    // The toggle button handles its own tap; resuming here too would play then instantly pause.
+    if (event.target?.closest?.(".music-toggle")) return;
+    invitationMusicUnlockEvents.forEach((type) => document.removeEventListener(type, resume, true));
     invitationMusicResumeBound = false;
+    playInvitationMusic();
   };
-  document.addEventListener("pointerdown", resume, { once: true });
-  document.addEventListener("keydown", resume, { once: true });
+  invitationMusicUnlockEvents.forEach((type) => document.addEventListener(type, resume, true));
+}
+
+function bindInvitationMusicVisibility() {
+  let resumeOnReturn = false;
+  document.addEventListener("visibilitychange", () => {
+    if (!invitationMusicAudio) return;
+    if (document.hidden) {
+      resumeOnReturn = !invitationMusicAudio.paused;
+      invitationMusicAudio.pause();
+      return;
+    }
+    if (resumeOnReturn) playInvitationMusic();
+    resumeOnReturn = false;
+  });
 }
 
 function playInvitationMusic() {
-  if (!invitationMusicAudio) return;
+  if (!invitationMusicAudio || invitationMusicMuted) return;
   invitationMusicAudio.play()
     .then(() => updateInvitationMusicButton(true))
     .catch(() => {
@@ -168,12 +186,21 @@ function setupInvitationMusic() {
   invitationMusicButton.setAttribute("aria-label", "배경음악 켜기");
   invitationMusicButton.addEventListener("click", () => {
     if (!invitationMusicAudio) return;
-    if (invitationMusicAudio.paused) playInvitationMusic();
-    else {
+    if (invitationMusicAudio.paused) {
+      invitationMusicMuted = false;
+      playInvitationMusic();
+    } else {
+      invitationMusicMuted = true;
       invitationMusicAudio.pause();
       updateInvitationMusicButton(false);
     }
   });
+  invitationMusicAudio.addEventListener("error", () => {
+    console.warn("배경음악 파일을 불러오지 못했습니다:", config.src);
+    invitationMusicButton?.remove();
+    invitationMusicButton = null;
+  });
+  bindInvitationMusicVisibility();
   document.body.appendChild(invitationMusicButton);
   updateInvitationMusicButton(false);
   // 토스트처럼 잠깐 떴다 사라지지 않고, 우측 하단에 항상 작게 고정 표시합니다.
@@ -699,6 +726,116 @@ function render() {
       </nav>
     </article>`;
   applySectionOrder();
+  renderInvitationStickers();
+}
+
+function renderInvitationStickers() {
+  const stickers = window.WEDDING_STICKERS;
+  if (!stickers || !Array.isArray(data.stickers)) return;
+  app.querySelectorAll(".invitation-sticker").forEach((node) => node.remove());
+  data.stickers.map(stickers.normalize).forEach((item) => {
+    const target = item.section === "ending" ? app.querySelector(".ending") : app.querySelector(`.section[id="${item.section}"]`);
+    target?.insertAdjacentHTML("beforeend", stickers.markup(item));
+  });
+}
+
+// Admin sticker page embeds the invitation with ?stickerEditor=1 and talks to it via postMessage.
+const isStickerEditorPreview = new URLSearchParams(location.search).get("stickerEditor") === "1";
+
+function stickerTargetAt(x, y) {
+  return document.elementsFromPoint(x, y)
+    .map((node) => node.closest?.(".section[id], .ending"))
+    .find(Boolean) || null;
+}
+
+function stickerTargetId(target) {
+  return target?.classList.contains("ending") ? "ending" : target?.id || "";
+}
+
+function stickerPlacement(target, x, y) {
+  const rect = target.getBoundingClientRect();
+  const percent = (value) => Math.round(Math.max(0, Math.min(100, value)) * 10) / 10;
+  return { section: stickerTargetId(target), x: percent(((x - rect.left) / rect.width) * 100), y: percent(((y - rect.top) / rect.height) * 100) };
+}
+
+function selectEditorSticker(id = "") {
+  app.querySelectorAll(".invitation-sticker").forEach((node) => node.classList.toggle("is-selected", node.dataset.stickerId === id));
+}
+
+function postStickerEditor(message) {
+  window.parent?.postMessage({ source: "wedding-sticker-editor", ...message }, location.origin);
+}
+
+function bindStickerEditor() {
+  document.body.classList.add("sticker-editor-preview");
+  let drag = null;
+
+  app.addEventListener("pointerdown", (event) => {
+    const sticker = event.target.closest(".invitation-sticker");
+    if (!sticker) return;
+    event.preventDefault();
+    const rect = sticker.getBoundingClientRect();
+    drag = {
+      sticker,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: event.clientX - (rect.left + rect.width / 2),
+      offsetY: event.clientY - (rect.top + rect.height / 2),
+      moved: false,
+    };
+    sticker.classList.add("is-dragging");
+    selectEditorSticker(sticker.dataset.stickerId);
+  });
+
+  window.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 4) return;
+    drag.moved = true;
+    const x = event.clientX - drag.offsetX;
+    const y = event.clientY - drag.offsetY;
+    const target = stickerTargetAt(x, y);
+    if (target) {
+      if (drag.sticker.parentElement !== target) target.appendChild(drag.sticker);
+      const placement = stickerPlacement(target, x, y);
+      drag.sticker.style.left = `${placement.x}%`;
+      drag.sticker.style.top = `${placement.y}%`;
+      drag.placement = placement;
+    }
+    if (event.clientY < 48) window.scrollBy(0, -10);
+    else if (event.clientY > window.innerHeight - 48) window.scrollBy(0, 10);
+  });
+
+  const finish = () => {
+    if (!drag) return;
+    const { sticker, moved, placement } = drag;
+    sticker.classList.remove("is-dragging");
+    drag = null;
+    const id = sticker.dataset.stickerId;
+    if (moved && placement) postStickerEditor({ type: "moved", id, ...placement });
+    else postStickerEditor({ type: "select", id });
+  };
+  window.addEventListener("pointerup", finish);
+  window.addEventListener("pointercancel", finish);
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== location.origin || event.data?.source !== "wedding-sticker-admin") return;
+    const message = event.data;
+    if (message.type === "set") {
+      data.stickers = Array.isArray(message.stickers) ? message.stickers : [];
+      renderInvitationStickers();
+      selectEditorSticker(message.selectedId || "");
+    } else if (message.type === "focus") {
+      app.querySelector(`.invitation-sticker[data-sticker-id="${message.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    } else if (message.type === "place") {
+      // New stickers land in the middle of whatever part of the invitation is on screen.
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const target = stickerTargetAt(centerX, centerY) || app.querySelector(".section[id]");
+      if (!target) return;
+      postStickerEditor({ type: "placed", item: { ...message.item, ...stickerPlacement(target, centerX, centerY) } });
+    }
+  });
+  postStickerEditor({ type: "ready" });
 }
 
 function renderInvitationLoadError(error) {
@@ -1435,6 +1572,7 @@ async function start() {
     document.body.style.overflowY = "auto";
     document.body.style.touchAction = "pan-y";
     document.querySelector("[data-invitation-intro]")?.remove();
+    if (isStickerEditorPreview) bindStickerEditor();
   } else {
     setupInvitationMusic();
     playInvitationIntro();

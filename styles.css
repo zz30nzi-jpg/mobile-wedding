@@ -442,6 +442,13 @@ body.intro-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
   content: "";
   transform: translateX(-50%);
 }
+.invitation-sticker { position: absolute; z-index: 3; display: block; width: var(--sticker-size, 84px); height: var(--sticker-size, 84px); color: var(--sticker-color, var(--accent-dark)); pointer-events: none; transform: translate(-50%, -50%) rotate(var(--sticker-rotate, 0deg)); }
+.sticker-editor-preview .invitation-sticker { pointer-events: auto; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sticker-editor-preview .invitation-sticker.is-selected { outline: 2px dashed color-mix(in srgb, var(--accent-dark) 70%, transparent); outline-offset: 4px; border-radius: 8px; }
+.sticker-editor-preview .invitation-sticker.is-dragging { z-index: 20; cursor: grabbing; opacity: 0.85; }
+.sticker-editor-preview .copy-preview-detail-edit { display: none; }
+body.sticker-editor-preview::before { display: none; }
+.invitation-sticker svg { display: block; width: 100%; height: 100%; }
 .section.photo-interlude { min-height: 360px; overflow: hidden; padding: 0; background: var(--paper); }
 .section.photo-interlude::before { display: none !important; }
 .photo-interlude-media {
@@ -903,6 +910,36 @@ body[data-admin-area="general"]:has(.editor-tooldock:not([hidden]):not(.is-colla
 .admin-hub-grid button:hover { border-color: var(--accent-dark); background: var(--soft-bg); transform: translateY(-1px); }
 .admin-hub-grid strong { color: var(--accent-dark); font-size: 15px; }
 .admin-hub-grid span { color: var(--muted); font-size: 11px; line-height: 1.6; }
+.sticker-palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+.sticker-palette button { display: grid; justify-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px; background: var(--card); color: var(--accent-dark); }
+.sticker-palette button:hover { border-color: var(--accent-dark); }
+.sticker-palette span { width: 64px; height: 64px; }
+.sticker-palette svg, .sticker-row-preview svg { display: block; width: 100%; height: 100%; }
+.sticker-palette small { color: var(--muted); font-size: 10px; line-height: 1.3; text-align: center; }
+.sticker-row-preview { width: 64px; height: 64px; }
+.sticker-row-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; }
+.sticker-row-fields .field { margin: 0; }
+.sticker-row-remove { margin-left: auto; }
+.sticker-stage { display: grid; justify-items: center; margin: 4px 0 12px; }
+.sticker-preview-frame { width: min(100%, 375px); height: min(68vh, 640px); min-height: 460px; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line)); border-radius: 24px; background: var(--paper); box-shadow: 0 12px 34px rgba(70,85,93,0.12); }
+.sticker-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; }
+.sticker-chip { display: grid; flex: 0 0 auto; justify-items: center; gap: 2px; width: 62px; border: 1px solid var(--line); border-radius: 12px; padding: 6px 4px; background: var(--card); }
+.sticker-chip svg { width: 36px; height: 36px; }
+.sticker-chip small { overflow: hidden; max-width: 100%; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.sticker-chip.is-active { border-color: var(--accent-dark); box-shadow: 0 0 0 1px var(--accent-dark); }
+.sticker-controls { display: grid; gap: 12px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--card); }
+.sticker-controls-head { display: flex; align-items: center; gap: 10px; }
+.sticker-controls-head > div { display: grid; gap: 2px; }
+.sticker-controls-head small { color: var(--muted); font-size: 11px; }
+.sticker-color-field { grid-column: 1 / -1; display: grid; gap: 6px; text-align: left; }
+.sticker-color-field > span { color: var(--muted); font-size: 12px; font-weight: 700; }
+.sticker-swatches { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sticker-swatch { position: relative; display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border: 2px solid var(--card); border-radius: 50%; padding: 0; background: var(--swatch); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+.sticker-swatch small { color: var(--card); font-size: 8px; font-weight: 800; line-height: 1; }
+.sticker-swatch.is-active { box-shadow: 0 0 0 2px var(--ink); }
+.sticker-swatch-custom { overflow: hidden; background: conic-gradient(#e0533d, #e8b33a, #5cae6a, #3f7fd0, #9a5bc8, #e0533d); }
+.sticker-swatch-custom.is-active { background: var(--swatch); }
+.sticker-swatch-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .admin-editor-intro { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .admin-editor-intro h2 { margin: 0; }
 .admin-mode-badge { border-radius: 999px; padding: 5px 9px; background: var(--soft-bg); color: var(--accent-dark); font-size: 10px; font-weight: 700; white-space: nowrap; }
