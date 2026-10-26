@@ -7,8 +7,8 @@ const AUDIO_EXTENSIONS = new Set([".mp3", ".m4a", ".aac", ".ogg", ".oga", ".wav"
 // 가능한 경로를 차례로 시도해 실제 폴더를 찾습니다. (vercel.json includeFiles 참고)
 function resolveMusicDir() {
   const candidates = [
-    path.join(process.cwd(), "source", "music"),
     path.join(__dirname, "..", "source", "music"),
+    path.join(process.cwd(), "source", "music"),
     path.join("/var/task", "source", "music"),
   ];
   for (const candidate of candidates) {
