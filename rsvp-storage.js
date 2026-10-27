@@ -752,14 +752,14 @@ function drawScaledCanvas(bitmap, maxDimension) {
   return canvas;
 }
 
-async function optimizeInvitationImage(file) {
+async function optimizeInvitationImage(file, maxDimension = 1200) {
   if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
     throw new Error("JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.");
   }
   if (!("createImageBitmap" in window)) throw new Error("이 브라우저에서는 이미지 최적화를 지원하지 않습니다.");
   try {
     const bitmap = await createImageBitmap(file);
-    const canvas = drawScaledCanvas(bitmap, 1200);
+    const canvas = drawScaledCanvas(bitmap, maxDimension);
     bitmap.close();
     const blob = await encodeCanvasBlob(canvas, 0.78);
     if (!blob) throw new Error("이미지를 변환하지 못했습니다.");
@@ -819,7 +819,9 @@ async function uploadInvitationImage(file, slot) {
     if (thumbUpload.error) throw thumbUpload.error;
     return { path, thumbPath };
   }
-  const optimized = await optimizeInvitationImage(file);
+  // 신랑·신부 소개 사진은 청첩장에서 160px 칸에 보여 640px이면 충분(다시 자르기용 -original은 크게 둠)
+  const isProfilePhoto = /^couple-(groom|bride)-photo$/.test(String(slot || ""));
+  const optimized = await optimizeInvitationImage(file, isProfilePhoto ? 640 : 1200);
   if (!client) return blobToDataUrl(optimized);
   // 슬롯당 같은 파일명(og-image.webp 등)을 upsert로 덮어써 Storage 용량이 누적되지 않게 합니다.
   // 대신 저장 경로 끝에 ?v=업로드시각 쿼리만 바꿔 CDN/카카오/브라우저 캐시를 무효화합니다.
