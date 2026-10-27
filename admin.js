@@ -1994,7 +1994,7 @@ function transportEditor(item = {}, index = 0) {
   return `
     <div class="guide-editor" data-transport-editor>
       <input type="hidden" name="transport.${index}.title" value="${escapeAdminHtml(selected)}">
-      <div class="guide-field"><span>안내 문장</span><div class="guide-lines" data-transport-line-list>${lines.map((line, lineIndex) => transportLineEditor(line, index, lineIndex)).join("")}</div></div>
+      <div class="guide-field"><span>${transportTypes.find((type) => type.label === selected)?.icon || ""} ${escapeAdminHtml(selected)} 안내</span><div class="guide-lines" data-transport-line-list>${lines.map((line, lineIndex) => transportLineEditor(line, index, lineIndex)).join("")}</div></div>
       <button class="guide-line-add" type="button" data-transport-line-add>＋ 줄 추가</button>
       <div class="guide-editor-foot">
         <label class="hero-copy-toggle"><input type="checkbox" name="transport.${index}.hidden" ${item.hidden ? "checked" : ""}><span>청첩장에서 숨기기</span></label>
@@ -2006,9 +2006,9 @@ function transportEditor(item = {}, index = 0) {
 function transportManager(items = []) {
   return `
     <div class="guide-manager" data-transport-manager>
-      <div class="guide-chip-row guide-chip-wrap"><div class="guide-chips" data-guide-chips></div></div>
+      <div class="guide-chip-row"><div class="guide-chips" data-guide-chips></div><button class="guide-chip guide-chip-add" type="button" data-transport-add>＋ 추가</button></div>
+      <div class="guide-picker" data-transport-picker hidden><span>추가할 교통수단</span><div class="guide-picker-chips" data-transport-picker-chips></div></div>
       <div class="guide-editors" data-transport-list>${items.map(transportEditor).join("")}</div>
-      <p class="guide-empty" data-guide-empty>교통수단을 눌러 안내 문장을 적어 주세요.</p>
       <div class="guide-foot-row"><p class="hero-tool-hint">문장을 적은 교통수단만 청첩장에 보여요.</p><button class="guide-ai" type="button" data-ai-transport-guide>AI로 초안 만들기</button></div>
     </div>`;
 }
@@ -5091,22 +5091,31 @@ function bindEditor() {
     })),
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   })) : [];
-  // 교통수단 칩 한 줄: 누르면 그 교통수단을 편집(없으면 새로 만듦). 문장을 적은 칸은 칩에 표시
+  // 위 칩 = 추가한 교통수단(누르면 편집), ＋ 추가 = 아직 없는 교통수단 고르기. 하나도 없으면 고르기를 바로 펼침
   const transportTitleOf = (editor) => editor.querySelector('input[name$=".title"]').value;
   const syncTransportChips = () => {
     if (!transportManagerElement || !transportList) return;
     const editors = [...transportList.querySelectorAll("[data-transport-editor]")];
+    const used = editors.map(transportTitleOf);
     let activeType = transportManagerElement.dataset.activeType || "";
-    if (!editors.some((editor) => transportTitleOf(editor) === activeType)) activeType = editors[0] ? transportTitleOf(editors[0]) : "";
+    if (!used.includes(activeType)) activeType = used[0] || "";
     transportManagerElement.dataset.activeType = activeType;
     editors.forEach((editor) => editor.classList.toggle("is-active", transportTitleOf(editor) === activeType));
-    transportManagerElement.querySelector("[data-guide-chips]").innerHTML = adminUtils.TRANSPORT_TYPES.map((type) => {
-      const editor = editors.find((item) => transportTitleOf(item) === type.label);
-      const filled = editor && [...editor.querySelectorAll("[data-transport-line] textarea")].some((field) => field.value.trim());
-      const off = editor?.querySelector('input[name$=".hidden"]')?.checked;
-      return `<button class="guide-chip${type.label === activeType ? " is-active" : ""}${filled ? " is-filled" : ""}${off ? " is-off" : ""}" type="button" data-transport-chip="${escapeAdminHtml(type.label)}">${type.icon} ${escapeAdminHtml(type.label)}</button>`;
+    const typeOf = (label) => adminUtils.TRANSPORT_TYPES.find((type) => type.label === label);
+    transportManagerElement.querySelector("[data-guide-chips]").innerHTML = editors.map((editor) => {
+      const label = transportTitleOf(editor);
+      const off = editor.querySelector('input[name$=".hidden"]')?.checked;
+      return `<button class="guide-chip${label === activeType ? " is-active" : ""}${off ? " is-off" : ""}" type="button" data-transport-chip="${escapeAdminHtml(label)}">${typeOf(label)?.icon || ""} ${escapeAdminHtml(label)}</button>`;
     }).join("");
-    transportManagerElement.querySelector("[data-guide-empty]")?.toggleAttribute("hidden", editors.length > 0);
+    const remaining = adminUtils.TRANSPORT_TYPES.filter((type) => !used.includes(type.label));
+    transportManagerElement.querySelector("[data-transport-picker-chips]").innerHTML = remaining.map((type) => `<button type="button" data-transport-pick="${escapeAdminHtml(type.label)}">${type.icon} ${escapeAdminHtml(type.label)}</button>`).join("");
+    const addButton = transportManagerElement.querySelector("[data-transport-add]");
+    // 하나도 없을 땐 고르기가 이미 펼쳐져 있으니 ＋ 추가는 숨김
+    addButton.hidden = !remaining.length || !editors.length;
+    const picker = transportManagerElement.querySelector("[data-transport-picker]");
+    if (!editors.length) picker.hidden = false;
+    if (!remaining.length) picker.hidden = true;
+    addButton.classList.toggle("is-active", !picker.hidden);
   };
   const renderTransportItems = (items) => {
     if (!transportList) return;
@@ -5161,17 +5170,27 @@ function bindEditor() {
       return;
     }
     const editors = [...transportList.querySelectorAll("[data-transport-editor]")];
+    const picker = transportManagerElement.querySelector("[data-transport-picker]");
     const chip = event.target.closest("[data-transport-chip]");
     if (chip) {
-      const label = chip.dataset.transportChip;
+      transportManagerElement.dataset.activeType = chip.dataset.transportChip;
+      if (editors.length) picker.hidden = true;
+      syncTransportChips();
+      return;
+    }
+    if (event.target.closest("[data-transport-add]")) {
+      picker.hidden = !picker.hidden;
+      syncTransportChips();
+      return;
+    }
+    const pick = event.target.closest("[data-transport-pick]");
+    if (pick) {
+      // 고른 교통수단을 기본 아이콘 줄로 만들고 바로 편집
+      const label = pick.dataset.transportPick;
+      const type = adminUtils.TRANSPORT_TYPES.find((entry) => entry.label === label);
       transportManagerElement.dataset.activeType = label;
-      if (editors.some((editor) => transportTitleOf(editor) === label)) {
-        syncTransportChips();
-      } else {
-        // 처음 누른 교통수단은 기본 아이콘 줄로 새로 만들고 첫 칸에 바로 입력
-        const type = adminUtils.TRANSPORT_TYPES.find((entry) => entry.label === label);
-        renderTransportItems([...transportItems(), { title: label, lines: (type?.lines || ["", ""]).map((icon) => ({ icon, text: "" })), hidden: false }]);
-      }
+      picker.hidden = true;
+      renderTransportItems([...transportItems(), { title: label, lines: (type?.lines || ["", ""]).map((icon) => ({ icon, text: "" })), hidden: false }]);
       transportList.querySelector("[data-transport-editor].is-active [data-transport-line] textarea")?.focus();
       return;
     }
@@ -5211,7 +5230,6 @@ function bindEditor() {
   }
   transportManagerElement?.addEventListener("input", (event) => {
     if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
-    if (event.target.closest("[data-transport-line]")) syncTransportChips();
   });
   transportManagerElement?.addEventListener("input", refreshFrameLists);
   transportManagerElement?.addEventListener("change", refreshFrameLists);

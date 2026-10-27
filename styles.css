@@ -468,7 +468,7 @@ summary { padding: 14px 0; color: color-mix(in srgb, var(--accent-dark) 72%, var
 .transport-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 700; color: var(--ink); }
 .transport-icon { flex: none; font-size: 16px; line-height: 1; }
 .transport-lines { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.transport-lines li { display: flex; align-items: flex-start; gap: 8px; text-align: left; font-size: 13px; color: var(--muted); }
+.transport-lines li { display: flex; align-items: flex-start; gap: 8px; text-align: left; font-size: 13px; color: var(--muted); word-break: keep-all; overflow-wrap: anywhere; }
 .transport-line-icon { flex: none; font-size: 14px; line-height: 1.6; }
 
 .gallery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 11px; }
@@ -604,7 +604,7 @@ body.modal-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
 .information-empty { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.8; text-align: center; }
 .information-row + .information-row { margin-top: 14px; border-top: 1px dashed color-mix(in srgb, var(--accent-dark) 22%, transparent); padding-top: 14px; }
 .information-num { display: grid; width: 22px; height: 22px; flex: none; margin-top: 2px; border: 1px solid color-mix(in srgb, var(--accent-dark) 40%, transparent); border-radius: 50%; color: var(--accent-dark); font-size: 11px; font-weight: 700; place-items: center; }
-.information-row p { margin: 0; color: var(--copy); font-size: 13px; line-height: 1.9; }
+.information-row p { margin: 0; color: var(--copy); font-size: 13px; line-height: 1.9; word-break: keep-all; overflow-wrap: anywhere; }
 .information-row p b { display: block; margin-bottom: 1px; color: var(--ink); font-weight: 600; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 .share-choice-grid { display: grid; gap: 8px; margin-top: 12px; }
@@ -1997,12 +1997,14 @@ body.copy-editor-public-preview.hero-frame-adjusting .hero-media .copy-edit-hand
 .guide-chip.is-active { border-color: transparent; background: var(--accent-dark); color: var(--card); }
 .guide-chip.is-off:not(.is-active) { color: var(--muted); text-decoration: line-through; }
 .guide-chip-add { border-style: dashed; color: var(--accent-dark); }
-/* 교통수단 칩: 6개가 두 줄로 감기고, 문장을 적은 칸은 점 표시 */
-.guide-chip-wrap { overflow: visible; }
-.guide-chip-wrap .guide-chips { flex-wrap: wrap; }
-.guide-chip-wrap .guide-chip:not(.is-active):not(.is-filled) { color: var(--muted); font-weight: 700; }
-.guide-chip.is-filled:not(.is-active) { border-color: color-mix(in srgb, var(--accent-dark) 45%, var(--line)); }
-.guide-chip.is-filled::after { display: inline-block; width: 5px; height: 5px; margin-left: 5px; border-radius: 50%; background: currentColor; content: ""; vertical-align: 2px; }
+.guide-chip.guide-chip-add.is-active { border: 1px solid var(--line); background: var(--soft-bg); color: var(--accent-dark); }
+.guide-chip-add[hidden] { display: none; }
+/* ＋ 추가를 누르면 펼쳐지는 '추가할 교통수단' 고르기 */
+.guide-picker { display: grid; gap: 6px; border-radius: 12px; padding: 10px; background: var(--soft-bg); }
+.guide-picker[hidden] { display: none; }
+.guide-picker > span { color: var(--ink); font-size: 12px; font-weight: 800; }
+.guide-picker-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.guide-picker-chips button { min-height: 32px; border: 1px solid var(--line); border-radius: 999px; padding: 0 12px; background: var(--card); color: var(--ink); font-size: 12.5px; font-weight: 700; }
 .guide-chip-add:disabled { opacity: 0.4; }
 .guide-editor { display: none; gap: 8px; }
 .guide-editor.is-active { display: grid; }
