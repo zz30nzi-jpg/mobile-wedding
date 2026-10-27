@@ -8,10 +8,6 @@
     { id: "black", name: "블랙", type: "color", enabled: true, palette: palette("#202529", "#2a3035", "#f1f4f5", "#b2bec4", "#a6b9c2", "rgba(203,216,222,0.2)", { side: "#15191c", button: "#354047", label: "#c3d1d7" }) },
     { id: "white", name: "화이트", type: "color", enabled: true, palette: palette("#ffffff", "#ffffff", "#454b50", "#848b90", "#92999e", "rgba(120,128,133,0.18)", { side: "#f7f7f7", button: "#f6f7f7", label: "#70777c" }) },
     { id: "green", name: "그린", type: "color", enabled: true, palette: palette("#f6f9f4", "#fcfdfb", "#424f40", "#778574", "#5b7853", "rgba(91,120,83,0.2)", { side: "#edf3ea", button: "#e3ede0", label: "#5b7853" }) },
-    { id: "about_time", name: "어바웃타임", type: "movie", concept: "어바웃타임", mood: "따뜻하고 빈티지한 필름 무드", enabled: true, heroDecoration: "frame_heart", heroTextTheme: "editorial_left", palette: palette("#f7f0e7", "#fffaf4", "#463a34", "#88776e", "#8d3440", "rgba(125,38,51,0.2)", { side: "#e9ddd1", button: "#fbf1e8", label: "#8d3440" }) },
-    { id: "la_la_land", name: "라라랜드", type: "movie", concept: "라라랜드", mood: "밤하늘과 골드 포인트의 시네마 무드", enabled: true, heroDecoration: "frame_inset", heroTextTheme: "editorial_left", palette: palette("#faf4e8", "#fffaf0", "#27305a", "#6f7190", "#62478e", "rgba(64,57,116,0.18)", { side: "#171839", button: "#fff9e9", label: "#74559e" }) },
-    { id: "spirited_away", name: "센과 치히로 무드", type: "movie", concept: "숲과 바람", mood: "차분한 자연과 동화 같은 무드", enabled: true, heroDecoration: "frame_heart", heroTextTheme: "minimal_center", palette: palette("#f4f0df", "#fbf7ea", "#37463f", "#718076", "#56725d", "rgba(86,114,93,0.18)", { side: "#dce3cf", button: "#f8f4e5", label: "#667c61" }) },
-    { id: "you_are_the_apple", name: "그 시절, 우리가 좋아했던 소녀 무드", type: "movie", concept: "청춘 영화", mood: "밝고 담백한 필름 무드", enabled: true, heroDecoration: "text_marriage", heroTextTheme: "editorial_left", palette: palette("#f7f3e8", "#fffaf0", "#3e5267", "#7d8d98", "#537c91", "rgba(83,124,145,0.18)", { side: "#e6eee9", button: "#fffaf0", label: "#5f8799" }) },
   ];
   const builtInAssets = {
     frames: [
@@ -118,14 +114,15 @@
     transport: "예식장 기준 자가용, 버스, 지하철 3가지를 기본으로 안내한다. 자가용은 식장 공식 안내를 우선해 주차장 위치와 외부 주차장 여부를 확인한다. 버스/지하철은 먼저 식장 도보 20분 이내에 버스정류장과 철도역이 각각 있는지 판정한다. 철도역은 지하철역을 우선하고, 지하철역이 없으면 기차역/KTX역/일반철도역으로 대체한다. 둘 다 있으면 각 이름과 도보 시간을 적고, 하나만 있으면 가까운 접근수단은 이름과 도보 시간을, 다른 접근수단은 그 지점에서 가까운 접근수단 또는 식장까지 이어지는 버스 번호/타는 정류장과 택시 시간을 함께 적는다. 불확실한 정보는 확인 필요라고 표시한다.",
     venue: "식장 공식홈페이지나 공식 안내 정보를 우선한다고 가정하고, 모르는 사실은 지어내지 않는다. 기본 안내사항은 주차와 식사다. 식사 안내에는 식권 받는 곳과 연회장 위치를 포함하고, 주차 안내에는 주차권 받는 곳, 주차권 필요 여부, 여러 주차장이 있으면 가능한 주차장을 정리한다.",
   };
+  // 없앤 영화 테마(어바웃타임·라라랜드·센과 치히로·그 시절 소녀)·레이아웃(스칼렛 데이·봄날 연가·벨벳 나이트).
+  // 예전에 저장된 데이터에 복사돼 남아 있어도 목록에 다시 나오지 않게 걸러냄
+  const REMOVED_THEME_IDS = ["about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
+  const REMOVED_LAYOUT_IDS = ["editorial_red", "cream_organic", "crimson_silk"];
   const BUILT_IN_LAYOUTS = [
     { id: "classic", name: "클래식", description: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.", previewBg: "#f7f0e7", previewAccent: "#8d3440", builtIn: true },
-    { id: "editorial_red", name: "스칼렛 데이", description: "딥레드 + 흑백 사진. 잡지형 큰 타이포·폴라로이드 프로필 구도.", previewBg: "#f8f3ec", previewAccent: "#c41230", baseLayout: "editorial", builtIn: true },
     { id: "garden_doodle", name: "러브 두들", description: "초록 낙서 프레임 + 하트 사진. 손그림 감성의 사랑스러운 결혼식.", previewBg: "#eef2eb", previewAccent: "#c23b2a", baseLayout: "classic", builtIn: true },
     { id: "navy_arch", name: "달빛 서약", description: "파란 배경 + 아치 사진. 단정하고 품격 있는 커플의 웨딩.", previewBg: "#f5f7fa", previewAccent: "#1a2456", baseLayout: "arch", builtIn: true },
-    { id: "cream_organic", name: "봄날 연가", description: "크림 + 라벤더 아치 패널. 둥글고 부드러운 봄 웨딩 무드.", previewBg: "#faf8f4", previewAccent: "#7c6d9a", baseLayout: "classic", builtIn: true },
     { id: "valentine_choco", name: "초콜릿 발렌타인", description: "꽉 찬 메인 사진 아래로 초콜릿이 녹아 흐르고, 하트 안에 달력이 담긴 발렌타인 웨딩.", previewBg: "#efe4d8", previewAccent: "#7d2236", baseLayout: "classic", splitEyebrow: true, builtIn: true },
-    { id: "crimson_silk", name: "벨벳 나이트", description: "진홍 다크 히어로 + 크림 본문. 연인의 열정을 담은 스플릿 구조.", previewBg: "#f8f2ec", previewAccent: "#8b1a2f", baseLayout: "split", builtIn: true },
   ];
   const DEFAULT_SECTION_TITLES = {
     invitation: { en: "Invitation", ko: "" },
@@ -148,7 +145,7 @@
     system.deletedThemeIds = Array.isArray(catalog.deletedThemeIds) ? catalog.deletedThemeIds : [];
     system.deletedAssetIds = Array.isArray(catalog.deletedAssetIds) ? catalog.deletedAssetIds : [];
     system.themes = mergeUnique(clone(builtInThemes), Array.isArray(catalog.themes) ? catalog.themes : [])
-      .filter((theme) => !system.deletedThemeIds.includes(theme.id));
+      .filter((theme) => !system.deletedThemeIds.includes(theme.id) && !REMOVED_THEME_IDS.includes(theme.id));
     system.themes.forEach((theme) => { theme.heroTextTheme = migrateTextThemeId(theme.heroTextTheme); });
     const catalogAssets = catalog.assets || {};
     system.assets = {};
@@ -171,9 +168,11 @@
     system.aiSettings = { enabled: true, provider: "Claude", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: DEFAULT_AI_PROMPTS, referenceImages: "", ...(catalog.aiSettings || {}), provider: "Claude", mockMode: false };
     system.aiSettings.prompts = { ...DEFAULT_AI_PROMPTS, ...(system.aiSettings.prompts || {}) };
     // built-in 항목은 항상 최신 코드 기준으로 덮어씀. 사용자가 직접 만든 커스텀(AI) 레이아웃만 Supabase에서 유지.
-    const savedCustomLayouts = (Array.isArray(catalog.layoutTemplates) ? catalog.layoutTemplates : []).filter((t) => !t.builtIn);
+    const savedCustomLayouts = (Array.isArray(catalog.layoutTemplates) ? catalog.layoutTemplates : []).filter((t) => !t.builtIn && !REMOVED_LAYOUT_IDS.includes(t.id));
     system.layoutTemplates = mergeUnique(BUILT_IN_LAYOUTS, savedCustomLayouts);
-    system.activeLayoutId = system.activeLayoutId || "classic";
+    // 없앤 레이아웃을 쓰던 청첩장은 클래식으로 (스킨 레이아웃이 없앤 레이아웃을 바탕으로 쓰는 경우도)
+    const activeLayout = system.layoutTemplates.find((t) => t.id === system.activeLayoutId);
+    system.activeLayoutId = !system.activeLayoutId || REMOVED_LAYOUT_IDS.includes(system.activeLayoutId) || REMOVED_LAYOUT_IDS.includes(activeLayout?.baseLayout) ? "classic" : system.activeLayoutId;
     const legacyCustom = !data.appearance.design && ((data.appearance.heroDecoration && data.appearance.heroDecoration !== "none") || (data.appearance.heroTextTheme && data.appearance.heroTextTheme !== "auto"));
     const previousDesign = data.appearance.design;
     data.appearance.design = {

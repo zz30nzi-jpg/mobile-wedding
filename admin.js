@@ -21,7 +21,7 @@ window.AI_DESIGN_SERVICE = window.createWeddingAIService?.() || {
   generateVenueGuide: missingAIService,
 };
 const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
-const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
+const movieConcepts = ["none"];
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
 const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
 let currentInvitationSite = null;
@@ -639,12 +639,9 @@ function renderBasicInfoOnboarding(message = "") {
   // 레이아웃 미리보기 카드 생성 (builtInLayouts 기준)
   const layouts = [
     { id: "classic",       name: "클래식",     desc: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.",        bg: "#f7f0e7", accent: "#8d3440", heroShape: "full" },
-    { id: "editorial_red", name: "스칼렛 데이", desc: "딥레드 + 흑백 사진. 잡지형 큰 타이포·폴라로이드 프로필 구도.",     bg: "#f8f3ec", accent: "#c41230", heroShape: "full" },
     { id: "garden_doodle", name: "러브 두들",  desc: "초록 낙서 프레임 + 하트 사진. 손그림 감성의 사랑스러운 결혼식.",   bg: "#eef2eb", accent: "#c23b2a", heroShape: "heart" },
     { id: "navy_arch",     name: "달빛 서약",  desc: "파란 배경 + 아치 사진. 단정하고 품격 있는 커플의 웨딩.",          bg: "#f5f7fa", accent: "#1a2456", heroShape: "arch" },
-    { id: "cream_organic", name: "봄날 연가",  desc: "크림 + 라벤더 아치 패널. 둥글고 부드러운 봄 웨딩 무드.",          bg: "#faf8f4", accent: "#7c6d9a", heroShape: "full" },
     { id: "valentine_choco", name: "초콜릿 발렌타인", desc: "꽉 찬 메인 사진 아래로 초콜릿이 녹아 흐르고, 하트 안에 달력이 담긴 발렌타인 웨딩.", bg: "#efe4d8", accent: "#7d2236", heroShape: "full" },
-    { id: "crimson_silk",  name: "벨벳 나이트", desc: "진홍 다크 히어로 + 크림 본문. 연인의 열정을 담은 스플릿 구조.",   bg: "#f8f2ec", accent: "#8b1a2f", heroShape: "inset" },
   ];
   const layoutCards = layouts.map((l) => `
     <button class="onboarding-layout-card ${l.id === "classic" ? "is-selected" : ""}" type="button" data-layout-pick="${escapeAdminHtml(l.id)}"
@@ -1091,7 +1088,11 @@ const LAYOUT_COLOR_PRESET = "__layout__";
 const LAYOUTS_WITH_OWN_COLORS = { valentine_choco: { label: "대표색 (브라운·베이지)", bg: "#efe4d8", accent: "#7d2236" } };
 
 function editorPresetSelect(name, label, themes, selected, layoutColors = null) {
-  const group = (type, groupLabel) => `<optgroup label="${groupLabel}">${editorDesignOptions(themes.filter((theme) => theme.type === type), selected)}</optgroup>`;
+  // 고를 테마가 없는 묶음(예: 영화테마를 모두 없앤 경우)은 빈 제목만 남지 않게 뺌
+  const group = (type, groupLabel) => {
+    const options = editorDesignOptions(themes.filter((theme) => theme.type === type), selected);
+    return options ? `<optgroup label="${groupLabel}">${options}</optgroup>` : "";
+  };
   const layoutGroup = `<optgroup label="레이아웃 대표색" data-layout-colors-group ${layoutColors ? "" : "hidden disabled"}><option value="${LAYOUT_COLOR_PRESET}" ${selected === LAYOUT_COLOR_PRESET ? "selected" : ""}>${escapeAdminHtml(layoutColors?.label || "대표색")}</option></optgroup>`;
   return `<label class="field"><span>${label}</span><select name="${name}">${layoutGroup}${group("color", "컬러테마")}${group("movie", "영화테마")}</select></label>`;
 }
