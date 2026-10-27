@@ -59,7 +59,9 @@ http.createServer((request, response) => {
     handleApi(request, response, pathname);
     return;
   }
-  const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  let relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  // 사용자별 주소 /청첩장주소, /청첩장주소/받는분 → 청첩장 페이지 (vercel.json rewrites 와 같음)
+  if (/^[^./]+(\/[^./]+)?$/.test(relativePath) && !fs.existsSync(path.resolve(root, relativePath))) relativePath = "index.html";
   const filePath = path.resolve(root, relativePath);
   if (!filePath.startsWith(root) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     response.writeHead(404);

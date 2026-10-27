@@ -2,10 +2,12 @@ let data = window.INVITATION_DATA;
 const app = document.querySelector("#app");
 const modalRoot = document.querySelector("#modal-root");
 const pageParams = new URLSearchParams(location.search);
-// 개인 링크(?to=홍길동)로 들어오면 봉투에 "to. 홍길동"을 보여 줌. 이름 없는 링크는 원래 봉투 그대로
-const guestName = String(pageParams.get("to") || "").trim().slice(0, 20);
+// 주소가 /청첩장주소/받는분이름 형식이면 그 칸들 (rsvp-storage.js)
+const pathInvitation = window.RSVP_STORAGE?.pathInvitationParts?.() || { card: "", to: "" };
+// 개인 링크(/청첩장주소/홍길동 또는 ?to=홍길동)로 들어오면 봉투에 "to. 홍길동"을 보여 줌. 이름 없는 링크는 원래 봉투 그대로
+const guestName = String(pageParams.get("to") || pathInvitation.to || "").trim().slice(0, 20);
 // 이 값이 있으면 특정 청첩장·미리보기를 보는 중이라 관리자 페이지로 보내지 않음
-const hasCardContext = ["card", "invitation", "__layout", "__thumb", "previewSectionMode", "copyEditorPreview"].some((key) => pageParams.has(key));
+const hasCardContext = Boolean(pathInvitation.card) || ["card", "invitation", "__layout", "__thumb", "previewSectionMode", "copyEditorPreview"].some((key) => pageParams.has(key));
 
 function redirectOAuthCallbackToAdmin() {
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));

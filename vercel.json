@@ -8,6 +8,14 @@
     {
       "source": "/favicon.ico",
       "destination": "/favicon-32.png"
+    },
+    {
+      "source": "/:card([^./]+)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:card([^./]+)/:to([^./]+)",
+      "destination": "/index.html"
     }
   ],
   "headers": [

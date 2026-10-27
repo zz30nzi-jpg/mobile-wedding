@@ -1,4 +1,4 @@
-const { SUPABASE_URL, SITE_CARD_SLUG, normalizeSlug, fetchPublicInvitationContent } = require("./_lib/public-invitation");
+const { SUPABASE_URL, SITE_CARD_SLUG, normalizeSlug, invitationPath, fetchPublicInvitationContent } = require("./_lib/public-invitation");
 
 function escapeAttribute(value = "") {
   return String(value).replace(/[&<>"']/g, (character) => ({
@@ -25,12 +25,8 @@ module.exports = async function sharePage(request, response) {
   const host = request.headers["x-forwarded-host"] || request.headers.host;
   const requestUrl = new URL(request.url || "/", `${protocol}://${host}`);
   const slug = normalizeSlug(requestUrl.searchParams.get("card") || requestUrl.searchParams.get("invitation") || SITE_CARD_SLUG) || SITE_CARD_SLUG;
-  // 받는 분 이름(?to=)은 청첩장으로 그대로 넘겨 봉투에 "to. 이름"으로 보이게 함
-  const to = String(requestUrl.searchParams.get("to") || "").trim().slice(0, 20);
-  const query = new URLSearchParams();
-  if (slug !== SITE_CARD_SLUG) query.set("card", slug);
-  if (to) query.set("to", to);
-  const mainUrl = `${protocol}://${host}/${query.toString() ? `?${query}` : ""}`;
+  // 받는 분 이름(?to=)은 청첩장으로 그대로 넘겨 봉투에 "to. 이름"으로 보이게 함 → /청첩장주소/받는분
+  const mainUrl = `${protocol}://${host}${invitationPath(slug, requestUrl.searchParams.get("to"))}`;
   let invitation = {};
 
   try {

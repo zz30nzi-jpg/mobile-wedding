@@ -15,6 +15,14 @@ function normalizeSlug(value = "") {
     .slice(0, 48);
 }
 
+// 청첩장 주소의 경로 부분: 기본 청첩장은 "/"(받는 분은 ?to=), 나머지는 /청첩장주소/받는분 (rsvp-storage.js invitationPageUrl 과 같은 규칙)
+function invitationPath(slug = "", to = "") {
+  const card = normalizeSlug(slug);
+  const name = String(to || "").replace(/[/.?#\\]/g, "").trim().slice(0, 20);
+  if (!card || card === "main" || card === SITE_CARD_SLUG) return `/${name ? `?to=${encodeURIComponent(name)}` : ""}`;
+  return `/${encodeURIComponent(card)}${name ? `/${encodeURIComponent(name)}` : ""}`;
+}
+
 // 공개 상태("ok")인 청첩장의 content를 돌려줍니다. 없거나 비공개면 null, 네트워크 오류는 throw.
 async function fetchPublicInvitationContent(slug) {
   const result = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_invitation`, {
@@ -27,4 +35,4 @@ async function fetchPublicInvitationContent(slug) {
   return invitation.status === "ok" ? invitation.content || null : null;
 }
 
-module.exports = { SUPABASE_URL, SITE_CARD_SLUG, normalizeSlug, fetchPublicInvitationContent };
+module.exports = { SUPABASE_URL, SITE_CARD_SLUG, normalizeSlug, invitationPath, fetchPublicInvitationContent };

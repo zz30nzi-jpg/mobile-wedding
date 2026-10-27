@@ -12,7 +12,20 @@ const SITE_CARD_SLUG = "main";
 // 기본 제공 테마의 배경색(styles.css body[data-theme] --body-bg). 저장된 bootBackground가 없을 때 사용
 const BUILT_IN_THEME_BG = { sky: "#eff7fa", beige: "#eee8e1", pink: "#fdf0f4", gray: "#edf0f2", black: "#15191c", white: "#f7f7f7", green: "#edf3ea" };
 
-export const config = { matcher: ["/", "/index.html"] };
+// 사용자별 주소 /청첩장주소, /청첩장주소/받는분 도 같이 처리. 점이 들어간 파일 요청(styles.css 등)은 matcher에서 제외
+export const config = { matcher: ["/", "/index.html", "/:card([^./]+)", "/:card([^./]+)/:to([^./]+)"] };
+// 실제 폴더·페이지 이름과 겹치는 첫 칸은 청첩장 주소로 보지 않음 (rsvp-storage.js 와 같은 규칙)
+const RESERVED_PATH_SEGMENTS = new Set(["api", "hub", "source", "admin", "index", "preview-all"]);
+
+// 경로의 첫 칸(청첩장 주소). 청첩장 경로가 아니면 null
+function pathCardSlug(pathname = "") {
+  if (pathname === "/" || pathname === "/index.html") return "";
+  const parts = pathname.split("/").filter(Boolean);
+  if (!parts.length || parts.length > 2 || parts.some((part) => part.includes("."))) return null;
+  let first = parts[0];
+  try { first = decodeURIComponent(first); } catch {}
+  return RESERVED_PATH_SEGMENTS.has(first.toLowerCase()) ? null : normalizeSlug(first);
+}
 
 function normalizeSlug(value = "") {
   return String(value || "")
@@ -102,8 +115,10 @@ export default async function middleware(request) {
   if (url.searchParams.has("__raw")) return;
   // 관리자 미리보기·레이아웃 썸네일은 원래 동작 유지
   if (url.searchParams.has("copyEditorPreview") || url.searchParams.has("__thumb") || url.searchParams.has("__layout")) return;
+  const pathSlug = pathCardSlug(url.pathname);
+  if (pathSlug === null) return;
   try {
-    const slug = normalizeSlug(url.searchParams.get("card") || url.searchParams.get("invitation") || SITE_CARD_SLUG) || SITE_CARD_SLUG;
+    const slug = normalizeSlug(url.searchParams.get("card") || url.searchParams.get("invitation") || pathSlug || SITE_CARD_SLUG) || SITE_CARD_SLUG;
     const [rawHtml, meta] = await Promise.all([cachedRawHtml(url.origin), cachedInvitationMeta(slug)]);
     if (!rawHtml || !meta) return;
     let html = rawHtml;

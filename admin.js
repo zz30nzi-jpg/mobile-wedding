@@ -2496,14 +2496,8 @@ function bindKakaoPreview() {
 
   const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || currentInvitationSite?.slug || "";
   const link = adminApp.querySelector("[data-share-link]");
-  // 이 배포의 기본 청첩장은 ?card= 없이 열리므로 짧은 주소(사이트 첫 주소)를 씀
-  const cardParam = slug && slug !== "main" && slug !== window.RSVP_STORAGE?.SITE_CARD_SLUG ? slug : "";
-  const invitationLink = (to = "") => {
-    const query = new URLSearchParams();
-    if (cardParam) query.set("card", cardParam);
-    if (to) query.set("to", to);
-    return `${location.origin}/${query.toString() ? `?${query}` : ""}`;
-  };
+  // 사용자별 주소: /청첩장주소, 이름 넣은 링크는 /청첩장주소/받는분 (기본 청첩장은 사이트 첫 주소)
+  const invitationLink = (to = "") => window.RSVP_STORAGE?.invitationPageUrl?.(slug, to) || `${location.origin}/`;
   if (link) link.dataset.shareLink = invitationLink();
   const copyLink = async (button, url) => {
     try {

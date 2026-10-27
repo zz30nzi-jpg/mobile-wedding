@@ -5,6 +5,9 @@ const DEFAULT_INVITATION_ID = "main";
 // 주소에 ?card= 가 없으면 이 청첩장을 엶 (짧은 주소: 사이트 첫 주소 그대로)
 // middleware.js·api/_lib/public-invitation.js 의 SITE_CARD_SLUG 와 같게 유지
 const SITE_CARD_SLUG = "main";
+// 사용자별 주소: /청첩장주소 또는 /청첩장주소/받는분이름 (예: /joseongho-jeonjiyeon/홍길동)
+// 실제 폴더·페이지 이름과 겹치는 첫 칸은 청첩장 주소로 보지 않음 (middleware.js·api/_lib/public-invitation.js 와 같은 규칙)
+const RESERVED_PATH_SEGMENTS = new Set(["api", "hub", "source", "admin", "index", "preview-all"]);
 let activeInvitationSlug = "";
 let supabaseClientInstance = null;
 
@@ -203,10 +206,31 @@ function dateOnly(value = "") {
   return String(value || "").slice(0, 10);
 }
 
+// 받는 분 이름: 주소 한 칸에 들어가므로 / . ? # 은 빼고 20자까지
+function cleanGuestName(value = "") {
+  return String(value || "").replace(/[/.?#\\]/g, "").trim().slice(0, 20);
+}
+
+function pathInvitationParts(pathname = location.pathname) {
+  const parts = String(pathname || "").split("/").filter(Boolean).map((part) => {
+    try { return decodeURIComponent(part); } catch { return part; }
+  });
+  if (!parts.length || parts.length > 2 || parts.some((part) => part.includes(".")) || RESERVED_PATH_SEGMENTS.has(parts[0].toLowerCase())) return { card: "", to: "" };
+  return { card: normalizeSlug(parts[0]), to: cleanGuestName(parts[1]) };
+}
+
+// 공유용 청첩장 주소. 기본 청첩장은 사이트 첫 주소(받는 분은 ?to=), 나머지는 /청첩장주소/받는분
+function invitationPageUrl(slug = "", to = "") {
+  const card = normalizeSlug(slug);
+  const name = cleanGuestName(to);
+  if (!card || card === DEFAULT_INVITATION_ID || card === SITE_CARD_SLUG) return `${location.origin}/${name ? `?to=${encodeURIComponent(name)}` : ""}`;
+  return `${location.origin}/${encodeURIComponent(card)}${name ? `/${encodeURIComponent(name)}` : ""}`;
+}
+
 function getUrlInvitationSlug() {
   if (window.__FORCE_CARD_SLUG) return normalizeSlug(window.__FORCE_CARD_SLUG);
   const params = new URLSearchParams(location.search);
-  const slug = normalizeSlug(params.get("card") || params.get("invitation") || "");
+  const slug = normalizeSlug(params.get("card") || params.get("invitation") || pathInvitationParts().card || "");
   // 관리자 페이지와 관리자 미리보기는 로그인한 사람의 청첩장을 따로 찾으므로 기본값을 쓰지 않음
   const isPublicPage = !/admin/.test(location.pathname) && !["copyEditorPreview", "previewSectionMode", "__layout", "__thumb"].some((key) => params.has(key));
   return slug || (isPublicPage ? SITE_CARD_SLUG : "");
@@ -233,7 +257,8 @@ function mediaPublicUrl(path = "") {
   const queryIndex = value.indexOf("?");
   const clean = queryIndex >= 0 ? value.slice(0, queryIndex) : value;
   const query = queryIndex >= 0 ? value.slice(queryIndex) : "";
-  if (!isStoragePath(clean)) return value;
+  // 사이트 안 파일(source/music/... 등)은 /청첩장주소/받는분 주소에서도 찾을 수 있게 사이트 첫 경로 기준으로
+  if (!isStoragePath(clean)) return /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(value) || !value ? value : `/${value.replace(/^\.\//, "")}`;
   const client = getSupabaseClient();
   if (!client) return "";
   return `${client.storage.from("invitation-media").getPublicUrl(clean).data.publicUrl}${query}`;
@@ -789,6 +814,8 @@ async function uploadInvitationImage(file, slot) {
 
 window.RSVP_STORAGE = {
   SITE_CARD_SLUG,
+  pathInvitationParts,
+  invitationPageUrl,
   getSupabaseClient,
   mediaPublicUrl,
   getActiveInvitationSlug,
