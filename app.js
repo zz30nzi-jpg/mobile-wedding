@@ -1672,7 +1672,7 @@ function bindEvents() {
     document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
   });
 
-  document.querySelector("#share-button").addEventListener("click", () => {
+  document.querySelector("#share-button")?.addEventListener("click", () => {
     openModal(shareModal());
     bindShareModal();
   });
