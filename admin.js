@@ -1647,18 +1647,23 @@ const noticePresets = [
   ["", "직접 입력"],
   ["meal", "식사 안내"],
   ["parking", "주차 안내"],
+  ["floor", "층별 안내"],
   ["photo", "사진 촬영 안내"],
   ["flower", "화환 안내"],
 ];
 const noticePresetValues = {
   meal: { title: "식사 안내", text: "예식 전후로 연회장을 편하게 이용해 주세요." },
   parking: { title: "주차 안내", text: "" },
+  floor: { title: "층별 안내", text: "" },
   photo: { title: "사진 촬영 안내", text: "예식 중 사진 촬영은 다른 하객의 관람에 방해되지 않도록 부탁드립니다." },
   flower: { title: "화환 안내", text: "축하 화환은 정중히 사양합니다. 따뜻한 마음만 감사히 받겠습니다." },
 };
+// 식장 안내 카테고리(탭)는 최대 5개
+const NOTICE_MAX = 5;
 const noticeContentPlaceholders = {
   "주차 안내": "주차권배부, 주차정산 내용",
   "연회장 이용 안내": "연회장 시간 및 위치 안내",
+  "층별 안내": "1층 · 로비, 안내데스크\n2층 · 예식홀\n3층 · 연회장",
   "2부 예식안내": "2부 예식 관련 안내 내용을 입력해 주세요.",
 };
 const venueGuideTemplate = [
@@ -1932,7 +1937,7 @@ function noticeEditor(notice = {}, index = 0) {
 }
 
 function noticeManager(notices = []) {
-  const editableNotices = notices.length ? notices.slice(0, 3) : venueGuideTemplate;
+  const editableNotices = notices.length ? notices.slice(0, NOTICE_MAX) : venueGuideTemplate;
   return `
     <section class="editor-subsection"><div class="editor-subsection-head"><strong>식장 안내</strong><span>식사, 주차, 촬영 등 하객에게 알릴 내용을 관리합니다.</span></div>
     <p class="admin-message micro-help">내용을 입력하지 않으면 청첩장에서 숨김처리됩니다.</p>
@@ -2526,7 +2531,9 @@ function bindKakaoPreview() {
   loadKakaoShare().catch(() => {});
   const mapUrl = `${location.origin}/api/map${cardParam ? `?card=${encodeURIComponent(cardParam)}` : ""}`;
   adminApp.querySelectorAll("[data-share-kakao]").forEach((button) => button.addEventListener("click", async () => {
-    const url = button.dataset.shareKakao === "guest" ? invitationLink(guestName?.value.trim() || "") : invitationLink();
+    const name = button.dataset.shareKakao === "guest" ? guestName?.value.trim() || "" : "";
+    const url = invitationLink(name);
+    const title = invitationData.meta?.title || "모바일 청첩장";
     const imagePath = invitationData.meta?.shareImage || invitationData.hero?.image || "";
     const imageUrl = imagePath ? window.RSVP_STORAGE?.mediaPublicUrl?.(imagePath) || "" : "";
     if (!/^https?:/.test(imageUrl)) {
@@ -2544,7 +2551,8 @@ function bindKakaoPreview() {
     kakao.Share.sendDefault({
       objectType: "feed",
       content: {
-        title: invitationData.meta?.title || "모바일 청첩장",
+        // 이름 넣은 링크는 카드 제목 앞에 "To. 이름"(링크 미리보기 middleware.js와 같은 모양)
+        title: name ? `To. ${name} ｜ ${title}` : title,
         description: String(invitationData.meta?.description || "").trim() || `${invitationData.wedding?.displayDate || ""}\n${invitationData.wedding?.venue || ""}`.trim(),
         imageUrl,
         imageWidth: 600,
@@ -4882,8 +4890,8 @@ function bindEditor() {
   })) : [];
   const renderNoticeItems = (items) => {
     if (!noticeList || !noticeAdd) return;
-    noticeList.innerHTML = items.slice(0, 3).map(noticeEditor).join("");
-    noticeAdd.disabled = items.length >= 3;
+    noticeList.innerHTML = items.slice(0, NOTICE_MAX).map(noticeEditor).join("");
+    noticeAdd.disabled = items.length >= NOTICE_MAX;
     autoResizeTextareas(noticeList);
     refreshFrameLists();
   };
@@ -4896,7 +4904,7 @@ function bindEditor() {
       }
       if (event.target.closest("[data-notice-add]")) {
         const items = noticeItems();
-        if (items.length < 3) renderNoticeItems([...items, { title: "", text: "" }]);
+        if (items.length < NOTICE_MAX) renderNoticeItems([...items, { title: "", text: "" }]);
       }
       const removeButton = event.target.closest("[data-notice-remove]");
       if (!removeButton) return;

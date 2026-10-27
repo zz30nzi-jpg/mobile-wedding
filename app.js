@@ -679,10 +679,12 @@ function gallerySectionHtml(gallery) {
 }
 
 function informationSectionHtml() {
-  return (data.notices || []).filter((notice) => !notice.hidden && notice.text?.trim()).length ? `<section class="section" id="information">
+  // 내용이 있는 안내가 없으면 청첩장에서는 숨김. 관리자 미리보기에서는 눌러서 입력할 수 있게 빈 자리를 보여 줌
+  if (!visibleNotices().length && !isCopyEditorPreview) return "";
+  return `<section class="section" id="information">
         ${sectionCopy("information", "Information", "식장 안내")}
         ${informationTabsMarkup()}
-      </section>` : "";
+      </section>`;
 }
 
 function attendanceSectionHtml() {
@@ -1357,11 +1359,20 @@ function bindSwipe(element, move) {
 }
 
 function visibleNotices() {
-  return data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
+  return (data.notices || []).filter((notice) => !notice.hidden && notice.text?.trim());
 }
 
 function informationTabsMarkup() {
   const notices = visibleNotices();
+  if (!notices.length) {
+    // 관리자 미리보기 전용 빈 자리(informationSectionHtml): 제목만 있는 항목은 탭으로 보여 주고 입력 안내를 띄움
+    const titles = (data.notices || []).filter((notice) => !notice.hidden && notice.title?.trim()).map((notice) => notice.title);
+    return `
+    <div class="information-tabs is-empty">
+      <div class="information-tablist">${(titles.length ? titles : ["주차 안내", "층별 안내"]).map((title, index) => `<span class="information-tab" aria-selected="${index === 0}">${escapeHtml(title)}</span>`).join("")}</div>
+      <div class="information-panel"><p class="information-empty">여기를 눌러 주차·층별 안내 같은 내용을 입력해 주세요.<br>내용을 입력하기 전까지 청첩장에는 보이지 않아요.</p></div>
+    </div>`;
+  }
   return `
     <div class="information-tabs" data-information-index="0">
       <div class="information-tablist" role="tablist">${notices.map((notice, index) => `<button class="information-tab" type="button" role="tab" aria-selected="${index === 0}" data-information-tab="${index}">${escapeHtml(notice.title)}</button>`).join("")}</div>
@@ -1373,6 +1384,7 @@ function bindInformationTabs() {
   const root = document.querySelector(".information-tabs");
   if (!root) return;
   const notices = visibleNotices();
+  if (!notices.length) return;
   const draw = () => {
     const index = Number(root.dataset.informationIndex);
     root.querySelector("[data-information-panel]").innerHTML = noticeRowsHtml(notices[index]);
@@ -1730,6 +1742,8 @@ window.renderCopyEditorPreview = (next) => {
   applyLayoutTemplate(data.designSystem?.activeLayoutId);
   window.WEDDING_DESIGN?.apply(data);
   document.querySelector("[data-invitation-intro]")?.remove();
+  // 식장 안내 탭 내용은 그린 뒤에 채우므로 다시 그릴 때마다 연결해야 미리보기에 내용이 보임
+  bindInformationTabs();
   applyResponsiveText();
   loadLazyBackgrounds();
   updateCountdown();

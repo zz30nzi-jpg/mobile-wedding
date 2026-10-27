@@ -52,6 +52,30 @@ async function cachedInvitationMeta(slug) {
   return meta;
 }
 
+function decodeGuestCode(code = "") {
+  const clean = String(code || "").trim();
+  if (!clean || /[^A-Za-z0-9_-]/.test(clean)) return "";
+  try {
+    const binary = atob(clean.replace(/-/g, "+").replace(/_/g, "/"));
+    return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, (character) => character.charCodeAt(0))).trim().slice(0, 20);
+  } catch {
+    return "";
+  }
+}
+
+// 이름 넣은 링크의 받는 분 이름: /청첩장주소/이름코드, ?n= 코드, 예전 ?to=·/청첩장주소/한글이름 (rsvp-storage.js pathInvitationParts·decodeGuestCode와 같은 규칙)
+function guestNameFrom(url) {
+  const plain = String(url.searchParams.get("to") || "").trim();
+  if (plain) return plain.slice(0, 20);
+  const fromQuery = decodeGuestCode(url.searchParams.get("n"));
+  if (fromQuery) return fromQuery;
+  const segment = url.pathname.split("/").filter(Boolean)[1] || "";
+  if (!segment || pathCardSlug(url.pathname) === null) return "";
+  let raw = segment;
+  try { raw = decodeURIComponent(segment); } catch {}
+  return decodeGuestCode(raw) || raw.replace(/[/.?#\\]/g, "").trim().slice(0, 20);
+}
+
 function escapeAttribute(value = "") {
   return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 }
@@ -128,11 +152,13 @@ export default async function middleware(request) {
         .replace(`<meta name="theme-color" content="${DEFAULT_BOOT_BG}">`, `<meta name="theme-color" content="${meta.color}">`)
         .replace('<html lang="ko">', '<html lang="ko" data-server-boot-bg>');
     }
-    // 공유 미리보기: 제목·설명·주소·대표 사진
-    if (meta.title) {
+    // 공유 미리보기: 제목·설명·주소·대표 사진. 이름 넣은 링크는 제목 앞에 "To. 이름"을 붙여 카톡 카드에서도 누구에게 보낸 건지 보이게
+    const guestName = guestNameFrom(url);
+    const title = guestName ? `To. ${guestName} ｜ ${meta.title || "모바일 청첩장"}` : meta.title;
+    if (title) {
       html = html
-        .replace('<meta property="og:title" content="모바일 청첩장">', `<meta property="og:title" content="${escapeAttribute(meta.title)}">`)
-        .replace("<title>모바일 청첩장</title>", `<title>${escapeAttribute(meta.title)}</title>`);
+        .replace('<meta property="og:title" content="모바일 청첩장">', `<meta property="og:title" content="${escapeAttribute(title)}">`)
+        .replace("<title>모바일 청첩장</title>", `<title>${escapeAttribute(title)}</title>`);
     }
     if (meta.description) {
       html = html

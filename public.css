@@ -382,7 +382,9 @@ body[data-layout-skin="valentine_choco"] .gallery-item:nth-child(3n + 2) { trans
 body[data-layout-skin="valentine_choco"] .gallery-item:nth-child(3n) { transform: rotate(-0.6deg) !important; }
 
 /* 식장 안내 탭 */
-body[data-layout-skin="valentine_choco"] .information-tab[aria-selected="true"], body[data-layout-skin="valentine_choco"] .information-tab.is-active { background: #fffdf9; color: var(--choco); font-weight: 600; }
+/* 식장 안내 탭: 고른 탭은 초콜릿 색으로 채워 또렷하게, 나머지는 크림 바탕 */
+body[data-layout-skin="valentine_choco"] .information-tab { border-color: rgba(107,74,60,0.16); background: #fffdf9; color: rgba(74,42,31,0.6); }
+body[data-layout-skin="valentine_choco"] .information-tab[aria-selected="true"], body[data-layout-skin="valentine_choco"] .information-tab.is-active { border-color: transparent; background: var(--choco); color: #fffdf9; font-weight: 600; box-shadow: 0 4px 10px rgba(74,42,31,0.18); }
 /* 계좌·방명록 카드 */
 body[data-layout-skin="valentine_choco"] .account-groups > :not(.copy-edit-handle), body[data-layout-skin="valentine_choco"] .guestbook-entry { border-color: transparent; background: #fffdf9; box-shadow: 0 4px 14px rgba(120,90,60,0.08); }
 /* 마지막 화면: 초콜릿 배경 위로 사진이 비치고, 윗가장자리가 물결로 녹아내림 */
@@ -414,6 +416,8 @@ body[data-layout-skin="valentine_choco"] .profile-birthday { background: #fffdf9
 body[data-layout-skin="valentine_choco"] .profile-photo { aspect-ratio: 4 / 5; background-size: cover !important; background-position: center !important; border: 0 !important; border-radius: 4px !important; outline: 1px solid rgba(74,42,31,0.35); outline-offset: 6px; box-shadow: none !important; }
 /* 식장 안내 본문 카드와 갤러리 더보기(하트) 버튼도 흰 바탕 + 브라운 글씨 */
 body[data-layout-skin="valentine_choco"] .information-panel { background: #fffdf9 !important; box-shadow: 0 4px 14px rgba(120,90,60,0.08); color: var(--copy); }
+body[data-layout-skin="valentine_choco"] .information-num { border-color: rgba(125,34,54,0.35); color: var(--burgundy); }
+body[data-layout-skin="valentine_choco"] .information-row p b { color: var(--choco); }
 body[data-layout-skin="valentine_choco"] #gallery-more { background: #fffdf9 !important; color: var(--choco) !important; filter: drop-shadow(0 3px 8px rgba(120,90,60,0.18)); }
 body[data-layout-skin="valentine_choco"] #gallery-more::after { color: var(--choco) !important; }
 

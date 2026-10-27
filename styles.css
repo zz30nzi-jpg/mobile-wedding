@@ -601,6 +601,7 @@ body.modal-open { position: fixed; right: 0; left: 0; width: 100%; overflow: hid
 .information-tab[aria-selected="true"] { border-color: transparent; background: var(--accent-dark); color: var(--card); font-weight: 600; }
 .information-panel { min-height: 100px; border-radius: 14px; padding: 22px 20px; background: color-mix(in srgb, var(--accent-dark) 7%, var(--card)); text-align: left; }
 .information-row { display: flex; gap: 12px; }
+.information-empty { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.8; text-align: center; }
 .information-row + .information-row { margin-top: 14px; border-top: 1px dashed color-mix(in srgb, var(--accent-dark) 22%, transparent); padding-top: 14px; }
 .information-num { display: grid; width: 22px; height: 22px; flex: none; margin-top: 2px; border: 1px solid color-mix(in srgb, var(--accent-dark) 40%, transparent); border-radius: 50%; color: var(--accent-dark); font-size: 11px; font-weight: 700; place-items: center; }
 .information-row p { margin: 0; color: var(--copy); font-size: 13px; line-height: 1.9; }

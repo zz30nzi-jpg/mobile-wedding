@@ -26,7 +26,9 @@ module.exports = async function sharePage(request, response) {
   const requestUrl = new URL(request.url || "/", `${protocol}://${host}`);
   const slug = normalizeSlug(requestUrl.searchParams.get("card") || requestUrl.searchParams.get("invitation") || SITE_CARD_SLUG) || SITE_CARD_SLUG;
   // 받는 분 이름(?n= 코드 또는 예전 ?to=)은 청첩장으로 넘겨 "to. 이름"으로 보이게 함 → /청첩장주소/이름코드
-  const mainUrl = `${protocol}://${host}${invitationPath(slug, { to: requestUrl.searchParams.get("to"), code: requestUrl.searchParams.get("n") })}`;
+  const to = String(requestUrl.searchParams.get("to") || "").trim().slice(0, 20);
+  const guestCode = String(requestUrl.searchParams.get("n") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80);
+  const mainUrl = `${protocol}://${host}${invitationPath(slug, { to, code: guestCode })}`;
   let invitation = {};
 
   try {
@@ -36,7 +38,13 @@ module.exports = async function sharePage(request, response) {
   }
 
   const hasInvitation = invitation && Object.keys(invitation).length > 0;
-  const title = hasInvitation ? (invitation.meta?.title || "모바일 청첩장") : "청첩장을 확인할 수 없습니다";
+  const baseTitle = hasInvitation ? (invitation.meta?.title || "모바일 청첩장") : "청첩장을 확인할 수 없습니다";
+  // 이름 넣은 링크는 카톡 카드 제목 앞에 "To. 이름" (middleware.js guestNameFrom과 같은 규칙)
+  let guestName = to;
+  if (!guestName && guestCode) {
+    try { guestName = Buffer.from(guestCode, "base64url").toString("utf8").trim().slice(0, 20); } catch { guestName = ""; }
+  }
+  const title = hasInvitation && guestName ? `To. ${guestName} ｜ ${baseTitle}` : baseTitle;
   const description = hasInvitation
     ? (String(invitation.meta?.description || "").trim() || `${invitation.wedding?.displayDate || ""} · ${invitation.wedding?.venue || ""}`.replace(/^ · | · $/g, "")).slice(0, 180)
     : "청첩장 주소를 다시 확인해 주세요.";
