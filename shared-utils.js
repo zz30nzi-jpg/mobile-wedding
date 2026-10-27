@@ -182,18 +182,18 @@
     // 박 색 자동이면 종이와 같은 톤으로 눌린 음각(무광), 박 색을 고르면 금속 박
     const attrs = `data-intro-style="envelope" data-env-tone="${c.tone}" data-seal-tone="${c.sealTone}" data-env-foil="${c.foil ? "metal" : "deboss"}" style="${vars.join(";")}"`;
     const stage = `
-      <div class="envelope-stage" role="button" tabindex="0" aria-label="청첩장 열기" data-envelope-open>
+      <div class="envelope-stage" role="button" tabindex="0" aria-label="청첩장 열기" data-envelope-open${to ? " data-has-to" : ""}>
         <div class="envelope-inside"></div>
         <div class="envelope-pocket">
           <i class="envelope-side envelope-side-left" style="clip-path:${sideClip(unit, "left")}"></i><i class="envelope-side envelope-side-right" style="clip-path:${sideClip(unit, "right")}"></i>
           <span class="envelope-bottom-wrap"><i class="envelope-bottom" style="clip-path:${bottomClip(unit)}"></i></span>
+          ${to ? `<div class="envelope-copy envelope-copy-to-wrap"><p class="envelope-copy-to" data-envelope-to>to. ${escapeHtml(to)}</p></div>` : ""}
         </div>
         <div class="envelope-flap-group">
           <div class="envelope-flap-shadow">
             <i class="envelope-flap" style="clip-path:${flapClip(unit)}"></i>
           </div>
           <div class="envelope-copy">
-            ${to ? `<p class="envelope-copy-to" data-envelope-to>to. ${escapeHtml(to)}</p>` : ""}
             <p class="envelope-copy-script" data-envelope-script>${escapeHtml(script || "Save the date")}</p>
             <p class="envelope-copy-lead" data-intro-name data-envelope-name>${escapeHtml(name)}</p>
             <p class="envelope-copy-date" data-envelope-date>${escapeHtml(date)}</p>

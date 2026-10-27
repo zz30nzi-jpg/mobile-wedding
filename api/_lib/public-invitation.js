@@ -15,12 +15,19 @@ function normalizeSlug(value = "") {
     .slice(0, 48);
 }
 
-// 청첩장 주소의 경로 부분: 기본 청첩장은 "/"(받는 분은 ?to=), 나머지는 /청첩장주소/받는분 (rsvp-storage.js invitationPageUrl 과 같은 규칙)
-function invitationPath(slug = "", to = "") {
+// 받는 분 이름 코드(UTF-8 → base64url). 카톡이 한글 주소의 공유 카드를 못 만드는 경우가 있어 주소에는 코드만 넣음 (rsvp-storage.js encodeGuestCode 와 같은 규칙)
+function guestCode(name = "") {
+  const clean = String(name || "").replace(/[/.?#\\]/g, "").trim().slice(0, 20);
+  return clean ? Buffer.from(clean, "utf8").toString("base64url") : "";
+}
+
+// 청첩장 주소의 경로 부분: 기본 청첩장은 "/"(받는 분은 ?n=코드), 나머지는 /청첩장주소/이름코드 (rsvp-storage.js invitationPageUrl 과 같은 규칙)
+// code: 이미 만들어진 이름 코드(?n=), to: 이름 그대로(예전 ?to=)
+function invitationPath(slug = "", { to = "", code = "" } = {}) {
   const card = normalizeSlug(slug);
-  const name = String(to || "").replace(/[/.?#\\]/g, "").trim().slice(0, 20);
-  if (!card || card === "main" || card === SITE_CARD_SLUG) return `/${name ? `?to=${encodeURIComponent(name)}` : ""}`;
-  return `/${encodeURIComponent(card)}${name ? `/${encodeURIComponent(name)}` : ""}`;
+  const nameCode = String(code || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80) || guestCode(to);
+  if (!card || card === "main" || card === SITE_CARD_SLUG) return `/${nameCode ? `?n=${nameCode}` : ""}`;
+  return `/${encodeURIComponent(card)}${nameCode ? `/${nameCode}` : ""}`;
 }
 
 // 공개 상태("ok")인 청첩장의 content를 돌려줍니다. 없거나 비공개면 null, 네트워크 오류는 throw.

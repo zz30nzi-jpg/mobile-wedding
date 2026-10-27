@@ -4,8 +4,9 @@ const modalRoot = document.querySelector("#modal-root");
 const pageParams = new URLSearchParams(location.search);
 // 주소가 /청첩장주소/받는분이름 형식이면 그 칸들 (rsvp-storage.js)
 const pathInvitation = window.RSVP_STORAGE?.pathInvitationParts?.() || { card: "", to: "" };
-// 개인 링크(/청첩장주소/홍길동 또는 ?to=홍길동)로 들어오면 봉투에 "to. 홍길동"을 보여 줌. 이름 없는 링크는 원래 봉투 그대로
-const guestName = String(pageParams.get("to") || pathInvitation.to || "").trim().slice(0, 20);
+// 개인 링크로 들어오면 봉투·메인 사진에 "to. 이름"을 보여 줌. 이름 없는 링크는 원래 화면 그대로.
+// /청첩장주소/이름코드 또는 ?n=이름코드 (관리자 '이름 넣은 링크'가 만듦, rsvp-storage.js encodeGuestCode). 예전 ?to=홍길동 링크도 읽음
+const guestName = String(pageParams.get("to") || window.RSVP_STORAGE?.decodeGuestCode?.(pageParams.get("n") || "") || pathInvitation.to || "").trim().slice(0, 20);
 // 이 값이 있으면 특정 청첩장·미리보기를 보는 중이라 관리자 페이지로 보내지 않음
 const hasCardContext = Boolean(pathInvitation.card) || ["card", "invitation", "__layout", "__thumb", "previewSectionMode", "copyEditorPreview"].some((key) => pageParams.has(key));
 
@@ -343,25 +344,6 @@ function fitSingleLineText() {
   });
 }
 
-function renderDayStrip() {
-  if (!weddingDate) return "";
-  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-  let cells = "";
-  for (let off = -2; off <= 2; off++) {
-    const d = new Date(weddingDate);
-    d.setDate(weddingDate.getDate() + off);
-    const isWed = off === 0;
-    cells += `<div class="day-cell${isWed ? " day-wedding" : ""}">
-      <span class="day-week">${WEEKDAYS_EN[d.getDay()]}</span>
-      <span class="day-num">${d.getDate()}</span>
-    </div>`;
-  }
-  return `<div class="day-strip-wrap">
-    <div class="day-strip-month">${months[weddingDate.getMonth()]}</div>
-    <div class="day-strip">${cells}</div>
-  </div>`;
-}
-
 function renderCalendar() {
   const year = weddingDate.getFullYear();
   const month = weddingDate.getMonth();
@@ -482,46 +464,7 @@ function shuffledGalleryPreview(images) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
-  // 벨벳나이트(crimson_silk)는 큰 미리보기 1장 + 3열 그리드 2줄(6장)로 정렬되도록 7장을 사용한다.
-  const count = document.body.dataset.layout === "crimson_silk" ? 7 : 6;
-  return shuffled.slice(0, count);
-}
-
-function probeImageOrientation(url) {
-  return new Promise((resolve) => {
-    if (!url) return resolve(null);
-    const img = new Image();
-    img.onload = () => resolve(img.naturalWidth > img.naturalHeight ? "landscape" : "portrait");
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
-}
-
-// 스칼렛데이(editorial_red) 매거진 갤러리: 1·6번 프레임은 가로형(16:9)이라
-// 가로형 사진만 배치하고, 가로형 사진이 없으면 해당 프레임을 세로형으로 대체한다.
-async function arrangeEditorialGallery() {
-  if (document.body.dataset.layout !== "editorial_red") return;
-  const grid = document.querySelector("#gallery .gallery-grid");
-  const items = grid ? [...grid.querySelectorAll(".gallery-item")] : [];
-  if (!items.length) return;
-  const gallery = galleryImages();
-  const sources = galleryPreviewImages.slice(0, items.length).map((image) => mediaUrl(galleryThumbAt(gallery.indexOf(image))));
-  const orientations = await Promise.all(sources.map(probeImageOrientation));
-  const landscapeIndexes = orientations.flatMap((orientation, index) => (orientation === "landscape" ? [index] : []));
-  const wideSlots = [...new Set([0, items.length - 1])];
-  const order = items.map((_, index) => index);
-  wideSlots.forEach((slot, slotIndex) => {
-    const landscapeIndex = landscapeIndexes[slotIndex];
-    if (landscapeIndex === undefined || landscapeIndex === slot) return;
-    const slotPos = order.indexOf(slot);
-    const landscapePos = order.indexOf(landscapeIndex);
-    [order[slotPos], order[landscapePos]] = [order[landscapePos], order[slotPos]];
-  });
-  order.forEach((originalIndex, position) => {
-    const item = items[originalIndex];
-    grid.appendChild(item);
-    item.classList.toggle("is-wide", wideSlots.includes(position) && orientations[originalIndex] === "landscape");
-  });
+  return shuffled.slice(0, 6);
 }
 
 function loadLazyBackgrounds() {
@@ -686,7 +629,6 @@ function weddingDaySectionHtml() {
   return `<section class="section" id="wedding-day">
         ${weddingDayTitleMarkup()}
         ${renderCalendar()}
-        ${renderDayStrip()}
         <div class="countdown" id="countdown"></div>
         <p class="subtle" id="countdown-message"></p>
       </section>`;
@@ -1684,7 +1626,8 @@ function applyLayoutTemplate(layoutId) {
   const urlOverride = pageParams.get("__layout");
   const isThumb = pageParams.get("__thumb") === "1";
   if (isThumb) document.body.classList.add("is-thumb");
-  const id = urlOverride || layoutId || "classic";
+  const requested = urlOverride || layoutId || "classic";
+  const id = (window.WEDDING_DESIGN.removedLayoutIds || []).includes(requested) ? "classic" : requested;
   // 스킨 레이아웃: 기본 레이아웃(구조)은 그대로 쓰고 색·장식만 덧입힘 (public.css 의 data-layout-skin 규칙)
   const skinBase = LAYOUT_SKINS[id];
   document.body.dataset.layout = skinBase || id;
@@ -1765,7 +1708,6 @@ async function start() {
   }
   applyResponsiveText();
   loadLazyBackgrounds();
-  arrangeEditorialGallery();
   updateCountdown();
   bindEvents();
   setInterval(updateCountdown, 1000);
@@ -1783,7 +1725,6 @@ window.renderCopyEditorPreview = (next) => {
   document.querySelector("[data-invitation-intro]")?.remove();
   applyResponsiveText();
   loadLazyBackgrounds();
-  arrangeEditorialGallery();
   updateCountdown();
 };
 

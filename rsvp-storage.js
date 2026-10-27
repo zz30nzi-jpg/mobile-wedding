@@ -211,20 +211,40 @@ function cleanGuestName(value = "") {
   return String(value || "").replace(/[/.?#\\]/g, "").trim().slice(0, 20);
 }
 
+// 받는 분 이름 코드: 카톡이 한글이 들어간 주소의 공유 카드를 못 만드는 경우가 있어 이름(UTF-8)을 base64url로 바꿔 주소에 넣음
+// (예: 홍길동 → 7ZmN6ri464-Z). api/_lib/public-invitation.js guestCode 와 같은 규칙
+function encodeGuestCode(name = "") {
+  return btoa(String.fromCharCode(...new TextEncoder().encode(String(name || "")))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// 코드가 아니거나 깨진 값이면 "" (화면에는 'to.' 줄 없이 원래 모습)
+function decodeGuestCode(code = "") {
+  const clean = String(code || "").trim();
+  if (!clean || /[^A-Za-z0-9_-]/.test(clean)) return "";
+  try {
+    const binary = atob(clean.replace(/-/g, "+").replace(/_/g, "/"));
+    return cleanGuestName(new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, (character) => character.charCodeAt(0))));
+  } catch {
+    return "";
+  }
+}
+
 function pathInvitationParts(pathname = location.pathname) {
   const parts = String(pathname || "").split("/").filter(Boolean).map((part) => {
     try { return decodeURIComponent(part); } catch { return part; }
   });
   if (!parts.length || parts.length > 2 || parts.some((part) => part.includes(".")) || RESERVED_PATH_SEGMENTS.has(parts[0].toLowerCase())) return { card: "", to: "" };
-  return { card: normalizeSlug(parts[0]), to: cleanGuestName(parts[1]) };
+  // 둘째 칸은 이름 코드, 코드가 아니면 이름을 그대로 쓴 것으로 봄 (/청첩장주소/홍길동)
+  return { card: normalizeSlug(parts[0]), to: decodeGuestCode(parts[1]) || cleanGuestName(parts[1]) };
 }
 
-// 공유용 청첩장 주소. 기본 청첩장은 사이트 첫 주소(받는 분은 ?to=), 나머지는 /청첩장주소/받는분
+// 공유용 청첩장 주소. 기본 청첩장은 사이트 첫 주소(받는 분은 ?n=코드), 나머지는 /청첩장주소/이름코드
 function invitationPageUrl(slug = "", to = "") {
   const card = normalizeSlug(slug);
   const name = cleanGuestName(to);
-  if (!card || card === DEFAULT_INVITATION_ID || card === SITE_CARD_SLUG) return `${location.origin}/${name ? `?to=${encodeURIComponent(name)}` : ""}`;
-  return `${location.origin}/${encodeURIComponent(card)}${name ? `/${encodeURIComponent(name)}` : ""}`;
+  const code = name ? encodeGuestCode(name) : "";
+  if (!card || card === DEFAULT_INVITATION_ID || card === SITE_CARD_SLUG) return `${location.origin}/${code ? `?n=${code}` : ""}`;
+  return `${location.origin}/${encodeURIComponent(card)}${code ? `/${code}` : ""}`;
 }
 
 function getUrlInvitationSlug() {
@@ -816,6 +836,7 @@ window.RSVP_STORAGE = {
   SITE_CARD_SLUG,
   pathInvitationParts,
   invitationPageUrl,
+  decodeGuestCode,
   getSupabaseClient,
   mediaPublicUrl,
   getActiveInvitationSlug,

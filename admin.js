@@ -21,7 +21,7 @@ window.AI_DESIGN_SERVICE = window.createWeddingAIService?.() || {
   generateVenueGuide: missingAIService,
 };
 const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
-const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
+const movieConcepts = ["none"];
 const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
 const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
 let currentInvitationSite = null;
@@ -639,12 +639,9 @@ function renderBasicInfoOnboarding(message = "") {
   // 레이아웃 미리보기 카드 생성 (builtInLayouts 기준)
   const layouts = [
     { id: "classic",       name: "클래식",     desc: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.",        bg: "#f7f0e7", accent: "#8d3440", heroShape: "full" },
-    { id: "editorial_red", name: "스칼렛 데이", desc: "딥레드 + 흑백 사진. 잡지형 큰 타이포·폴라로이드 프로필 구도.",     bg: "#f8f3ec", accent: "#c41230", heroShape: "full" },
     { id: "garden_doodle", name: "러브 두들",  desc: "초록 낙서 프레임 + 하트 사진. 손그림 감성의 사랑스러운 결혼식.",   bg: "#eef2eb", accent: "#c23b2a", heroShape: "heart" },
     { id: "navy_arch",     name: "달빛 서약",  desc: "파란 배경 + 아치 사진. 단정하고 품격 있는 커플의 웨딩.",          bg: "#f5f7fa", accent: "#1a2456", heroShape: "arch" },
-    { id: "cream_organic", name: "봄날 연가",  desc: "크림 + 라벤더 아치 패널. 둥글고 부드러운 봄 웨딩 무드.",          bg: "#faf8f4", accent: "#7c6d9a", heroShape: "full" },
     { id: "valentine_choco", name: "초콜릿 발렌타인", desc: "꽉 찬 메인 사진 아래로 초콜릿이 녹아 흐르고, 하트 안에 달력이 담긴 발렌타인 웨딩.", bg: "#efe4d8", accent: "#7d2236", heroShape: "full" },
-    { id: "crimson_silk",  name: "벨벳 나이트", desc: "진홍 다크 히어로 + 크림 본문. 연인의 열정을 담은 스플릿 구조.",   bg: "#f8f2ec", accent: "#8b1a2f", heroShape: "inset" },
   ];
   const layoutCards = layouts.map((l) => `
     <button class="onboarding-layout-card ${l.id === "classic" ? "is-selected" : ""}" type="button" data-layout-pick="${escapeAdminHtml(l.id)}"
@@ -1091,7 +1088,10 @@ const LAYOUT_COLOR_PRESET = "__layout__";
 const LAYOUTS_WITH_OWN_COLORS = { valentine_choco: { label: "대표색 (브라운·베이지)", bg: "#efe4d8", accent: "#7d2236" } };
 
 function editorPresetSelect(name, label, themes, selected, layoutColors = null) {
-  const group = (type, groupLabel) => `<optgroup label="${groupLabel}">${editorDesignOptions(themes.filter((theme) => theme.type === type), selected)}</optgroup>`;
+  const group = (type, groupLabel) => {
+    const items = themes.filter((theme) => theme.type === type);
+    return items.length ? `<optgroup label="${groupLabel}">${editorDesignOptions(items, selected)}</optgroup>` : "";
+  };
   const layoutGroup = `<optgroup label="레이아웃 대표색" data-layout-colors-group ${layoutColors ? "" : "hidden disabled"}><option value="${LAYOUT_COLOR_PRESET}" ${selected === LAYOUT_COLOR_PRESET ? "selected" : ""}>${escapeAdminHtml(layoutColors?.label || "대표색")}</option></optgroup>`;
   return `<label class="field"><span>${label}</span><select name="${name}">${layoutGroup}${group("color", "컬러테마")}${group("movie", "영화테마")}</select></label>`;
 }
@@ -1139,7 +1139,7 @@ function editorOnboardingPicker(system, selectedPreset, selectedTextTheme) {
           <h2>원하는 테마로<br>청첩장 편집을 시작해보세요</h2>
         </div>
         <div class="editor-start-section">
-          <h3>컬러 · 영화테마</h3>
+          <h3>컬러테마</h3>
           <div class="editor-start-grid">${(() => {
             const own = LAYOUTS_WITH_OWN_COLORS[system.activeLayoutId] || LAYOUTS_WITH_OWN_COLORS.valentine_choco;
             return `<button class="editor-start-card editor-start-layout-colors ${selectedPreset === LAYOUT_COLOR_PRESET ? "is-selected" : ""}" type="button" data-onboarding-preset="${LAYOUT_COLOR_PRESET}" ${LAYOUTS_WITH_OWN_COLORS[system.activeLayoutId] ? "" : "hidden"}>
@@ -1300,7 +1300,7 @@ function editorDesignPanel() {
     </section>
     <section class="editor-theme-strip">
       <span>테마</span>
-      ${editorPresetSelect("editorPresetId", "컬러테마 · 영화테마", system.themes, shownPreset, layoutColors)}
+      ${editorPresetSelect("editorPresetId", "컬러테마", system.themes, shownPreset, layoutColors)}
       <button class="editor-theme-open" type="button" data-editor-theme-open>전체보기</button>
     </section>
     ${onboarding}
@@ -2183,19 +2183,29 @@ function renderEditor(message = "", focus = "") {
         </fieldset>
         <div class="share-pane share-link-box">
           <strong>내 청첩장 링크</strong>
-          <button class="share-link-copy" type="button" data-share-link-copy data-share-link="" aria-label="청첩장 링크 복사" title="링크 복사">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
-            <span class="share-link-copied" aria-hidden="true">복사됐어요</span>
-          </button>
+          <div class="share-link-actions">
+            <button class="share-link-copy" type="button" data-share-link-copy data-share-link="" aria-label="청첩장 링크 복사" title="링크 복사">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+              <span class="share-link-copied" aria-hidden="true">복사됐어요</span>
+            </button>
+            <button class="share-link-copy share-link-kakao" type="button" data-share-kakao="main" aria-label="청첩장 카카오톡으로 보내기" title="카카오톡으로 보내기">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4C7.03 4 3 7.13 3 11c0 2.47 1.65 4.64 4.14 5.88l-.84 3.07c-.07.27.23.48.46.33l3.66-2.42c.51.07 1.03.11 1.58.11 4.97 0 9-3.13 9-7s-4.03-7-9-7z"/></svg>
+            </button>
+          </div>
         </div>
         <div class="share-pane share-link-box share-guest-link">
           <label><strong>이름 넣은 링크</strong><span>봉투에 "to. 이름"이 보여요</span>
             <input type="text" maxlength="20" placeholder="받는 분 이름" autocomplete="off" data-share-guest-name>
           </label>
-          <button class="share-link-copy" type="button" data-share-guest-copy aria-label="이름 넣은 링크 복사" title="링크 복사">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
-            <span class="share-link-copied" aria-hidden="true">복사됐어요</span>
-          </button>
+          <div class="share-link-actions">
+            <button class="share-link-copy" type="button" data-share-guest-copy aria-label="이름 넣은 링크 복사" title="링크 복사">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+              <span class="share-link-copied" aria-hidden="true">복사됐어요</span>
+            </button>
+            <button class="share-link-copy share-link-kakao" type="button" data-share-kakao="guest" aria-label="이름 넣은 청첩장 카카오톡으로 보내기" title="카카오톡으로 보내기">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4C7.03 4 3 7.13 3 11c0 2.47 1.65 4.64 4.14 5.88l-.84 3.07c-.07.27.23.48.46.33l3.66-2.42c.51.07 1.03.11 1.58.11 4.97 0 9-3.13 9-7s-4.03-7-9-7z"/></svg>
+            </button>
+          </div>
         </div>
         <fieldset class="share-pane" id="share-settings"><legend>미리보기</legend>
           <div class="kakao-card-preview" data-kakao-preview aria-label="카카오톡 공유 카드 미리보기">
@@ -2317,7 +2327,7 @@ function renderEditor(message = "", focus = "") {
               <span class="copy-frame-toggle-state" data-copy-frame-toggle-state>OFF</span>
             </button>
             <div class="copy-editor-frame-scroll" data-copy-frame-scroll>
-              <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20261027-intro1" title="공개 청첩장 문구 수정 미리보기" scrolling="yes" data-copy-editor-frame></iframe>
+              <iframe class="copy-editor-public-frame" src="./index.html?copyEditorPreview=1&v=20261027-rm1" title="공개 청첩장 문구 수정 미리보기" scrolling="yes" data-copy-editor-frame></iframe>
             </div>
             <aside class="copy-editor-drawer" data-copy-editor-drawer>
             <section class="copy-editor-section copy-editor-intro-settings">
@@ -2512,6 +2522,66 @@ function bindKakaoPreview() {
   // 이름 넣은 링크: 비워 두고 누르면 이름 없는 기본 링크가 복사됨
   const guestName = adminApp.querySelector("[data-share-guest-name]");
   adminApp.querySelector("[data-share-guest-copy]")?.addEventListener("click", (event) => copyLink(event.currentTarget, invitationLink(guestName?.value.trim() || "")));
+  // 카카오톡으로 보내기: 청첩장 안의 공유 버튼과 같은 버튼 카드(청첩장 보기·위치 보기). 이름 칸 옆 버튼은 이름 넣은 링크로 보냄
+  loadKakaoShare().catch(() => {});
+  const mapUrl = `${location.origin}/api/map${cardParam ? `?card=${encodeURIComponent(cardParam)}` : ""}`;
+  adminApp.querySelectorAll("[data-share-kakao]").forEach((button) => button.addEventListener("click", async () => {
+    const url = button.dataset.shareKakao === "guest" ? invitationLink(guestName?.value.trim() || "") : invitationLink();
+    const imagePath = invitationData.meta?.shareImage || invitationData.hero?.image || "";
+    const imageUrl = imagePath ? window.RSVP_STORAGE?.mediaPublicUrl?.(imagePath) || "" : "";
+    if (!/^https?:/.test(imageUrl)) {
+      alert("카드 사진이나 메인 사진을 저장한 뒤에 카카오톡으로 보낼 수 있어요.");
+      return;
+    }
+    let kakao;
+    try {
+      kakao = await loadKakaoShare();
+    } catch {
+      copyLink(button, url);
+      alert("카카오톡을 열지 못해서 링크를 복사했어요. 카카오톡에 붙여 넣어 보내 주세요.");
+      return;
+    }
+    kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: invitationData.meta?.title || "모바일 청첩장",
+        description: String(invitationData.meta?.description || "").trim() || `${invitationData.wedding?.displayDate || ""}\n${invitationData.wedding?.venue || ""}`.trim(),
+        imageUrl,
+        imageWidth: 600,
+        imageHeight: 800,
+        link: { mobileWebUrl: url, webUrl: url },
+      },
+      buttons: [
+        { title: "청첩장 보기", link: { mobileWebUrl: url, webUrl: url } },
+        { title: "위치 보기", link: { mobileWebUrl: mapUrl, webUrl: mapUrl } },
+      ],
+    });
+  }));
+}
+
+// 카카오 SDK·키(kakao-config.js)는 관리자 공유 탭에서 처음 필요할 때 한 번만 불러옴. 실패하면 다음에 다시 시도
+let kakaoSharePromise = null;
+function loadKakaoShare() {
+  const load = (src) => new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`${src} 불러오기 실패`));
+    document.head.appendChild(script);
+  });
+  kakaoSharePromise ||= Promise.all([
+    window.Kakao ? null : load("https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js"),
+    window.KAKAO_SHARE_CONFIG ? null : load("./kakao-config.js?v=20261026-kakao1"),
+  ]).then(() => {
+    const key = window.KAKAO_SHARE_CONFIG?.javascriptKey?.trim();
+    if (!key || !window.Kakao) throw new Error("카카오 공유 설정 없음");
+    if (!window.Kakao.isInitialized()) window.Kakao.init(key);
+    return window.Kakao;
+  }).catch((error) => {
+    kakaoSharePromise = null;
+    throw error;
+  });
+  return kakaoSharePromise;
 }
 
 function bindSectionModeTabs() {

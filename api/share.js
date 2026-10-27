@@ -25,8 +25,8 @@ module.exports = async function sharePage(request, response) {
   const host = request.headers["x-forwarded-host"] || request.headers.host;
   const requestUrl = new URL(request.url || "/", `${protocol}://${host}`);
   const slug = normalizeSlug(requestUrl.searchParams.get("card") || requestUrl.searchParams.get("invitation") || SITE_CARD_SLUG) || SITE_CARD_SLUG;
-  // 받는 분 이름(?to=)은 청첩장으로 그대로 넘겨 봉투에 "to. 이름"으로 보이게 함 → /청첩장주소/받는분
-  const mainUrl = `${protocol}://${host}${invitationPath(slug, requestUrl.searchParams.get("to"))}`;
+  // 받는 분 이름(?n= 코드 또는 예전 ?to=)은 청첩장으로 넘겨 "to. 이름"으로 보이게 함 → /청첩장주소/이름코드
+  const mainUrl = `${protocol}://${host}${invitationPath(slug, { to: requestUrl.searchParams.get("to"), code: requestUrl.searchParams.get("n") })}`;
   let invitation = {};
 
   try {
