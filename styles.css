@@ -91,6 +91,279 @@ body[data-theme="green"] {
   --panel-bg: rgba(255,255,255,0.62); --light-panel: rgba(255,255,255,0.7);
 }
 
+body[data-movie-concept="about_time"] {
+  --paper: #f7f0e7; --card: #fffaf4; --ink: #463a34; --muted: #88776e;
+  --accent: #b85862; --accent-dark: #7d2633; --line: rgba(125,38,51,0.2); --shadow: 0 12px 28px rgba(84,45,42,0.13);
+  --body-bg: #e9ddd1; --hero-bg: #cbb8a8; --media-start: #efe0d3; --media-end: #b99d8c; --label: #8d3440;
+  --nav-bg: rgba(255,249,241,0.96); --nav-border: #d2b5a7; --nav-button: #fbf1e8; --nav-text: #79313b; --nav-hover: #f2ded3;
+  --copy: #594a43; --soft-bg: rgba(249,239,228,0.9); --admin-bg: #efe3d8; --save: #8d3440; --save-hover: #702832;
+  --surface: #fffaf4; --input-bg: #fffdf9; --button-hover: #fff7ef;
+  --panel-bg: rgba(255,250,244,0.72); --light-panel: rgba(255,250,244,0.76);
+  --hero-overlay-top: rgba(0,0,0,0.05); --hero-overlay-bottom: rgba(0,0,0,0.48);
+  background-image: radial-gradient(circle at top left, rgba(125,38,51,0.08), transparent 34%), linear-gradient(145deg, #eaded2, #f5ece3);
+  font-family: Georgia, "Noto Serif KR", serif;
+}
+body[data-movie-concept="about_time"] .invitation {
+  background-color: var(--paper);
+  background-image: linear-gradient(rgba(255,250,244,0.72), rgba(255,250,244,0.72)), repeating-linear-gradient(0deg, transparent 0 27px, rgba(125,38,51,0.035) 28px);
+}
+body[data-movie-concept="about_time"] .section-title,
+body[data-movie-concept="about_time"] .hero-names,
+body[data-movie-concept="about_time"] .ending-names {
+  font-family: Georgia, "Noto Serif KR", serif;
+  letter-spacing: 0.08em;
+}
+body[data-movie-concept="about_time"] .hero { min-height: 730px; }
+body[data-movie-concept="about_time"] .hero-media { filter: saturate(0.92) contrast(0.98); }
+body[data-movie-concept="about_time"] .hero::before {
+  position: absolute;
+  z-index: 1;
+  inset: 14px;
+  border: 1px solid rgba(255,255,255,0.54);
+  box-shadow: inset 0 0 82px 28px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,0,0,0.18);
+  content: "";
+  pointer-events: none;
+}
+body[data-movie-concept="about_time"] .hero-content { z-index: 2; }
+body[data-movie-concept="about_time"] .hero-content {
+  right: 30px;
+  bottom: 38px;
+  left: 30px;
+  border-top: 1px solid rgba(255,255,255,0.62);
+  border-bottom: 1px solid rgba(255,255,255,0.62);
+  padding: 16px 0 14px;
+  text-align: left;
+}
+body[data-movie-concept="about_time"] .hero-eyebrow {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 23px;
+  font-style: italic;
+  letter-spacing: 0.16em;
+  text-transform: none;
+}
+body[data-movie-concept="about_time"] .hero-names { margin: 4px 0; font-size: 34px; letter-spacing: 0.06em; }
+body[data-movie-concept="about_time"] .hero-date { font-size: 12px; letter-spacing: 0.1em; }
+body[data-movie-concept="about_time"] .btn {
+  border: 1px solid rgba(125,38,51,0.42);
+  border-radius: 3px;
+  background: #fffaf4;
+  box-shadow: inset 0 0 0 2px rgba(125,38,51,0.07), 0 3px 8px rgba(84,45,42,0.09);
+  letter-spacing: 0.04em;
+}
+body[data-movie-concept="about_time"] .btn-primary { border-color: #7d2633; background: #7d2633; color: #fffaf4; }
+body[data-movie-concept="about_time"] .section { position: relative; }
+body[data-movie-concept="about_time"] .section + .section::before {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(125,38,51,0.28);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px rgba(125,38,51,0.18);
+  background-image: none;
+  -webkit-mask: none;
+  mask: none;
+  content: "";
+  transform: translateX(-50%) rotate(45deg);
+}
+body[data-movie-concept="about_time"] .section-title::after {
+  display: block;
+  width: 54px;
+  height: 1px;
+  margin: 15px auto 0;
+  background: linear-gradient(90deg, transparent, #8d3440, transparent);
+  content: "";
+}
+body[data-movie-concept="about_time"] .profile-card,
+body[data-movie-concept="about_time"] .notice,
+body[data-movie-concept="about_time"] details,
+body[data-movie-concept="about_time"] .countdown-item {
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 3px rgba(125,38,51,0.035), 0 5px 14px rgba(84,45,42,0.08);
+}
+body[data-movie-concept="about_time"] .profile-photo { border-radius: 2px 2px 0 0; filter: saturate(0.9); }
+body[data-movie-concept="about_time"] .calendar { border: 1px solid rgba(125,38,51,0.16); padding: 8px; background: rgba(255,250,244,0.48); }
+body[data-movie-concept="about_time"] .transport-panel { border-left-width: 4px; box-shadow: inset 0 0 0 1px rgba(125,38,51,0.06); }
+body[data-movie-concept="about_time"] .notice { border-left: 4px solid rgba(125,38,51,0.52); }
+body[data-movie-concept="about_time"] .gallery-item {
+  border: 5px solid #fffaf4;
+  border-radius: 2px;
+  background: #fffaf4;
+  box-shadow: 0 5px 12px rgba(84,45,42,0.16);
+}
+body[data-movie-concept="about_time"] .gallery-item:nth-child(odd) { transform: rotate(-1deg); }
+body[data-movie-concept="about_time"] .gallery-item:nth-child(even) { transform: rotate(1deg); }
+body[data-movie-concept="about_time"] .gallery-slide-photo { border: 7px solid #fffaf4; border-radius: 2px; box-shadow: var(--shadow); }
+body[data-movie-concept="about_time"] .ending { border-top: 3px double rgba(125,38,51,0.24); border-bottom: 3px double rgba(125,38,51,0.24); }
+
+body[data-movie-concept="la_la_land"] {
+  --paper: #faf4e8; --card: #fffaf0; --ink: #27305a; --muted: #6f7190;
+  --accent: #d8a241; --accent-dark: #62478e; --line: rgba(64,57,116,0.18); --shadow: 0 14px 30px rgba(30,30,77,0.13);
+  --body-bg: #171839; --hero-bg: #302b67; --media-start: #565099; --media-end: #262451; --label: #74559e;
+  --nav-bg: rgba(254,248,235,0.96); --nav-border: #d7b560; --nav-button: #fff9e9; --nav-text: #4a4279; --nav-hover: #f7e9bf;
+  --copy: #4e5275; --soft-bg: rgba(249,241,216,0.84); --admin-bg: #eee6d7; --save: #62478e; --save-hover: #4e396f;
+  --surface: #fffaf0; --input-bg: #fffdf8; --button-hover: #fff4d5; --panel-bg: rgba(255,250,240,0.78); --light-panel: rgba(255,248,225,0.8);
+  --hero-overlay-top: rgba(0,0,0,0.08); --hero-overlay-bottom: rgba(0,0,0,0.54);
+  --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 24'%3E%3Cpath d='m32 2 2.5 7.5L42 12l-7.5 2.5L32 22l-2.5-7.5L22 12l7.5-2.5Z' fill='none' stroke='%2362478e' stroke-width='1.2'/%3E%3Cpath d='m12 7 1.2 3.8L17 12l-3.8 1.2L12 17l-1.2-3.8L7 12l3.8-1.2Zm40 0 1.2 3.8L57 12l-3.8 1.2L52 17l-1.2-3.8L47 12l3.8-1.2Z' fill='none' stroke='%23d8a241' stroke-width='1'/%3E%3C/svg%3E");
+  background-image: radial-gradient(circle at 18% 12%, rgba(216,162,65,0.2) 0 1px, transparent 2px), radial-gradient(circle at 82% 20%, rgba(255,255,255,0.2) 0 1px, transparent 2px), linear-gradient(180deg, #171839, #39306e);
+  background-size: 34px 34px, 46px 46px, auto;
+}
+body[data-movie-concept="la_la_land"] .hero::before {
+  position: absolute; z-index: 1; inset: 15px; border: 1px solid rgba(255,226,153,0.5); content: ""; pointer-events: none;
+}
+body[data-movie-concept="la_la_land"] .hero-content { z-index: 2; }
+body[data-movie-concept="la_la_land"] .hero-content {
+  top: 54px;
+  bottom: auto;
+  text-align: center;
+  transform: none;
+}
+body[data-movie-concept="la_la_land"] .hero-eyebrow {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 22px;
+  font-style: italic;
+  letter-spacing: 0.16em;
+  text-transform: none;
+}
+body[data-movie-concept="la_la_land"] .hero-names {
+  margin: 5px auto 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 52px;
+  font-style: italic;
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.34);
+}
+body[data-movie-concept="la_la_land"] .hero-date {
+  position: absolute;
+  top: 570px;
+  right: 0;
+  left: 0;
+  border-top: 1px solid rgba(255,226,153,0.64);
+  padding-top: 10px;
+  color: #fff0bd;
+  font-family: Georgia, serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+body[data-movie-concept="la_la_land"] .btn { border-radius: 999px; box-shadow: 0 3px 10px rgba(64,57,116,0.1); }
+body[data-movie-concept="la_la_land"] .gallery-item { border: 3px solid #fffaf0; box-shadow: 0 5px 14px rgba(64,57,116,0.2); }
+body[data-movie-concept="la_la_land"] .section-title::after { display: block; width: 5px; height: 5px; margin: 14px auto 0; border-radius: 50%; background: #d8a241; box-shadow: -10px 0 #d8a241, 10px 0 #d8a241; content: ""; }
+
+body[data-movie-concept="spirited_away"] {
+  --paper: #f4f0df; --card: #fbf7ea; --ink: #37463f; --muted: #718076;
+  --accent: #a9bd91; --accent-dark: #56725d; --line: rgba(86,114,93,0.18); --shadow: 0 12px 28px rgba(63,81,67,0.11);
+  --body-bg: #dce3cf; --hero-bg: #b6c6ad; --media-start: #e8ead3; --media-end: #aabf9f; --label: #667c61;
+  --nav-bg: rgba(248,245,230,0.96); --nav-border: #b7c6a6; --nav-button: #f8f4e5; --nav-text: #56725d; --nav-hover: #e8eed9;
+  --copy: #58675e; --soft-bg: rgba(235,239,217,0.84); --admin-bg: #e3e8d8; --save: #6d876c; --save-hover: #587057;
+  --surface: #fcf8eb; --input-bg: #fffdf5; --button-hover: #eff2df; --panel-bg: rgba(252,248,235,0.78); --light-panel: rgba(246,244,224,0.84);
+  --hero-overlay-top: rgba(0,0,0,0.03); --hero-overlay-bottom: rgba(0,0,0,0.42);
+  --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 24'%3E%3Cpath d='M6 17c12-9 22 0 31-8 8-7 15-4 27-1M22 19c8-7 15-8 22-4' fill='none' stroke='%2356725d' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M35 10c-2-7 4-8 5-2-1 3-3 4-5 2Z' fill='%23a9bd91' stroke='%2356725d' stroke-width='.7'/%3E%3C/svg%3E");
+  background-image: radial-gradient(circle at 10% 10%, rgba(255,255,255,0.36), transparent 26%), linear-gradient(145deg, #dce3cf, #eef0df);
+}
+body[data-movie-concept="spirited_away"] .hero::before {
+  position: absolute; z-index: 1; inset: 13px; border: 1px solid rgba(249,245,224,0.56); border-radius: 18px; box-shadow: inset 0 0 72px 20px rgba(0,0,0,0.2); content: ""; pointer-events: none;
+}
+body[data-movie-concept="spirited_away"] .hero-content { z-index: 2; }
+body[data-movie-concept="spirited_away"] .hero-content {
+  top: 62px;
+  right: 30px;
+  bottom: auto;
+  left: auto;
+  width: 170px;
+  text-align: right;
+  transform: none;
+}
+body[data-movie-concept="spirited_away"] .hero-eyebrow {
+  margin: 0;
+  color: rgba(255,255,255,0.88);
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  text-transform: none;
+}
+body[data-movie-concept="spirited_away"] .hero-names {
+  margin: 18px 0 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0.18em;
+  writing-mode: vertical-rl;
+  margin-left: auto;
+}
+body[data-movie-concept="spirited_away"] .hero-date {
+  position: absolute;
+  top: 495px;
+  right: 0;
+  width: 210px;
+  border-right: 2px solid rgba(255,255,255,0.62);
+  padding-right: 10px;
+  font-size: 11px;
+  line-height: 1.8;
+  letter-spacing: 0.06em;
+}
+body[data-movie-concept="spirited_away"] .btn,
+body[data-movie-concept="spirited_away"] .profile-card,
+body[data-movie-concept="spirited_away"] .notice,
+body[data-movie-concept="spirited_away"] details { border-radius: 16px 8px 16px 8px; }
+body[data-movie-concept="spirited_away"] .gallery-item { border: 4px solid #fbf7ea; border-radius: 12px 5px 12px 5px; box-shadow: 0 5px 13px rgba(63,81,67,0.14); }
+
+body[data-movie-concept="you_are_the_apple"] {
+  --paper: #f7f3e8; --card: #fffaf0; --ink: #3e5267; --muted: #7d8d98;
+  --accent: #9fc4d4; --accent-dark: #537c91; --line: rgba(83,124,145,0.18); --shadow: 0 12px 28px rgba(72,104,119,0.1);
+  --body-bg: #e6eee9; --hero-bg: #bfd8df; --media-start: #edf2e8; --media-end: #b8d2d7; --label: #5f8799;
+  --nav-bg: rgba(251,248,237,0.96); --nav-border: #abcbd4; --nav-button: #fffaf0; --nav-text: #537c91; --nav-hover: #e7f0ef;
+  --copy: #5d6f7a; --soft-bg: rgba(237,242,233,0.88); --admin-bg: #e8efeb; --save: #6f9bab; --save-hover: #587f8f;
+  --surface: #fffaf0; --input-bg: #fffdf8; --button-hover: #edf4f1; --panel-bg: rgba(255,250,240,0.76); --light-panel: rgba(240,246,239,0.84);
+  --hero-overlay-top: rgba(0,0,0,0.025); --hero-overlay-bottom: rgba(0,0,0,0.4);
+  --section-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 24'%3E%3Cpath d='M8 14c9-9 16 8 25-2s16 8 31-2' fill='none' stroke='%23537c91' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M34 8c3-5 9-1 5 4-2 2-4 3-5 4-1-2-3-3-4-5-2-4 3-6 4-3Z' fill='none' stroke='%239fc4d4' stroke-width='1'/%3E%3C/svg%3E");
+  background-image: linear-gradient(145deg, #e6eee9, #f3eee1);
+}
+body[data-movie-concept="you_are_the_apple"] .hero::before {
+  position: absolute; z-index: 1; inset: 16px; border: 1px dashed rgba(255,255,255,0.62); box-shadow: inset 0 0 70px 20px rgba(0,0,0,0.18); content: ""; pointer-events: none;
+}
+body[data-movie-concept="you_are_the_apple"] .hero-content { z-index: 2; }
+body[data-movie-concept="you_are_the_apple"] .hero-content {
+  top: auto;
+  right: 26px;
+  bottom: 34px;
+  left: 26px;
+  border-radius: 3px;
+  padding: 16px 15px 14px;
+  background: rgba(255,250,240,0.86);
+  color: #416a7d;
+  text-align: left;
+  text-shadow: none;
+  transform: none;
+}
+body[data-movie-concept="you_are_the_apple"] .hero-eyebrow {
+  margin: 0;
+  color: #779cad;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 21px;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  text-transform: none;
+}
+body[data-movie-concept="you_are_the_apple"] .hero-names {
+  margin: 4px 0;
+  color: #416a7d;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+}
+body[data-movie-concept="you_are_the_apple"] .hero-date { color: #7393a0; font-size: 11px; letter-spacing: 0.06em; }
+body[data-movie-concept="you_are_the_apple"] .btn { border-radius: 7px; box-shadow: 2px 2px 0 rgba(83,124,145,0.11); }
+body[data-movie-concept="you_are_the_apple"] .gallery-item { border: 5px solid #fffaf0; border-bottom-width: 12px; border-radius: 2px; box-shadow: 0 4px 11px rgba(72,104,119,0.16); }
+body[data-movie-concept="you_are_the_apple"] .gallery-item:nth-child(odd) { transform: rotate(-0.8deg); }
+body[data-movie-concept="you_are_the_apple"] .gallery-item:nth-child(even) { transform: rotate(0.8deg); }
+
 * { box-sizing: border-box; }
 /* 더블탭 확대(double-tap zoom)만 차단하고 핀치 줌/스크롤은 유지합니다.
    특히 갤러리 모달의 좌우 넘김 버튼을 빠르게 두 번 누를 때 페이지 전체가
@@ -1894,6 +2167,12 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
   .hero { min-height: 620px; }
   .profile-grid { gap: 8px; }
   .hero-names { font-size: 26px; }
+  body[data-movie-concept="about_time"] .hero-names { font-size: 30px; }
+  body[data-movie-concept="la_la_land"] .hero-names { font-size: 45px; }
+  body[data-movie-concept="la_la_land"] .hero-date { top: 500px; }
+  body[data-movie-concept="spirited_away"] .hero-content { right: 22px; }
+  body[data-movie-concept="spirited_away"] .hero-names { font-size: 22px; }
+  body[data-movie-concept="spirited_away"] .hero-date { top: 430px; width: 188px; }
   body[data-hero-text-theme="editorial_left"] .hero .hero-names { font-size: 38px; }
   .countdown { gap: 4px; }
   .countdown-item { padding: 10px 2px; }
