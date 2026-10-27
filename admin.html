@@ -14,8 +14,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20261027-merge3">
-    <link rel="stylesheet" href="./admin.css?v=20261027-refac4">
+    <link rel="stylesheet" href="./styles.css?v=20261027-merge4">
+    <link rel="stylesheet" href="./admin.css?v=20261027-merge4">
     <!-- 실제 청첩장 테마가 적용될 때까지 내용을 가리고, 배경은 마지막으로 본 테마 색으로 칠함 (admin.js revealAdminPage) -->
     <style>html:not(.theme-ready){background:var(--boot-bg,#ffffff)}html:not(.theme-ready) body{visibility:hidden}</style>
     <script>
@@ -85,14 +85,14 @@
           .catch(function () { return null; });
         loadScript("https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js", 9000).catch(function () {});
         await loadScript("./invitation-data.js?v=20261026-stickers1", 12000);
-        await loadScript("./shared-utils.js?v=20261027-merge1", 12000);
+        await loadScript("./shared-utils.js?v=20261027-merge4", 12000);
         await loadScript("./section-registry.js?v=20261026-nosnap1", 12000);
         await loadScript("./design-system.js?v=20261027-merge1", 12000);
         await loadScript("./supabase-config.js?v=20260614-cache1", 12000);
         await loadScript("./rsvp-storage.js?v=20261027-merge1", 12000);
         await loadScript("./admin-ai-service.js?v=20260629-transport1", 12000);
         await loadScript("./stickers.js?v=20261027-ui51", 12000);
-        await loadScript("./admin.js?v=20261027-merge3", 12000);
+        await loadScript("./admin.js?v=20261027-merge4", 12000);
       }
       bootAdminScripts().catch(function (error) {
         showAdminLoadError("필수 스크립트 로딩에 실패했습니다. 네트워크를 바꾸거나 새로고침해 주세요. (" + String(error.message || error).replace(/[<>&]/g, "") + ")");

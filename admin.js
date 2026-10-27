@@ -1660,16 +1660,17 @@ const noticePresetValues = {
 };
 // 식장 안내 카테고리(탭)는 최대 5개
 const NOTICE_MAX = 5;
-const noticeContentPlaceholders = {
-  "주차 안내": "주차권배부, 주차정산 내용",
-  "연회장 이용 안내": "연회장 시간 및 위치 안내",
-  "층별 안내": "1층 · 로비, 안내데스크\n2층 · 예식홀\n3층 · 연회장",
-  "2부 예식안내": "2부 예식 관련 안내 내용을 입력해 주세요.",
+// 탭 이름별 항목 칸 예시 [항목 이름, 설명]
+const noticeRowPlaceholders = {
+  "주차 안내": ["지하 주차장", "2시간 무료"],
+  "층별 안내": ["1층", "로비, 안내데스크"],
+  "연회장 이용 안내": ["연회장", "2층, 예식 30분 전부터"],
+  "식사 안내": ["연회장", "예식 후 2층"],
+  "2부 예식안내": ["2부 예식", "오후 3시, 3층"],
 };
 const venueGuideTemplate = [
   { title: "주차 안내", text: "" },
-  { title: "연회장 이용 안내", text: "" },
-  { title: "2부 예식안내", text: "" },
+  { title: "층별 안내", text: "" },
 ];
 const bankOptions = ["", "국민은행", "신한은행", "우리은행", "하나은행", "농협은행", "기업은행", "카카오뱅크", "토스뱅크", "새마을금고", "부산은행", "경남은행", "직접 입력"];
 
@@ -1925,38 +1926,64 @@ function recommendationSets(groom, bride) {
   };
 }
 
-function noticeEditor(notice = {}, index = 0) {
+// 식장 안내·교통 안내 하단 편집기: 위에 카테고리 칩, 아래에는 고른 칩 하나만 편집(guide-*). 칩·선택 상태는 syncGuideChips가 그림
+// 식장 안내 한 항목(청첩장의 ①②③ 한 칸): 항목 이름 + 설명. 저장할 때는 notice.N.text 한 덩어리로 합침(noticeTextFromRows)
+function noticeRowEditor(row = {}, title = "") {
+  const [labelHint, bodyHint] = noticeRowPlaceholders[title] || ["항목 이름", "설명"];
   return `
-    <div class="notice-editor" data-notice-editor>
-      <div class="notice-editor-head"><strong>식장 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-notice-remove aria-label="식장 안내 ${index + 1} 삭제">−</button></div>
-      ${select(`noticePreset.${index}`, `식장 안내 ${index + 1} 추천`, "", noticePresets)}
-      ${input(`notice.${index}.title`, "제목", notice.title || "")}
-      <label class="field"><span>내용</span><textarea name="notice.${index}.text" rows="2" placeholder="${escapeAdminHtml(noticeContentPlaceholders[notice.title] || "")}">${escapeAdminHtml(notice.text || "")}</textarea></label>
-      <label class="consent"><input type="checkbox" name="notice.${index}.hidden" ${notice.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
+    <div class="guide-line guide-row" data-notice-row>
+      <input class="guide-row-label" value="${escapeAdminHtml(row.label || "")}" placeholder="${escapeAdminHtml(labelHint)}" aria-label="항목 이름">
+      <textarea rows="1" placeholder="${escapeAdminHtml(bodyHint)}" aria-label="설명">${escapeAdminHtml((row.lines || []).join("\n"))}</textarea>
+      <button class="guide-line-remove" type="button" data-notice-row-remove aria-label="항목 삭제">×</button>
+    </div>`;
+}
+
+function noticeRowsMarkup(text = "", title = "") {
+  const rows = adminUtils.parseNoticeRows(text);
+  return (rows.length ? rows : [{}]).map((row) => noticeRowEditor(row, title)).join("");
+}
+
+// 항목 칸 → 청첩장이 읽는 형식(shared-utils parseNoticeRows). 빈 항목은 버림
+function noticeTextFromRows(rows = []) {
+  return rows.filter((row) => row.label || row.body).map((row, index) => {
+    const [first = "", ...rest] = row.body.split("\n").map((line) => line.trim()).filter(Boolean);
+    const head = row.label ? (first ? `${row.label} · ${first}` : `${row.label} ·`) : (index === 0 ? first : `· ${first}`);
+    return [head, ...rest].join("\n");
+  }).join("\n");
+}
+
+function noticeEditor(notice = {}, index = 0) {
+  const suggestions = noticePresets.filter(([value]) => value).map(([value, label]) => `<button type="button" data-notice-preset="${value}">${label}</button>`).join("");
+  return `
+    <div class="guide-editor" data-notice-editor>
+      <label class="guide-field"><span>탭 이름</span><input name="notice.${index}.title" value="${escapeAdminHtml(notice.title || "")}" placeholder="예: 주차 안내" autocomplete="off"></label>
+      <div class="guide-suggest" data-guide-suggest>${suggestions}</div>
+      <div class="guide-field"><span>항목</span><div class="guide-lines" data-notice-rows>${noticeRowsMarkup(notice.text, notice.title)}</div></div>
+      <button class="guide-line-add" type="button" data-notice-row-add>＋ 항목 추가</button>
+      <textarea name="notice.${index}.text" hidden>${escapeAdminHtml(notice.text || "")}</textarea>
+      <div class="guide-editor-foot">
+        <label class="hero-copy-toggle"><input type="checkbox" name="notice.${index}.hidden" ${notice.hidden ? "checked" : ""}><span>청첩장에서 숨기기</span></label>
+        <button class="guide-remove" type="button" data-notice-remove>이 탭 삭제</button>
+      </div>
     </div>`;
 }
 
 function noticeManager(notices = []) {
   const editableNotices = notices.length ? notices.slice(0, NOTICE_MAX) : venueGuideTemplate;
   return `
-    <section class="editor-subsection"><div class="editor-subsection-head"><strong>식장 안내</strong><span>식사, 주차, 촬영 등 하객에게 알릴 내용을 관리합니다.</span></div>
-    <p class="admin-message micro-help">내용을 입력하지 않으면 청첩장에서 숨김처리됩니다.</p>
-    <p class="admin-message micro-help">한 줄에 하나씩 적고 «라벨 · 내용» 형식으로 쓰면 번호가 붙은 항목으로 나뉩니다. 구분자 «·» 없는 줄은 바로 윗 항목에 이어집니다.</p>
-    <div class="notice-manager" data-notice-manager>
-      <div class="notice-manager-list" data-notice-list>${editableNotices.map(noticeEditor).join("")}</div>
-      <div class="notice-ai-actions">
-        <button class="btn ai-generate-btn" type="button" data-ai-venue-guide>AI로 식장안내 생성</button>
-        <button class="btn notice-add" type="button" data-notice-add>＋ 식장 안내 추가</button>
-      </div>
-    </div></section>`;
+    <div class="guide-manager" data-notice-manager data-guide-active="0">
+      <div class="guide-chip-row"><div class="guide-chips" data-guide-chips></div><button class="guide-chip guide-chip-add" type="button" data-notice-add>＋ 추가</button></div>
+      <div class="guide-editors" data-notice-list>${editableNotices.map(noticeEditor).join("")}</div>
+      <p class="hero-tool-hint">항목마다 청첩장에 ①②③ 번호 칸으로 보여요. 항목이 비면 그 탭은 청첩장에서 숨겨져요.</p>
+    </div>`;
 }
 
 function transportLineEditor(line = {}, itemIndex = 0, lineIndex = 0) {
   return `
-    <div class="transport-line-editor" data-transport-line>
-      <input class="transport-line-icon-input" name="transport.${itemIndex}.lines.${lineIndex}.icon" value="${escapeAdminHtml(line.icon || "")}" maxlength="4" aria-label="줄 ${lineIndex + 1} 아이콘">
-      <textarea name="transport.${itemIndex}.lines.${lineIndex}.text" rows="2" aria-label="줄 ${lineIndex + 1} 내용">${escapeAdminHtml(line.text || "")}</textarea>
-      <button class="icon-btn" type="button" data-transport-line-remove aria-label="줄 ${lineIndex + 1} 삭제">×</button>
+    <div class="guide-line" data-transport-line>
+      <input class="guide-line-icon" name="transport.${itemIndex}.lines.${lineIndex}.icon" value="${escapeAdminHtml(line.icon || "")}" maxlength="4" aria-label="줄 ${lineIndex + 1} 아이콘">
+      <textarea name="transport.${itemIndex}.lines.${lineIndex}.text" rows="1" aria-label="줄 ${lineIndex + 1} 내용" placeholder="안내 문장">${escapeAdminHtml(line.text || "")}</textarea>
+      <button class="guide-line-remove" type="button" data-transport-line-remove aria-label="줄 ${lineIndex + 1} 삭제">×</button>
     </div>`;
 }
 
@@ -1965,26 +1992,25 @@ function transportEditor(item = {}, index = 0) {
   const selected = transportTypes.length ? normalizeTransportTitle(item.title) : item.title || "";
   const lines = normalizeTransportLines(item);
   return `
-    <div class="notice-editor" data-transport-editor>
-      <div class="notice-editor-head"><strong>교통 안내 ${index + 1}</strong><button class="icon-btn" type="button" data-transport-remove aria-label="교통 안내 ${index + 1} 삭제">×</button></div>
-      ${select(`transport.${index}.title`, "교통수단", selected, transportTypes.map((type) => [type.label, `${type.icon} ${type.label}`]))}
-      <div class="transport-line-list" data-transport-line-list>${lines.map((line, lineIndex) => transportLineEditor(line, index, lineIndex)).join("")}</div>
-      <button class="btn notice-add transport-line-add" type="button" data-transport-line-add>＋ 줄 추가</button>
-      <label class="consent"><input type="checkbox" name="transport.${index}.hidden" ${item.hidden ? "checked" : ""}> <span>청첩장에서 숨기기</span></label>
+    <div class="guide-editor" data-transport-editor>
+      <input type="hidden" name="transport.${index}.title" value="${escapeAdminHtml(selected)}">
+      <div class="guide-field"><span>안내 문장</span><div class="guide-lines" data-transport-line-list>${lines.map((line, lineIndex) => transportLineEditor(line, index, lineIndex)).join("")}</div></div>
+      <button class="guide-line-add" type="button" data-transport-line-add>＋ 줄 추가</button>
+      <div class="guide-editor-foot">
+        <label class="hero-copy-toggle"><input type="checkbox" name="transport.${index}.hidden" ${item.hidden ? "checked" : ""}><span>청첩장에서 숨기기</span></label>
+        <button class="guide-remove" type="button" data-transport-remove>이 교통수단 삭제</button>
+      </div>
     </div>`;
 }
 
 function transportManager(items = []) {
   return `
-    <section class="editor-subsection"><div class="editor-subsection-head"><strong>교통 안내</strong><span>가까운 역·정류장 기준으로 경로와 소요시간을 항목별로 관리합니다.</span></div>
-    <p class="admin-message micro-help">교통수단을 선택하고, 각 줄의 아이콘과 내용을 입력해 주세요. 줄을 추가/삭제할 수 있고, 한 줄 안에서도 줄바꿈으로 여러 문장을 적을 수 있습니다. AI 연결 시에는 식장 주소 기준 가장 가까운 기차/지하철역과 버스정류장을 찾아 안내를 생성합니다.</p>
-    <div class="notice-manager" data-transport-manager>
-      <div class="notice-manager-list" data-transport-list>${items.map(transportEditor).join("")}</div>
-      <div class="notice-ai-actions">
-        <button class="btn ai-generate-btn" type="button" data-ai-transport-guide>AI로 교통안내 생성</button>
-        <button class="btn notice-add" type="button" data-transport-add>＋ 교통 안내 추가</button>
-      </div>
-    </div></section>`;
+    <div class="guide-manager" data-transport-manager>
+      <div class="guide-chip-row guide-chip-wrap"><div class="guide-chips" data-guide-chips></div></div>
+      <div class="guide-editors" data-transport-list>${items.map(transportEditor).join("")}</div>
+      <p class="guide-empty" data-guide-empty>교통수단을 눌러 안내 문장을 적어 주세요.</p>
+      <div class="guide-foot-row"><p class="hero-tool-hint">문장을 적은 교통수단만 청첩장에 보여요.</p><button class="guide-ai" type="button" data-ai-transport-guide>AI로 초안 만들기</button></div>
+    </div>`;
 }
 
 function ensureAccountRows(accounts = [], sourceData = invitationData, options = {}) {
@@ -2049,6 +2075,9 @@ function formatAccountNumber(value = "") {
   return digits.replace(/(\d{3})(\d{4})(\d{4})(\d+)/, "$1-$2-$3-$4");
 }
 
+// 편집 화면 계좌 창에서 보고 있는 쪽(신랑측/신부측). 계좌를 추가·삭제해 다시 그려도 그대로 유지
+let accountActiveSide = "신랑측";
+
 function accountManager(accounts = [], options = {}) {
   const groups = ["신랑측", "신부측"];
   const relationOptions = ["신랑", "신부", "아버님", "어머님", "형제", "자매", "직접입력"];
@@ -2080,7 +2109,8 @@ function accountManager(accounts = [], options = {}) {
       </div>
     </div>`;
   return `
-    <section class="editor-subsection account-manager-section" data-account-manager><div class="editor-subsection-head"><strong>계좌 안내</strong><span>필요한 계좌만 남기고 추가·삭제할 수 있습니다.</span></div>
+    <section class="editor-subsection account-manager-section" data-account-manager data-account-active-side="${accountActiveSide}"><div class="editor-subsection-head"><strong>계좌 안내</strong><span>필요한 계좌만 남기고 추가·삭제할 수 있습니다.</span></div>
+    <div class="guide-chip-row account-side-tabs">${groups.map((side) => `<button class="guide-chip${side === accountActiveSide ? " is-active" : ""}" type="button" data-account-side-tab="${side}">${side}</button>`).join("")}</div>
     <div class="account-manager" data-account-list>
       ${groups.map((side) => `
         <section class="account-side-group" data-account-side="${side}">
@@ -2824,9 +2854,9 @@ function editorData(form) {
       lines: [...editor.querySelectorAll("[data-transport-line]")].map((line) => ({
         icon: line.querySelector('input').value.trim(),
         text: line.querySelector('textarea').value.trim(),
-      })).filter((line) => line.icon || line.text),
+      })).filter((line) => line.text),
       hidden: editor.querySelector('input[name*=".hidden"]').checked,
-    })).filter((item) => item.title || item.lines.length);
+    })).filter((item) => item.lines.length);
   }
   next.couple.groom.tags = fields.getAll("couple.groom.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
   next.couple.bride.tags = fields.getAll("couple.bride.tags").map((item) => item.trim().replace(/^#+/, "")).filter(Boolean).slice(0, 3);
@@ -3318,14 +3348,34 @@ function bindEditor() {
       updateFloatingSaveForToolDock();
     }
   };
+  // 식장 안내·교통 안내·계좌는 입력할 게 많아 하단 시트 대신 가운데 창으로 띄움(styles.css body.has-guide-modal). 바깥을 누르면 완료처럼 닫힘
+  document.querySelector(".guide-modal-backdrop")?.remove();
+  const guideBackdrop = document.createElement("div");
+  guideBackdrop.className = "guide-modal-backdrop";
+  guideBackdrop.addEventListener("click", () => closeToolDockFromHistory());
+  document.body.appendChild(guideBackdrop);
+  // 가운데 창에서 입력칸을 누르면 키보드가 올라온 뒤 그 칸이 창 안에서 보이게 스크롤
+  toolPanel?.addEventListener("focusin", (event) => {
+    if (!document.body.classList.contains("has-guide-modal") || !event.target.matches("input, textarea, select")) return;
+    setTimeout(() => event.target.scrollIntoView({ block: "nearest" }), 320);
+  });
+  const syncGuideModal = () => {
+    document.body.classList.toggle("has-guide-modal", Boolean(toolPanel && !toolPanel.hidden && ["information", "location", "account"].includes(toolPanel.dataset.context)));
+  };
   const updateFloatingSaveForToolDock = () => {
+    syncGuideModal();
     // 접힌 편집 도구 머리와 저장 버튼이 겹치지 않게 저장 버튼 위치를 바꾸는 표시(styles.css)
     document.body.classList.toggle("has-collapsed-tooldock", Boolean(toolPanel && !toolPanel.hidden && toolPanel.classList.contains("is-collapsed")));
     if (toolPanel && !toolPanel.hidden) openAdminOverlay(closeToolDockFromHistory);
     else closeAdminOverlay(closeToolDockFromHistory);
   };
+  // 식장·교통 안내 창을 열 때 내용을 기억해 두고, 취소하면 되돌림(편집기 쪽 guideSnapshot·guideRestore)
+  let guideSnapshot = null;
+  const guideManagerFor = (context) => copyEditor.querySelector(context === "information" ? "[data-notice-manager]" : context === "location" ? "[data-transport-manager]" : null);
   const setToolDock = (title, help, activeTab = "media", context = "text") => {
     if (!toolPanel) return;
+    const guideManager = guideManagerFor(context);
+    if (guideManager && (toolPanel.hidden || toolPanel.dataset.context !== context)) guideSnapshot = { manager: guideManager, items: guideManager.guideSnapshot?.() };
     toolPanel.hidden = false;
     toolPanel.classList.remove("is-collapsed");
     toolPanel.classList.toggle("is-manager", context === "information" || context === "location" || context === "wedding-snap-detail" || context === "rsvp-detail" || (context === "hero" && activeTab === "frame"));
@@ -3333,11 +3383,12 @@ function bindEditor() {
     toolPanel.classList.toggle("is-profile", context === "profile");
     toolPanel.classList.toggle("is-copy", context === "hero-copy" || context === "text-copy");
     toolPanel.dataset.context = context;
+    syncGuideModal();
     // 취소/완료: 열 때 상태를 저장해 두는 섹션 시트에만 (목록 관리형은 완료만)
     const sheetContexts = ["hero", "hero-copy", "text-copy", "profile", "parents", "interlude", "rsvp-detail", "information", "location", "gallery-sheet", "account", "calendar"];
     if (context !== "account") returnAccountManager();
     toolPanel.querySelector("[data-tooldock-actions]")?.toggleAttribute("hidden", !sheetContexts.includes(context));
-    toolPanel.querySelector("[data-tooldock-cancel]")?.toggleAttribute("hidden", context === "information" || context === "location");
+    toolPanel.querySelector("[data-tooldock-cancel]")?.toggleAttribute("hidden", false);
     if (!sheetContexts.includes(context)) heroEditSnapshot = null;
     if (heroFrameAdjusting && context !== "hero") stopHeroFrameAdjust();
     if (interludeAdjusting && context !== "interlude") stopInterludeFrameAdjust();
@@ -4092,6 +4143,8 @@ function bindEditor() {
   }
   function finishHeroEditing(cancel) {
     stopInterludeFrameAdjust();
+    if (cancel && guideSnapshot?.items) guideSnapshot.manager.guideRestore?.(guideSnapshot.items);
+    guideSnapshot = null;
     if (cancel && accountSnapshot) {
       renderAccountItems(accountSnapshot.items);
       invitationData.accountSuppressedKeys = accountSnapshot.suppressed;
@@ -4822,6 +4875,21 @@ function bindEditor() {
   });
   const bindAccountManager = () => {
     const manager = form.querySelector("[data-account-manager]");
+    // 계좌 창에서는 이름표를 숨기고 칸 안 흐린 글씨로 보여 줌(styles.css .sheet-account-host)
+    manager?.querySelectorAll("[data-account-editor] .field").forEach((field) => {
+      const label = field.querySelector("span")?.textContent || "";
+      const control = field.querySelector("input, select");
+      if (control?.tagName === "INPUT" && !control.placeholder) control.placeholder = label;
+      if (control?.tagName === "SELECT" && control.options[0]?.value === "") control.options[0].textContent = label;
+    });
+    // 계좌 창 안의 신랑측/신부측 탭(styles.css .sheet-account-host)
+    manager?.addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-account-side-tab]");
+      if (!tab) return;
+      accountActiveSide = tab.dataset.accountSideTab;
+      manager.dataset.accountActiveSide = accountActiveSide;
+      manager.querySelectorAll("[data-account-side-tab]").forEach((item) => item.classList.toggle("is-active", item === tab));
+    });
     const syncConditionalFields = () => {
       manager?.querySelectorAll("[data-account-editor]").forEach((editor) => {
         const relationSelect = editor.querySelector('select[name*=".relation"]');
@@ -4880,6 +4948,19 @@ function bindEditor() {
     syncConditionalFields();
   };
   bindAccountManager();
+  // 식장 안내·교통 안내 편집기 위쪽 칩: 편집기마다 하나씩, 고른 칩의 편집기만 보임
+  const syncGuideChips = (manager, editorSelector, labelOf) => {
+    if (!manager) return;
+    const editors = [...manager.querySelectorAll(editorSelector)];
+    const active = Math.min(Number(manager.dataset.guideActive || 0), Math.max(editors.length - 1, 0));
+    manager.dataset.guideActive = String(active);
+    editors.forEach((editor, index) => editor.classList.toggle("is-active", index === active));
+    manager.querySelector("[data-guide-chips]").innerHTML = editors.map((editor, index) => {
+      const hidden = editor.querySelector('input[name$=".hidden"]')?.checked;
+      return `<button class="guide-chip${index === active ? " is-active" : ""}${hidden ? " is-off" : ""}" type="button" data-guide-chip="${index}">${escapeAdminHtml(labelOf(editor, index))}</button>`;
+    }).join("");
+    manager.querySelector("[data-guide-empty]")?.toggleAttribute("hidden", editors.length > 0);
+  };
   const noticeManagerElement = form.querySelector("[data-notice-manager]");
   const noticeList = noticeManagerElement?.querySelector("[data-notice-list]");
   const noticeAdd = noticeManagerElement?.querySelector("[data-notice-add]");
@@ -4888,64 +4969,117 @@ function bindEditor() {
     text: editor.querySelector('textarea[name*=".text"]').value,
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   })) : [];
+  const syncNoticeChips = () => {
+    syncGuideChips(noticeManagerElement, "[data-notice-editor]", (editor) => editor.querySelector('input[name$=".title"]').value.trim() || "새 안내");
+    // 탭 이름이 비어 있을 때만 추천 이름을 보여 줌
+    noticeList?.querySelectorAll("[data-notice-editor]").forEach((editor) => editor.querySelector("[data-guide-suggest]")?.toggleAttribute("hidden", Boolean(editor.querySelector('input[name$=".title"]').value.trim())));
+    if (noticeAdd) noticeAdd.disabled = noticeItems().length >= NOTICE_MAX;
+  };
+  // 고른 칩과 같은 이름의 탭을 미리보기에서도 열어 둠
+  // 항목 칸을 고치면 숨겨 둔 notice.N.text를 다시 만들어 저장·미리보기에 쓰이게 함
+  const syncNoticeText = (editor) => {
+    const rows = [...editor.querySelectorAll("[data-notice-row]")].map((row) => ({
+      label: row.querySelector("input").value.trim(),
+      body: row.querySelector("textarea").value.trim(),
+    }));
+    editor.querySelector('textarea[name$=".text"]').value = noticeTextFromRows(rows);
+  };
+  const redrawNoticeRows = (editor) => {
+    const title = editor.querySelector('input[name$=".title"]').value.trim();
+    editor.querySelector("[data-notice-rows]").innerHTML = noticeRowsMarkup(editor.querySelector('textarea[name$=".text"]').value, title);
+    autoResizeTextareas(editor);
+  };
+  const showNoticeInPreview = () => {
+    const editor = noticeList?.querySelector("[data-notice-editor].is-active");
+    const title = editor?.querySelector('input[name$=".title"]').value.trim();
+    const tab = [...(frameDocumentRef?.querySelectorAll("#information [data-information-tab]") || [])].find((item) => item.textContent.trim() === title);
+    tab?.click();
+  };
   const renderNoticeItems = (items) => {
     if (!noticeList || !noticeAdd) return;
     noticeList.innerHTML = items.slice(0, NOTICE_MAX).map(noticeEditor).join("");
-    noticeAdd.disabled = items.length >= NOTICE_MAX;
+    syncNoticeChips();
     autoResizeTextareas(noticeList);
     refreshFrameLists();
   };
   if (noticeManagerElement) {
     noticeManagerElement.addEventListener("click", (event) => {
-      const aiButton = event.target.closest("[data-ai-venue-guide]");
-      if (aiButton) {
-        generateVenueGuide(aiButton);
+      const chip = event.target.closest("[data-guide-chip]");
+      if (chip) {
+        noticeManagerElement.dataset.guideActive = chip.dataset.guideChip;
+        syncNoticeChips();
+        showNoticeInPreview();
+        return;
+      }
+      const preset = event.target.closest("[data-notice-preset]");
+      if (preset) {
+        const selected = noticePresetValues[preset.dataset.noticePreset];
+        const editor = preset.closest("[data-notice-editor]");
+        const textField = editor.querySelector('textarea[name$=".text"]');
+        editor.querySelector('input[name$=".title"]').value = selected.title;
+        if (!textField.value.trim() && selected.text) textField.value = selected.text;
+        redrawNoticeRows(editor);
+        syncNoticeChips();
+        refreshFrameLists();
+        editor.querySelector("[data-notice-row] input")?.focus();
+        return;
+      }
+      const rowAdd = event.target.closest("[data-notice-row-add]");
+      if (rowAdd) {
+        const editor = rowAdd.closest("[data-notice-editor]");
+        const title = editor.querySelector('input[name$=".title"]').value.trim();
+        editor.querySelector("[data-notice-rows]").insertAdjacentHTML("beforeend", noticeRowEditor({}, title));
+        editor.querySelector("[data-notice-row]:last-child input")?.focus();
+        return;
+      }
+      const rowRemove = event.target.closest("[data-notice-row-remove]");
+      if (rowRemove) {
+        const editor = rowRemove.closest("[data-notice-editor]");
+        rowRemove.closest("[data-notice-row]").remove();
+        if (!editor.querySelector("[data-notice-row]")) editor.querySelector("[data-notice-rows]").insertAdjacentHTML("beforeend", noticeRowEditor({}, editor.querySelector('input[name$=".title"]').value.trim()));
+        syncNoticeText(editor);
+        refreshFrameLists();
         return;
       }
       if (event.target.closest("[data-notice-add]")) {
         const items = noticeItems();
-        if (items.length < NOTICE_MAX) renderNoticeItems([...items, { title: "", text: "" }]);
+        if (items.length >= NOTICE_MAX) return;
+        noticeManagerElement.dataset.guideActive = String(items.length);
+        renderNoticeItems([...items, { title: "", text: "" }]);
+        noticeList.querySelector('[data-notice-editor].is-active input[name$=".title"]')?.focus();
+        return;
       }
       const removeButton = event.target.closest("[data-notice-remove]");
       if (!removeButton) return;
       const items = noticeItems();
       const index = [...noticeList.querySelectorAll("[data-notice-editor]")].indexOf(removeButton.closest("[data-notice-editor]"));
       items.splice(index, 1);
+      noticeManagerElement.dataset.guideActive = String(Math.max(0, index - 1));
       renderNoticeItems(items);
     });
     noticeManagerElement.addEventListener("input", (event) => {
       if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
-      const titleField = event.target.closest('input[name*=".title"]');
+      const row = event.target.closest("[data-notice-row]");
+      if (row) syncNoticeText(row.closest("[data-notice-editor]"));
+      const titleField = event.target.closest('input[name$=".title"]');
       if (titleField) {
-        const textField = titleField.closest("[data-notice-editor]")?.querySelector('textarea[name*=".text"]');
-        if (textField && !textField.value.trim()) textField.placeholder = noticeContentPlaceholders[titleField.value.trim()] || "";
+        // 탭 이름에 맞는 예시로 빈 항목 칸 안내를 바꿈
+        const [labelHint, bodyHint] = noticeRowPlaceholders[titleField.value.trim()] || ["항목 이름", "설명"];
+        titleField.closest("[data-notice-editor]").querySelectorAll("[data-notice-row]").forEach((item) => {
+          item.querySelector("input").placeholder = labelHint;
+          item.querySelector("textarea").placeholder = bodyHint;
+        });
+        syncNoticeChips();
       }
-    });
-    noticeManagerElement.addEventListener("focusin", (event) => {
-      const field = event.target.closest('textarea[name*=".text"]');
-      if (!field || field.value.trim()) return;
-      field.dataset.placeholderText = field.placeholder;
-      field.placeholder = "";
-    });
-    noticeManagerElement.addEventListener("focusout", (event) => {
-      const field = event.target.closest('textarea[name*=".text"]');
-      if (!field || field.value.trim()) return;
-      field.placeholder = field.dataset.placeholderText || noticeContentPlaceholders[field.closest("[data-notice-editor]")?.querySelector('input[name*=".title"]')?.value] || "";
     });
     noticeManagerElement.addEventListener("input", refreshFrameLists);
     noticeManagerElement.addEventListener("change", refreshFrameLists);
     noticeManagerElement.addEventListener("change", (event) => {
-      const preset = event.target.closest('select[name^="noticePreset."]');
-      if (!preset) return;
-      const selected = noticePresetValues[preset.value];
-      if (!selected) return;
-      const editor = preset.closest("[data-notice-editor]");
-      editor.querySelector('input[name*=".title"]').value = selected.title;
-      editor.querySelector('textarea[name*=".text"]').value = selected.text;
-      editor.querySelector('textarea[name*=".text"]').placeholder = noticeContentPlaceholders[selected.title] || "";
-      refreshFrameLists();
+      if (event.target.matches('input[name$=".hidden"]')) syncNoticeChips();
     });
     renderNoticeItems(noticeItems());
+    noticeManagerElement.guideSnapshot = () => noticeItems();
+    noticeManagerElement.guideRestore = (items) => renderNoticeItems(items);
   }
   const transportManagerElement = form.querySelector("[data-transport-manager]");
   const transportList = transportManagerElement?.querySelector("[data-transport-list]");
@@ -4957,9 +5091,27 @@ function bindEditor() {
     })),
     hidden: editor.querySelector('input[name*=".hidden"]').checked,
   })) : [];
+  // 교통수단 칩 한 줄: 누르면 그 교통수단을 편집(없으면 새로 만듦). 문장을 적은 칸은 칩에 표시
+  const transportTitleOf = (editor) => editor.querySelector('input[name$=".title"]').value;
+  const syncTransportChips = () => {
+    if (!transportManagerElement || !transportList) return;
+    const editors = [...transportList.querySelectorAll("[data-transport-editor]")];
+    let activeType = transportManagerElement.dataset.activeType || "";
+    if (!editors.some((editor) => transportTitleOf(editor) === activeType)) activeType = editors[0] ? transportTitleOf(editors[0]) : "";
+    transportManagerElement.dataset.activeType = activeType;
+    editors.forEach((editor) => editor.classList.toggle("is-active", transportTitleOf(editor) === activeType));
+    transportManagerElement.querySelector("[data-guide-chips]").innerHTML = adminUtils.TRANSPORT_TYPES.map((type) => {
+      const editor = editors.find((item) => transportTitleOf(item) === type.label);
+      const filled = editor && [...editor.querySelectorAll("[data-transport-line] textarea")].some((field) => field.value.trim());
+      const off = editor?.querySelector('input[name$=".hidden"]')?.checked;
+      return `<button class="guide-chip${type.label === activeType ? " is-active" : ""}${filled ? " is-filled" : ""}${off ? " is-off" : ""}" type="button" data-transport-chip="${escapeAdminHtml(type.label)}">${type.icon} ${escapeAdminHtml(type.label)}</button>`;
+    }).join("");
+    transportManagerElement.querySelector("[data-guide-empty]")?.toggleAttribute("hidden", editors.length > 0);
+  };
   const renderTransportItems = (items) => {
     if (!transportList) return;
     transportList.innerHTML = items.map(transportEditor).join("");
+    syncTransportChips();
     autoResizeTextareas(transportList);
     refreshFrameLists();
   };
@@ -4981,10 +5133,6 @@ function bindEditor() {
     date: form.elements["wedding.date"]?.value || invitationData.wedding?.date || "",
     notices: noticeItems(),
   });
-  const generateVenueGuide = () => {
-    renderNoticeItems(venueGuideTemplate.map((item) => ({ ...item, hidden: false })));
-    alert("주차 안내 / 연회장 이용 안내 / 2부 예식안내 항목을 불러왔습니다.\n각 항목에 내용을 입력해 주세요. 입력하지 않으면 청첩장에서 숨겨집니다.");
-  };
   const generateTransportGuide = async (button) => {
     if (!window.AI_DESIGN_SERVICE?.generateTransportGuide) return alert("AI 서비스 스크립트를 불러오지 못했습니다.");
     button.disabled = true;
@@ -5013,10 +5161,18 @@ function bindEditor() {
       return;
     }
     const editors = [...transportList.querySelectorAll("[data-transport-editor]")];
-    if (event.target.closest("[data-transport-add]")) {
-      const defaultType = adminUtils.TRANSPORT_TYPES?.find((type) => type.label === adminUtils.normalizeTransportTitle("")) || adminUtils.TRANSPORT_TYPES?.[0];
-      const defaultLines = (defaultType?.lines || ["", ""]).map((icon) => ({ icon, text: "" }));
-      renderTransportItems([...transportItems(), { title: "", lines: defaultLines, hidden: false }]);
+    const chip = event.target.closest("[data-transport-chip]");
+    if (chip) {
+      const label = chip.dataset.transportChip;
+      transportManagerElement.dataset.activeType = label;
+      if (editors.some((editor) => transportTitleOf(editor) === label)) {
+        syncTransportChips();
+      } else {
+        // 처음 누른 교통수단은 기본 아이콘 줄로 새로 만들고 첫 칸에 바로 입력
+        const type = adminUtils.TRANSPORT_TYPES.find((entry) => entry.label === label);
+        renderTransportItems([...transportItems(), { title: label, lines: (type?.lines || ["", ""]).map((icon) => ({ icon, text: "" })), hidden: false }]);
+      }
+      transportList.querySelector("[data-transport-editor].is-active [data-transport-line] textarea")?.focus();
       return;
     }
     const lineAddButton = event.target.closest("[data-transport-line-add]");
@@ -5040,11 +5196,22 @@ function bindEditor() {
     const removeButton = event.target.closest("[data-transport-remove]");
     if (!removeButton) return;
     const items = transportItems();
-    items.splice(editors.indexOf(removeButton.closest("[data-transport-editor]")), 1);
+    const index = editors.indexOf(removeButton.closest("[data-transport-editor]"));
+    items.splice(index, 1);
+    transportManagerElement.dataset.activeType = "";
     renderTransportItems(items);
   });
+  transportManagerElement?.addEventListener("change", (event) => {
+    if (event.target.matches('input[name$=".hidden"]')) syncTransportChips();
+  });
+  syncTransportChips();
+  if (transportManagerElement) {
+    transportManagerElement.guideSnapshot = () => transportItems();
+    transportManagerElement.guideRestore = (items) => renderTransportItems(items);
+  }
   transportManagerElement?.addEventListener("input", (event) => {
     if (event.target.tagName === "TEXTAREA") autoResizeTextarea(event.target);
+    if (event.target.closest("[data-transport-line]")) syncTransportChips();
   });
   transportManagerElement?.addEventListener("input", refreshFrameLists);
   transportManagerElement?.addEventListener("change", refreshFrameLists);

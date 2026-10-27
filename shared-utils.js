@@ -52,9 +52,12 @@
   };
 
   // 식장 안내 본문: "라벨 · 내용" 줄이 새 행을 열고, 구분자 없는 줄은 앞 행에 이어 붙습니다.
+  // 관리자 항목 편집기가 쓰는 두 형식: "라벨 ·"(설명 없는 항목), "· 내용"(이름 없는 항목)
   const parseNoticeRows = (text = "") => String(text).split("\n").map((line) => line.trim()).filter(Boolean).reduce((rows, line) => {
     const divider = line.indexOf(" · ");
     if (divider > 0) rows.push({ label: line.slice(0, divider).trim(), lines: [line.slice(divider + 3).trim()] });
+    else if (line.endsWith(" ·")) rows.push({ label: line.slice(0, -2).trim(), lines: [] });
+    else if (line.startsWith("· ")) rows.push({ label: "", lines: [line.slice(2).trim()] });
     else if (rows.length) rows[rows.length - 1].lines.push(line);
     else rows.push({ label: "", lines: [line] });
     return rows;

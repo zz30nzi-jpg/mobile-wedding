@@ -815,6 +815,34 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 3px s
 .account-remove { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; font-size: 15px; }
 .account-add { width: calc(100% - 18px); margin: 0 9px 10px; }
 .account-manager-section { grid-column: 1 / -1; }
+/* 계좌 창(편집 화면): 신랑측/신부측 탭으로 한쪽씩. 기본 탭의 계좌 편집기에서는 두 쪽을 모두 보여 줌 */
+.account-side-tabs { display: none; }
+.sheet-account-host .account-side-tabs { display: flex; margin-bottom: 8px; }
+.sheet-account-host .account-side-head { display: none; }
+/* 계좌 창 카드: 연락처 목록처럼 촘촘하게. [관계][이름] × / [은행][계좌번호] / 예금주. 이름표는 칸 안 흐린 글씨(admin.js bindAccountManager) */
+.sheet-account-host .account-manager-section { border: 0 !important; padding: 0 !important; background: none !important; box-shadow: none !important; }
+.sheet-account-host .account-side-group { border: 0 !important; background: none !important; }
+.sheet-account-host .account-side-list { display: grid; gap: 6px; }
+.sheet-account-host .account-editor { grid-template-columns: 108px minmax(0, 1fr); gap: 6px !important; padding: 8px 34px 8px 8px !important; border: 1px solid var(--line) !important; border-radius: 12px !important; background: var(--card) !important; box-shadow: none !important; }
+.sheet-account-host .account-editor .account-row { padding: 0 !important; border: 0 !important; }
+.sheet-account-host .account-editor .account-row-main, .sheet-account-host .account-editor .account-row-custom { grid-column: 1 / -1; }
+.sheet-account-host .account-editor .account-name-relation { grid-template-columns: 108px minmax(0, 1fr); gap: 6px; }
+.sheet-account-host .account-editor .account-name-relation > .field:has(select) { order: -1; }
+.sheet-account-host .account-editor .account-row-bank { order: 3; }
+.sheet-account-host .account-editor .account-row:has(input[name$=".number"]) { order: 4; }
+.sheet-account-host .account-editor .account-row-custom[data-account-bank-custom] { order: 5; }
+.sheet-account-host .account-editor .account-row:has(input[name$=".name"]) { order: 6; grid-column: 1 / -1; }
+.sheet-account-host .account-editor .field { gap: 0 !important; }
+.sheet-account-host .account-editor .field > span { display: none; }
+/* 예금주만 칸 앞에 작은 이름표(값이 이름과 같으면 헷갈리지 않게) */
+.sheet-account-host .account-editor .account-row:has(input[name$=".name"]) .field { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px !important; }
+.sheet-account-host .account-editor .account-row:has(input[name$=".name"]) .field > span { display: block; padding-left: 4px; color: var(--muted); font-size: 12px !important; font-weight: 700; }
+.sheet-account-host .account-editor :is(input, select) { height: 36px !important; min-height: 36px !important; border: 0 !important; border-radius: 9px !important; padding: 0 10px !important; background: var(--soft-bg) !important; }
+.sheet-account-host .account-editor select { padding: 0 22px 0 10px !important; background-position: right 8px center !important; }
+.sheet-account-host .account-remove { position: absolute; top: 12px !important; right: 6px !important; width: 26px !important; height: 26px !important; min-height: 0 !important; border: 0 !important; padding: 0 !important; background: none !important; color: var(--muted) !important; font-size: 16px !important; }
+body .sheet-account-host .account-add.btn { width: 100% !important; min-height: 38px !important; margin: 6px 0 0 !important; border: 1px dashed var(--line) !important; border-radius: 12px !important; background: none !important; color: var(--accent-dark) !important; font-size: 13px !important; font-weight: 800; box-shadow: none !important; }
+.sheet-account-host [data-account-active-side="신랑측"] .account-side-group:not([data-account-side="신랑측"]),
+.sheet-account-host [data-account-active-side="신부측"] .account-side-group:not([data-account-side="신부측"]) { display: none; }
 .quick-couple-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .quick-side-card { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 16px; padding: 12px; background: var(--soft-bg); }
 .quick-side-card h3 { margin: 0; color: var(--accent-dark); font-size: 14px; }
@@ -1477,6 +1505,8 @@ body.copy-editor-public-preview .hero-media.copy-editable-target[data-active-med
 }
 body.copy-editor-public-preview .hero-media.copy-editable-target[data-edit-label]::before { position: absolute; z-index: 4; top: 18px; left: 18px; display: inline-grid; border-radius: 999px; padding: 5px 9px; background: var(--accent-dark); color: var(--card); content: attr(data-edit-label); font-size: 10px; font-weight: 800; pointer-events: none; }
 body.copy-editor-public-preview .hero-media.copy-editable-target[data-edit-label]::after { display: none; }
+/* 식장명은 한 줄 맞춤 때문에 overflow:hidden이라, 편집 표시(라벨·연필)와 큰 글자 윗부분이 잘림. 관리자 미리보기에서만 풀어 줌 */
+body.copy-editor-public-preview .location-venue.copy-editable-target { overflow: visible; }
 body.copy-editor-public-preview .hero-content { z-index: 14; }
 body.copy-editor-public-preview .hero-to { z-index: 15; }
 body.copy-editor-public-preview .profile-card.copy-editable-target,
@@ -1507,10 +1537,6 @@ body.copy-editor-public-preview .copy-preview-detail-edit { position: relative; 
 .editor-tooldock.is-manager .editor-tooldock-manager { max-height: min(48vh, 360px); }
 .editor-tooldock-manager .editor-subsection { min-width: 360px; border: 0; padding: 0; background: transparent; }
 .editor-tooldock-manager .editor-subsection-head { position: sticky; z-index: 1; top: 0; border-radius: 12px; padding: 8px; background: color-mix(in srgb, var(--card) 96%, transparent); }
-.editor-tooldock-manager .notice-manager-list { display: flex; grid-template-columns: none; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
-.editor-tooldock-manager .notice-editor { flex: 0 0 250px; }
-.editor-tooldock-manager [data-transport-list] { display: grid; grid-template-columns: 1fr; overflow: visible; }
-.editor-tooldock-manager [data-transport-list] .notice-editor { width: 100%; min-width: 0; }
 .notice-editor textarea { overflow: hidden; resize: none; }
 .editor-detail-fields { display: grid; min-width: 320px; gap: 9px; padding-bottom: 6px; }
 .editor-detail-fields .field textarea { min-height: 88px; }
@@ -1953,13 +1979,70 @@ body.copy-editor-public-preview.hero-frame-adjusting .hero-media .copy-edit-hand
 .hero-to-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .editor-tooldock .hero-to-steps .frame-step-control { gap: 2px; padding: 6px 8px; }
 .editor-tooldock .hero-to-steps .frame-step-control > span { font-size: 12px; }
-.editor-tooldock .hero-to-steps .frame-stepper { grid-template-columns: 30px minmax(24px, 1fr) 30px; }.hero-copy-row:has(.hero-copy-toggle input:not(:checked)) input[type="text"] { opacity: 0.4; }
+.editor-tooldock .hero-to-steps .frame-stepper { grid-template-columns: 30px minmax(24px, 1fr) 30px; }
+.hero-copy-row:has(.hero-copy-toggle input:not(:checked)) input[type="text"] { opacity: 0.4; }
 .hero-copy-names { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 4px; }
 .hero-copy-names i { color: var(--muted); font-style: normal; }
 .hero-position-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .hero-position-quick button, .hero-frame-actions button { min-height: 36px; border: 0; border-radius: 10px; background: var(--soft-bg); color: var(--ink); font-size: 13px; font-weight: 800; }
 .hero-position-quick button.is-active { background: var(--accent-dark); color: var(--card); }
 .hero-tool-hint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; text-align: center; }
+/* 식장 안내·교통 안내 하단 편집기(admin.js noticeManager·transportManager): 위 칩으로 고르고 아래에서 하나씩 편집.
+   메인 문구 시트와 같은 간격(8px)·글자(12px)·입력칸(soft-bg) */
+.guide-manager { display: grid; gap: 8px; }
+.guide-chip-row { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.guide-chip-row::-webkit-scrollbar { display: none; }
+.guide-chips { display: flex; gap: 6px; }
+.guide-chip { flex: none; min-height: 34px; border: 1px solid var(--line); border-radius: 999px; padding: 0 13px; background: var(--card); color: var(--ink); font-size: 12.5px; font-weight: 800; white-space: nowrap; }
+.guide-chip.is-active { border-color: transparent; background: var(--accent-dark); color: var(--card); }
+.guide-chip.is-off:not(.is-active) { color: var(--muted); text-decoration: line-through; }
+.guide-chip-add { border-style: dashed; color: var(--accent-dark); }
+/* 교통수단 칩: 6개가 두 줄로 감기고, 문장을 적은 칸은 점 표시 */
+.guide-chip-wrap { overflow: visible; }
+.guide-chip-wrap .guide-chips { flex-wrap: wrap; }
+.guide-chip-wrap .guide-chip:not(.is-active):not(.is-filled) { color: var(--muted); font-weight: 700; }
+.guide-chip.is-filled:not(.is-active) { border-color: color-mix(in srgb, var(--accent-dark) 45%, var(--line)); }
+.guide-chip.is-filled::after { display: inline-block; width: 5px; height: 5px; margin-left: 5px; border-radius: 50%; background: currentColor; content: ""; vertical-align: 2px; }
+.guide-chip-add:disabled { opacity: 0.4; }
+.guide-editor { display: none; gap: 8px; }
+.guide-editor.is-active { display: grid; }
+.guide-field { display: grid; gap: 4px; }
+.guide-field > span { color: var(--ink); font-size: 12px; font-weight: 800; }
+.guide-field input, .guide-field textarea, .guide-line textarea, .guide-line-icon, .guide-row-label { width: 100%; min-width: 0; min-height: 36px; border: 0; border-radius: 9px; padding: 6px 10px; background: var(--soft-bg); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.55; resize: none; }
+.guide-field textarea { min-height: 76px; overflow: hidden; }
+.guide-suggest { display: flex; flex-wrap: wrap; gap: 5px; }
+.guide-suggest[hidden] { display: none; }
+.guide-suggest button { min-height: 30px; border: 1px solid var(--line); border-radius: 999px; padding: 0 10px; background: var(--card); color: var(--ink); font-size: 12px; font-weight: 700; }
+.guide-lines { display: grid; gap: 6px; }
+.guide-line { display: grid; grid-template-columns: 44px minmax(0, 1fr) 28px; align-items: start; gap: 6px; }
+.guide-line-icon { padding: 8px 2px; font-size: 16px; text-align: center; }
+.guide-row { grid-template-columns: minmax(84px, 34%) minmax(0, 1fr) 28px; }
+.guide-row-label { font-weight: 700; }
+.guide-field .guide-line textarea { min-height: 36px; overflow: hidden; }
+.guide-line-remove { width: 28px; height: 36px; border: 0; background: none; color: var(--muted); font-size: 18px; }
+.guide-line-add, .guide-ai, .guide-remove { justify-self: start; min-height: 30px; border: 0; padding: 0; background: none; color: var(--accent-dark); font-size: 12px; font-weight: 800; }
+.guide-remove { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.guide-editor-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.guide-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.guide-foot-row .hero-tool-hint, .guide-manager > .hero-tool-hint { text-align: left; }
+.guide-empty { margin: 4px 0; color: var(--muted); font-size: 12px; text-align: center; }
+.guide-empty[hidden] { display: none; }
+
+/* 식장 안내·교통 안내 편집: 하단 시트 대신 가운데 창(admin.js syncGuideModal). 하단 탭·저장 버튼보다 위 */
+.guide-modal-backdrop { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(28,18,13,0.22); }
+body.has-guide-modal .guide-modal-backdrop { display: block; }
+/* 위쪽에 붙여 키보드가 올라와도 가리지 않게. 높이는 키보드를 뺀 화면(--keyboard-offset, admin.js) 안에서 내용만큼 */
+body.has-guide-modal .editor-tooldock { top: max(14px, calc(env(safe-area-inset-top) + 10px)) !important; right: auto !important; bottom: auto !important; left: 50% !important; z-index: 110; width: min(calc(100vw - 24px), 440px) !important; max-width: none !important; max-height: min(640px, calc(100dvh - var(--keyboard-offset, 0px) - max(28px, calc(env(safe-area-inset-top) + 24px)))) !important; border-radius: 18px !important; box-shadow: 0 18px 44px rgba(28,18,13,0.22); transform: translateX(-50%) !important; grid-template-rows: auto auto minmax(0, 1fr); }
+/* 입력칸 글자가 16px보다 작으면 휴대폰(특히 인앱 브라우저)이 눌렀을 때 화면을 확대함 */
+/* 관리자 전체 입력칸 14px 규칙(body[data-admin-area="general"] :is(input…))보다 우선하도록 같은 꼴로 */
+body[data-admin-area="general"].has-guide-modal .editor-tooldock :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]), select, textarea) { font-size: 16px !important; }
+/* 창 머리: [제목 ……… 취소 완료] 한 줄. 접기 버튼·설명 문구는 창에서는 쓰지 않음 */
+body.has-guide-modal .editor-tooldock .editor-tooldock-head { grid-template-columns: minmax(0, 1fr) auto !important; min-height: 40px; padding-bottom: 2px; }
+body.has-guide-modal .editor-tooldock .editor-tooldock-close, body.has-guide-modal .editor-tooldock [data-tooldock-help] { display: none !important; }
+body.has-guide-modal .editor-tooldock [data-tooldock-title] { padding-left: 4px; font-size: 16px; text-align: left; }
+body.has-guide-modal .editor-tooldock .editor-tooldock-pane.is-active { max-height: none; overflow-y: auto; }
+body.has-guide-modal .editor-tooldock .editor-tooldock-manager { max-height: none; }
+body.has-guide-modal .admin-floating-save { opacity: 0; pointer-events: none; }
 .editor-tool-button.hero-size-reset { justify-self: center; }
 .editor-tooldock .hero-frame-open { width: 100%; justify-content: center; }
 .hero-frame-tools { display: grid; gap: 8px; }
