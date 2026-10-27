@@ -141,6 +141,8 @@ img { max-width: 100%; }
 .invitation-intro::after { position: absolute; inset: 0; content: ""; background: var(--intro-tint); }
 .invitation-intro > * { position: relative; z-index: 1; }
 .invitation-intro.is-finished { visibility: hidden; opacity: 0; pointer-events: none; }
+/* 진입화면이 열리기 시작하기 전에는 본문을 그리지 않음(app.js playInvitationIntro). 진입화면 층이 늦게 그려져도 청첩장이 비치지 않게 */
+body.intro-covering .invitation { visibility: hidden; }
 .invitation-intro-copy { display: grid; padding: 28px; color: var(--intro-name-color, var(--accent-dark)); text-align: var(--intro-align, center); text-shadow: var(--intro-text-shadow, 0 1px 0 color-mix(in srgb, var(--card) 72%, transparent)); transform: translateY(var(--intro-offset-y, 0)); }
 .invitation-intro-copy p, .invitation-intro-copy span { margin: 0; color: var(--intro-sub-color, var(--muted)); letter-spacing: 0.14em; text-transform: uppercase; }
 .invitation-intro-copy p { margin-bottom: var(--intro-eyebrow-name-gap, 10px); font-size: var(--intro-eyebrow-size, 11px); }

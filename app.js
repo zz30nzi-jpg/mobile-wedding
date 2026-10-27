@@ -1175,10 +1175,15 @@ function playInvitationIntro() {
   // 끝나는 순간 페이지 전체 배치를 다시 계산해 버벅이고 화면이 살짝 흔들렸음
   document.documentElement.classList.add("intro-lock");
   document.body.classList.add("intro-open");
+  // 진입화면이 열리기 시작할 때까지 청첩장 본문을 숨겨 둠(styles.css body.intro-covering).
+  // 느린 휴대폰·카톡 인앱 브라우저는 무거운 진입화면 층을 늦게 그려, 그 사이 밑에 깔린 청첩장이 먼저 비칠 수 있음
+  document.body.classList.add("intro-covering");
+  const uncover = () => document.body.classList.remove("intro-covering");
   window.addEventListener("wheel", preventIntroAction, { passive: false });
   window.addEventListener("touchmove", preventIntroAction, { passive: false });
   window.addEventListener("keydown", preventIntroKey);
   const unlockScroll = () => {
+    uncover();
     document.documentElement.classList.remove("intro-lock");
     document.body.classList.remove("intro-open");
     window.removeEventListener("wheel", preventIntroAction);
@@ -1198,6 +1203,7 @@ function playInvitationIntro() {
       opened = true;
       // 탭 동작 안에서 음악을 시작해야 브라우저 자동재생 차단에 걸리지 않음
       playInvitationMusic();
+      uncover();
       intro.classList.add("is-opening");
       // 봉투 아래·씰은 뚜껑이 열린 직후(0.7s)부터 0.85s 동안 내려감 → 1.55s에 끝.
       // 그때부터 배경이 사라지는 동안(0.7s)에도 바로 스크롤할 수 있게 하고(is-finished는 터치를 통과시킴),
@@ -1231,6 +1237,7 @@ function playInvitationIntro() {
     await Promise.all([heroReady, fontsReady]);
     // 다음 프레임에 시작해야 클래스 변경이 한 프레임 안에서 레이아웃 작업과 겹치지 않음
     requestAnimationFrame(() => {
+      uncover();
       intro.classList.add("is-finished");
       setTimeout(() => {
         unlock();
