@@ -32,9 +32,7 @@ body:not([data-admin-area="general"]) .btn {
 }
 
 body:not([data-admin-area="general"]) .contact-row .btn,
-body:not([data-admin-area="general"]) .guest-photo-actions .btn,
-body:not([data-admin-area="general"]) .modal-actions .btn,
-body:not([data-admin-area="general"]) .share-row .btn {
+body:not([data-admin-area="general"]) .modal-actions .btn {
   flex: 1 1 0;
   max-width: 100%;
   padding-right: 12px;
@@ -47,19 +45,7 @@ body:not([data-admin-area="general"])[data-layout="garden_doodle"] .contact-row 
   flex: 0 1 148px;
 }
 
-body:not([data-admin-area="general"]) .guest-photo-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  width: 100%;
-  max-width: min(100%, 280px);
-  margin: 0 auto;
-}
 
-body:not([data-admin-area="general"]) .guest-photo-actions .btn {
-  width: 100%;
-  font-size: clamp(10px, 3vw, 12px);
-}
 
 body:not([data-admin-area="general"]) .profile-name {
   display: inline-flex;
@@ -138,13 +124,10 @@ body:not([data-admin-area="general"]) .location-address {
     max-width: min(100%, 144px);
     font-size: clamp(10px, 3.15vw, 12px);
   }
-  body:not([data-admin-area="general"]) .contact-row,
-  body:not([data-admin-area="general"]) .share-row {
+  body:not([data-admin-area="general"]) .contact-row {
     flex-wrap: nowrap;
   }
-  body:not([data-admin-area="general"]) .contact-row .btn,
-  body:not([data-admin-area="general"]) .guest-photo-actions .btn,
-  body:not([data-admin-area="general"]) .share-row .btn {
+  body:not([data-admin-area="general"]) .contact-row .btn {
     font-size: clamp(10px, 3vw, 12px);
     padding-right: 8px;
     padding-left: 8px;
@@ -159,10 +142,9 @@ body[data-layout="classic"] .section-title + .invitation-copy,
 body[data-layout="classic"] .section-title + .calendar,
 body[data-layout="classic"] .section-title + .gallery-grid { margin-top: 0; }
 body[data-layout="classic"] .subtle { margin: 0 auto 24px; line-height: 1.9; }
-body[data-layout="classic"] .subtle + .btn,
-body[data-layout="classic"] .subtle + .guest-photo-note + .guest-photo-actions { margin-top: 22px; }
-body[data-layout="classic"] .parents { max-width: min(100%, 248px); padding: 10px 13px; }
-body[data-layout="classic"] #invitation .contact-row { max-width: min(100%, 248px); }
+body[data-layout="classic"] .subtle + .btn { margin-top: 22px; }
+body[data-layout="classic"] .parents { max-width: min(100%, 320px); padding: 12px 14px; }
+body[data-layout="classic"] #invitation .contact-row { max-width: min(100%, 320px); }
 body[data-layout="classic"] #invitation .contact-row .btn { flex: 0 1 118px; padding-right: 8px; padding-left: 8px; }
 body[data-layout="classic"] .calendar,
 body[data-layout="classic"] .countdown { max-width: 258px; }
@@ -276,8 +258,6 @@ body[data-layout="classic"] .map-links .btn[data-map-app="tmap"]::before {
   margin: 0 !important;
   transform: translateY(1.5px) !important;
 }
-body[data-layout="classic"] .guest-photo-actions { max-width: 236px; }
-body[data-layout="classic"] .guest-photo-actions .btn { min-height: 38px; padding-right: 8px; padding-left: 8px; }
 body[data-layout="classic"] .gallery-footer { justify-content: flex-end; margin-top: 40px; padding-right: 8px; }
 body[data-layout="classic"] #gallery-more {
   width: 30px;
@@ -286,7 +266,6 @@ body[data-layout="classic"] #gallery-more {
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C5 16 1 12 1 7C1 3 4 1 7 1C9 1 11 2 12 4C13 2 15 1 17 1C20 1 23 3 23 7C23 12 19 16 12 21Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
 }
-.guest-photo-note { margin: -12px auto 20px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 
 /* RSVP modal compact summary style */
 .modal:has(#attendance-form) { width: min(100%, 370px); border-radius: 8px; padding: 24px; }
@@ -302,3 +281,268 @@ body[data-layout="classic"] #gallery-more {
 .modal:has(#attendance-form) .modal-actions { margin: 20px -16px -16px; }
 .modal:has(#attendance-form) #attendance-submit { width: 100%; border-radius: 4px; }
 
+
+
+/* ===== 초콜릿 발렌타인 (valentine_choco): 클래식 구조 위에 브라운·베이지 + 버건디·핑크 포인트 스킨 =====
+   아래 대표색은 '레이아웃 대표색'일 때만. 다른 컬러테마를 고르면(data-skin-colors="theme") 맨 아래 규칙으로 테마 색을 따름 */
+body[data-layout-skin="valentine_choco"]:not([data-skin-colors="theme"]) {
+  --paper: #fbf6f0 !important; --card: #fdf8f2 !important; --ink: #3b2620 !important; --copy: #5a4034 !important; --muted: #9a8274 !important;
+  --accent: #4a2a1f !important; --accent-dark: #4a2a1f !important; --line: rgba(125,34,54,0.16) !important; --shadow: 0 12px 32px rgba(74,42,31,0.12) !important;
+  --body-bg: #f4ece3 !important; --hero-bg: #4a2a1f !important; --media-start: #e7d7c8 !important; --media-end: #b89b86 !important; --label: #6b4a3c !important;
+  --nav-bg: rgba(253,248,242,0.96) !important; --nav-border: #dcc8b6 !important; --nav-button: #f1e4d6 !important; --nav-text: #6b4a3c !important; --nav-hover: #e8d6c4 !important;
+  --soft-bg: rgba(251,246,240,0.86) !important; --save: #4a2a1f !important; --save-hover: #3a2018 !important;
+  --surface: #fffaf5 !important; --input-bg: #fffaf5 !important; --button-hover: #fffaf5 !important; --panel-bg: rgba(255,250,245,0.66) !important; --light-panel: rgba(255,250,245,0.72) !important;
+  --choco: #4a2a1f !important; --burgundy: #7d2236 !important; --beige-light: #f3e6d6 !important;
+  --hero-overlay-top: rgba(40,20,14,0.08) !important; --hero-overlay-bottom: rgba(40,20,14,0.42) !important;
+}
+/* 메인 사진: 꽉 찬 화면 유지, 하단 흐림 대신 초콜릿이 녹아 흘러내림 */
+body[data-layout-skin="valentine_choco"] .hero { background: transparent; }
+/* 메인 사진 자체를 아래 가장자리가 녹아 흘러내리는 모양으로 자름: 사진을 아래로 78px 늘리고,
+   위쪽은 그대로(사각형 마스크) + 맨 아래 140px은 방울 모양 마스크 */
+body[data-layout-skin="valentine_choco"] .hero-media {
+  bottom: -78px; opacity: 1;
+  -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 139px) no-repeat, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 375 140' preserveAspectRatio='none'><path d='M0 0 H375 V50 C362 50 354 58 351 72 C348 88 341 100 330 100 C318 100 313 88 311 76 C309 62 300 54 286 54 C271 54 263 65 259 82 C254 104 251 128 237 129 C223 130 219 106 217 86 C215 66 206 56 190 56 C176 56 169 63 163 71 C156 80 146 82 137 75 C128 67 120 59 106 59 C91 59 83 71 79 86 C74 104 67 114 56 114 C44 114 40 101 38 86 C35 66 22 52 0 52 Z' fill='%23000'/></svg>") bottom / 100% 140px no-repeat;
+  mask: linear-gradient(#000, #000) top / 100% calc(100% - 139px) no-repeat, url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 375 140' preserveAspectRatio='none'><path d='M0 0 H375 V50 C362 50 354 58 351 72 C348 88 341 100 330 100 C318 100 313 88 311 76 C309 62 300 54 286 54 C271 54 263 65 259 82 C254 104 251 128 237 129 C223 130 219 106 217 86 C215 66 206 56 190 56 C176 56 169 63 163 71 C156 80 146 82 137 75 C128 67 120 59 106 59 C91 59 83 71 79 86 C74 104 67 114 56 114 C44 114 40 101 38 86 C35 66 22 52 0 52 Z' fill='%23000'/></svg>") bottom / 100% 140px no-repeat;
+}
+/* 글자 가독성용 그늘은 옅게만: 글자 주변 최대 18%, 사진 중간부터는 원본 밝기 */
+body[data-layout-skin="valentine_choco"] .hero::after { background: linear-gradient(180deg, rgba(40,20,14,0.06) 0%, rgba(40,20,14,0.18) 30%, rgba(40,20,14,0.08) 52%, transparent 70%); }
+body[data-layout-skin="valentine_choco"] #invitation { padding-top: 100px; }
+/* Our Wedding / Day 타이틀 */
+/* 원래 영문 문구는 숨기고 ::before/::after 로 그림. 관리자에서 글자 크기를 바꾸면 font-size 가 인라인 !important 로 들어오므로
+   크기 0 대신 줄 높이 0 + 투명 글자로 숨김 */
+body[data-layout-skin="valentine_choco"] .hero-eyebrow { font-size: 0; color: transparent !important; line-height: 0 !important; letter-spacing: 0; text-shadow: none !important; text-transform: none; }
+body[data-layout-skin="valentine_choco"] .hero-eyebrow::before,
+body[data-layout-skin="valentine_choco"] .hero-eyebrow::after { line-height: 1; }
+body[data-layout-skin="valentine_choco"] .hero-eyebrow::before { display: block; content: attr(data-main); color: #fff; font-family: "Playfair Display", serif; font-size: 38px; font-weight: 400; letter-spacing: 0.01em; text-shadow: 0 0 24px rgba(40,20,14,0.42), 0 1px 3px rgba(40,20,14,0.12); }
+body[data-layout-skin="valentine_choco"] .hero-eyebrow::after { display: block; margin-top: -6px; content: attr(data-script); color: var(--beige-light); font-family: "Great Vibes", cursive; font-size: 50px; text-shadow: 0 0 22px rgba(40,20,14,0.4), 0 1px 3px rgba(40,20,14,0.1); }
+body[data-layout-skin="valentine_choco"] .hero-names { margin-top: 18px; font-size: 24px; letter-spacing: 0.14em; }
+/* 옅어진 사진 그늘 대신 글자 뒤에만 넓게 번지는 그림자(윤곽이 보이지 않게 블러 크게, 진하지 않게) */
+body[data-layout-skin="valentine_choco"] .hero-names,
+body[data-layout-skin="valentine_choco"] .hero-date { text-shadow: 0 0 20px rgba(40,20,14,0.42), 0 1px 3px rgba(40,20,14,0.12); }
+body[data-layout-skin="valentine_choco"] .hero-date { letter-spacing: 0.08em; }
+/* 섹션 라벨·제목 */
+/* 달력: 버건디 하트 안에 담고, 뒤로 핑크 빛이 은은하게 번짐 */
+/* 달력: 화면보다 큰 버건디 하트(좌우가 잘림) 안에 크게 담고, 뒤로 핑크 빛이 은은하게 번짐 */
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar {
+  display: grid; align-content: start; box-sizing: border-box; max-width: none; height: 486px; margin: -22px -30px 6px; padding: 126px 62px 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92' preserveAspectRatio='none'><defs><linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23963247'/><stop offset='1' stop-color='%236e1c2f'/></linearGradient></defs><path d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z' fill='url(%23h)'/></svg>") center 14px / 142% 472px no-repeat;
+  filter: drop-shadow(0 12px 26px rgba(125,34,54,0.28));
+}
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar caption, body[data-layout-skin="valentine_choco"] #wedding-day .calendar thead, body[data-layout-skin="valentine_choco"] #wedding-day .calendar tbody, body[data-layout-skin="valentine_choco"] #wedding-day .calendar tr { display: contents; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar caption { display: block; grid-column: 1 / -1; margin: 0 0 14px; text-align: center; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar .calendar-month-name { display: block; color: #fff; font-family: "Great Vibes", cursive; font-size: 58px; line-height: 1; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar .calendar-year-month { display: none; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar th, body[data-layout-skin="valentine_choco"] #wedding-day .calendar td { display: grid; place-items: center; height: 32px; padding: 0; color: #fff; font-family: "Playfair Display", serif; font-size: 14px; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar th { height: 28px; color: rgba(255,255,255,0.72); font-family: "Noto Serif KR", serif; font-size: 11px; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar .wedding-day span { width: 28px; height: 28px; color: var(--burgundy) !important; font-weight: 700; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar .wedding-day span::before { background-color: #fff8f2; }
+
+/* --- 섹션 공통: 손글씨 라벨, 하트 구분 아이콘, 초콜릿·버건디 버튼 --- */
+body[data-layout-skin="valentine_choco"] { --valentine-drip-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 375 140' preserveAspectRatio='none'><path d='M0 0 H375 V50 C362 50 354 58 351 72 C348 88 341 100 330 100 C318 100 313 88 311 76 C309 62 300 54 286 54 C271 54 263 65 259 82 C254 104 251 128 237 129 C223 130 219 106 217 86 C215 66 206 56 190 56 C176 56 169 63 163 71 C156 80 146 82 137 75 C128 67 120 59 106 59 C91 59 83 71 79 86 C74 104 67 114 56 114 C44 114 40 101 38 86 C35 66 22 52 0 52 Z' fill='%23000'/></svg>"); --valentine-wave-top: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 375 46' preserveAspectRatio='none'><path d='M0 46 V24 C30 10 58 30 92 22 S150 6 190 18 S256 34 298 18 S352 8 375 20 V46 Z' fill='%23000'/></svg>"); --section-divider: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M20 33C11 27 6 22 6 16c0-4 3-7 7-7 3 0 5 2 7 5 2-3 4-5 7-5 4 0 7 3 7 7 0 6-5 11-14 17z'/></svg>"); }
+body[data-layout-skin="valentine_choco"] .section + .section::before { width: 22px; height: 22px; top: -6px; background: var(--burgundy); }
+body[data-layout-skin="valentine_choco"] .section-label { margin-bottom: 6px !important; color: rgba(107,74,60,0.42) !important; font-family: "Great Vibes", cursive !important; font-size: 34px !important; letter-spacing: 0 !important; text-transform: none !important; line-height: 1.1 !important; }
+body[data-layout-skin="valentine_choco"] .section-label::before, body[data-layout-skin="valentine_choco"] .section-label::after { content: none; }
+body[data-layout-skin="valentine_choco"] .section-title { color: var(--choco); font-size: 19px; letter-spacing: 0.02em; }
+body[data-layout-skin="valentine_choco"] .btn { border: 1px solid rgba(255,255,255,0.9) !important; border-radius: 999px !important; background: #fffdf9 !important; color: var(--choco) !important; box-shadow: 0 4px 14px rgba(120,90,60,0.1) !important; }
+body[data-layout-skin="valentine_choco"] .btn:hover { background: #ffffff !important; }
+body[data-layout-skin="valentine_choco"] .btn-primary { border-color: rgba(255,255,255,0.9) !important; background: #fffdf9 !important; color: var(--choco) !important; font-weight: 600; }
+body[data-layout-skin="valentine_choco"] .btn-primary:hover { background: #ffffff !important; }
+/* 인사말: 혼주 카드 */
+body[data-layout-skin="valentine_choco"] .parents { border: 0; background: #fffdf9; box-shadow: 0 4px 14px rgba(120,90,60,0.08); }
+body[data-layout-skin="valentine_choco"] .parents strong { color: var(--choco); }
+body[data-layout-skin="valentine_choco"] .parents-heart { color: #b08d76; }
+/* 소개: 아치 사진 테두리를 초콜릿으로, 신랑·신부 표시는 버건디 */
+body[data-layout-skin="valentine_choco"] .profile-role { color: #8a6a5a; }
+body[data-layout-skin="valentine_choco"] .profile-person-name { color: var(--choco); }
+body[data-layout-skin="valentine_choco"] .tag { border-color: transparent; background: #fffdf9; color: var(--choco); }
+/* 카운트다운: 초콜릿 조각 */
+body[data-layout-skin="valentine_choco"] .countdown { gap: 6px; }
+body[data-layout-skin="valentine_choco"] .countdown-item { border-radius: 10px; background: #fffdf9; box-shadow: 0 4px 14px rgba(120,90,60,0.08); }
+body[data-layout-skin="valentine_choco"] .countdown strong { color: var(--choco); font-family: "Playfair Display", serif; font-weight: 400; }
+body[data-layout-skin="valentine_choco"] .countdown small { color: var(--muted); letter-spacing: 0.08em; }
+body[data-layout-skin="valentine_choco"] #countdown-message { color: var(--choco); }
+/* 중간 사진: 메인처럼 아래 가장자리가 흘러내림 */
+body[data-layout-skin="valentine_choco"] .photo-interlude { background: transparent; }
+body[data-layout-skin="valentine_choco"] .photo-interlude::after { content: none !important; }
+body[data-layout-skin="valentine_choco"] .photo-interlude-media {
+  inset: 0 0 0 0;
+}
+/* 오시는 길 */
+body[data-layout-skin="valentine_choco"] .location-venue { color: var(--choco); font-family: "Playfair Display", "Noto Serif KR", serif; }
+body[data-layout-skin="valentine_choco"] .location-hall { color: #8a6a5a; }
+body[data-layout-skin="valentine_choco"] .location-address { background: transparent !important; color: var(--muted) !important; }
+body[data-layout-skin="valentine_choco"] .map-links .btn { background: transparent; box-shadow: none; color: var(--choco); }
+body[data-layout-skin="valentine_choco"] .transport-panel { border-color: transparent; background: #fffdf9; box-shadow: 0 4px 14px rgba(120,90,60,0.08); }
+/* 갤러리: 초콜릿 테두리 폴라로이드 */
+/* 갤러리: 작은 폴라로이드 3열 (흰 테두리, 아래 여백 두툼, 살짝 기울임) */
+body[data-layout-skin="valentine_choco"] .gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 14px 10px !important; padding: 4px 2px; }
+body[data-layout-skin="valentine_choco"] .gallery-item { aspect-ratio: 3 / 4 !important; border: 4px solid #fffdf9 !important; border-bottom-width: 13px !important; border-radius: 2px !important; box-shadow: 0 5px 12px rgba(120,90,60,0.14) !important; }
+body[data-layout-skin="valentine_choco"] .gallery-item:nth-child(3n + 1) { transform: rotate(-1.6deg) !important; }
+body[data-layout-skin="valentine_choco"] .gallery-item:nth-child(3n + 2) { transform: translateY(6px) rotate(1.1deg) !important; }
+body[data-layout-skin="valentine_choco"] .gallery-item:nth-child(3n) { transform: rotate(-0.6deg) !important; }
+
+/* 식장 안내 탭 */
+body[data-layout-skin="valentine_choco"] .information-tab[aria-selected="true"], body[data-layout-skin="valentine_choco"] .information-tab.is-active { background: #fffdf9; color: var(--choco); font-weight: 600; }
+/* 계좌·방명록 카드 */
+body[data-layout-skin="valentine_choco"] .account-groups > :not(.copy-edit-handle), body[data-layout-skin="valentine_choco"] .guestbook-entry { border-color: transparent; background: #fffdf9; box-shadow: 0 4px 14px rgba(120,90,60,0.08); }
+/* 마지막 화면: 초콜릿 배경 위로 사진이 비치고, 윗가장자리가 물결로 녹아내림 */
+body[data-layout-skin="valentine_choco"] .ending { min-height: 300px; padding-top: 70px; background: #fffdf9; color: var(--choco);
+  /* 위: 물결로 녹아내림 / 가운데: 그대로 / 아래: 페이지 배경으로 스며듦 (경계선 방지) */
+  -webkit-mask: var(--valentine-wave-top) top / 100% 46px no-repeat, linear-gradient(#000, #000) 0 45px / 100% calc(100% - 45px - 110px) no-repeat, linear-gradient(180deg, #000 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0.18) 80%, transparent 100%) bottom / 100% 111px no-repeat;
+  mask: var(--valentine-wave-top) top / 100% 46px no-repeat, linear-gradient(#000, #000) 0 45px / 100% calc(100% - 45px - 110px) no-repeat, linear-gradient(180deg, #000 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0.18) 80%, transparent 100%) bottom / 100% 111px no-repeat; padding-bottom: 90px; }
+body[data-layout-skin="valentine_choco"] .ending .media { opacity: 0.16; }
+body[data-layout-skin="valentine_choco"] .ending::after { background: none; }
+body[data-layout-skin="valentine_choco"] .ending-content, body[data-layout-skin="valentine_choco"] .ending .preserve { color: var(--copy); }
+body[data-layout-skin="valentine_choco"] .ending-names { color: var(--choco); font-family: "Noto Serif KR", serif; font-size: 22px; font-weight: 500; letter-spacing: 0.18em; }
+body[data-layout-skin="valentine_choco"] .ending .btn, body[data-layout-skin="valentine_choco"] .ending .btn:hover { border-color: rgba(120,90,60,0.18) !important; background: #fffdf9 !important; color: var(--choco) !important; }
+/* 하단 메뉴 */
+body[data-layout-skin="valentine_choco"] .bottom-tabbar { background: rgba(255,253,249,0.96); border-color: rgba(120,90,60,0.1); }
+body[data-layout-skin="valentine_choco"] .bottom-tabbar a { color: var(--choco); }
+
+/* 소개 섹션: 흐릿한 하트(섹션 배경) + 연한 손글씨 love 무늬(::after).
+   무늬는 위아래가 실제로 투명해지도록 mask로 스며들게 해서, 앞뒤 섹션과의 경계선이 생기지 않음 */
+body[data-layout-skin="valentine_choco"] #about-us { background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 140 132'><defs><filter id='b' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='7'/></filter></defs><path filter='url(%23b)' fill='%23c99286' fill-opacity='.55' d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z'/></svg>") center 18px / 130px 122px no-repeat; }
+/* love 무늬는 이름·제목과 겹쳐 보이지 않게 옅게(opacity 0.45) */
+body[data-layout-skin="valentine_choco"] #about-us::after { position: absolute; z-index: 0; inset: 0; content: ""; pointer-events: none; opacity: 0.45;
+  background: url("./source/love-pattern.webp") center top / 300px 300px repeat;
+  -webkit-mask: linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+  mask: linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); }
+body[data-layout-skin="valentine_choco"] #about-us > * { position: relative; z-index: 1; }
+
+/* 소개 사진: 얇은 브라운 라인 액자 */
+body[data-layout-skin="valentine_choco"] .profile-birthday { background: #fffdf9 !important; color: var(--copy) !important; }
+body[data-layout-skin="valentine_choco"] .profile-photo { aspect-ratio: 4 / 5; background-size: cover !important; background-position: center !important; border: 0 !important; border-radius: 4px !important; outline: 1px solid rgba(74,42,31,0.35); outline-offset: 6px; box-shadow: none !important; }
+/* 식장 안내 본문 카드와 갤러리 더보기(하트) 버튼도 흰 바탕 + 브라운 글씨 */
+body[data-layout-skin="valentine_choco"] .information-panel { background: #fffdf9 !important; box-shadow: 0 4px 14px rgba(120,90,60,0.08); color: var(--copy); }
+body[data-layout-skin="valentine_choco"] #gallery-more { background: #fffdf9 !important; color: var(--choco) !important; filter: drop-shadow(0 3px 8px rgba(120,90,60,0.18)); }
+body[data-layout-skin="valentine_choco"] #gallery-more::after { color: var(--choco) !important; }
+
+body[data-layout-skin="valentine_choco"] .photo-interlude-media { background-position: center 70% !important; }
+/* 한글 글꼴: 고운돋움 (영문 손글씨 라벨·달력 숫자·카운트다운 숫자는 각자 글꼴 유지) */
+body[data-layout-skin="valentine_choco"],
+body[data-layout-skin="valentine_choco"] :where(h1, h2, h3, h4, p, span, strong, small, div, a, button, td, th, li, label, em, b, input, textarea, select) { font-family: "Gowun Dodum", "Noto Sans KR", sans-serif !important; }
+body[data-layout-skin="valentine_choco"] .section-label,
+body[data-layout-skin="valentine_choco"] .calendar-month-name { font-family: "Great Vibes", cursive !important; }
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar td,
+body[data-layout-skin="valentine_choco"] .countdown strong { font-family: "Playfair Display", serif !important; }
+
+/* ── 달력 하트 색(관리자 수정모드에서 달력을 눌러 선택) — 하트 안 월 필기체·요일·날짜·결혼식 날 표시도 함께 ── */
+/* 흰색: 하트는 크림빛 흰색, 날짜는 초콜릿, 월 필기체와 결혼식 날 표시는 버건디 */
+body[data-layout-skin="valentine_choco"][data-calendar-heart="white"] #wedding-day .calendar { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92' preserveAspectRatio='none'><defs><linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fffdf9'/><stop offset='1' stop-color='%23f6ebe0'/></linearGradient></defs><path d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z' fill='url(%23h)'/></svg>"); filter: drop-shadow(0 12px 26px rgba(120,90,60,0.2)); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="white"] #wedding-day .calendar .calendar-month-name { color: var(--burgundy); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="white"] #wedding-day .calendar td { color: var(--choco); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="white"] #wedding-day .calendar th { color: rgba(74,42,31,0.55); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="white"] #wedding-day .calendar .wedding-day span { color: #fffdf9 !important; }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="white"] #wedding-day .calendar .wedding-day span::before { background-color: var(--burgundy); }
+/* 어두운 브라운: 하트는 초콜릿, 날짜는 흰색, 월 필기체와 결혼식 날 표시는 밝은 베이지 */
+body[data-layout-skin="valentine_choco"][data-calendar-heart="choco"] #wedding-day .calendar { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92' preserveAspectRatio='none'><defs><linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%235c3527'/><stop offset='1' stop-color='%233b2018'/></linearGradient></defs><path d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z' fill='url(%23h)'/></svg>"); filter: drop-shadow(0 12px 26px rgba(40,20,14,0.3)); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="choco"] #wedding-day .calendar .calendar-month-name { color: var(--beige-light); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="choco"] #wedding-day .calendar td { color: #fffaf4; }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="choco"] #wedding-day .calendar th { color: rgba(243,230,214,0.7); }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="choco"] #wedding-day .calendar .wedding-day span { color: var(--choco) !important; }
+body[data-layout-skin="valentine_choco"][data-calendar-heart="choco"] #wedding-day .calendar .wedding-day span::before { background-color: var(--beige-light); }
+
+/* ── 발렌타인 달력: 큰 하트가 항상 화면(섹션) 가장자리 밖으로 이어지게 ──
+   예전엔 달력 영역을 좌우 30px만 넓혀서, 섹션 여백이 30px보다 큰 화면(대부분)에서는 하트가 화면 안쪽에서 일자로 잘렸음 */
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar {
+  --cal-bleed: 80px;
+  width: calc(100% + 2 * var(--cal-bleed)); margin-left: calc(-1 * var(--cal-bleed)); margin-right: calc(-1 * var(--cal-bleed));
+  background-size: 540px 476px;
+}
+@media (max-width: 600px) {
+  body[data-layout-skin="valentine_choco"] #wedding-day .calendar { --cal-bleed: clamp(32px, 12vw, 52px); }
+}
+
+/* 연락 버튼: 위 부모님 카드(흰 바탕 카드)와 구분되게 바탕 없는 테두리 버튼 + 전화 아이콘 */
+body[data-layout-skin="valentine_choco"] #invitation .contact-row .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; border: 1px solid rgba(74,42,31,0.28) !important; background: transparent !important; box-shadow: none !important; color: var(--choco) !important; font-size: 14px; }
+body[data-layout-skin="valentine_choco"] #invitation .contact-row .btn:hover { background: rgba(255,253,249,0.6) !important; }
+body[data-layout-skin="valentine_choco"] #invitation .contact-row .btn::before { width: 13px; height: 13px; flex: 0 0 13px; content: ""; background: currentColor; opacity: 0.75; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z'/></svg>") center / contain no-repeat; }
+/* 달력 날짜가 하트 밖으로 나가지 않게: 하트는 고정 크기(540x476)로 가운데 그려지므로 날짜 칸도 고정 너비로 가운데 */
+body[data-layout-skin="valentine_choco"] #wedding-day .calendar { grid-template-columns: repeat(7, 34px); justify-content: center; padding-left: 0; padding-right: 0; }
+
+/* 카운트다운 문구와 중간 사진 사이를 좁히고(일정 섹션 아래 여백·사진 위 스며드는 구간 축소), 중간 사진 높이도 낮춤 */
+body[data-layout-skin="valentine_choco"] #wedding-day { padding-bottom: 28px; }
+body[data-layout-skin="valentine_choco"] .photo-interlude { min-height: 440px !important; }
+body[data-layout-skin="valentine_choco"] .photo-interlude-media {
+  -webkit-mask: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.06) 18%, rgba(0,0,0,0.22) 38%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.8) 80%, #000 100%) top / 100% 100px no-repeat, linear-gradient(#000, #000) 0 99px / 100% calc(100% - 218px) no-repeat, var(--valentine-drip-mask) bottom / 100% 120px no-repeat;
+  mask: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.06) 18%, rgba(0,0,0,0.22) 38%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.8) 80%, #000 100%) top / 100% 100px no-repeat, linear-gradient(#000, #000) 0 99px / 100% calc(100% - 218px) no-repeat, var(--valentine-drip-mask) bottom / 100% 120px no-repeat;
+}
+
+/* ── 오시는 길: 웨딩 티켓 ── 다른 레이아웃에서는 감싸는 칸 없이 예전 그대로 */
+.location-ticket, .location-ticket-main { display: contents; }
+.location-ticket-stub, .location-ticket-copy, .map-app-name { display: none; }
+body[data-layout-skin="valentine_choco"] .location-ticket { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 92px; margin: 20px 0 22px; border-radius: 14px; background: #fffdf9; box-shadow: 0 2px 10px rgba(120,90,60,0.08); text-align: left; }
+body[data-layout-skin="valentine_choco"] .location-ticket::before,
+body[data-layout-skin="valentine_choco"] .location-ticket::after { position: absolute; right: 83px; width: 18px; height: 18px; border-radius: 50%; background: var(--paper); content: ""; }
+body[data-layout-skin="valentine_choco"] .location-ticket::before { top: -9px; }
+body[data-layout-skin="valentine_choco"] .location-ticket::after { bottom: -9px; }
+body[data-layout-skin="valentine_choco"] .location-ticket-main { display: block; min-width: 0; padding: 22px 14px 18px 20px; }
+body[data-layout-skin="valentine_choco"] .location-ticket .location-venue { margin: 0; font-size: 19px; text-align: left; }
+body[data-layout-skin="valentine_choco"] .location-ticket .location-hall { margin: 4px 0 0; font-size: 13px; text-align: left; }
+body[data-layout-skin="valentine_choco"] .location-ticket .location-address { display: block; word-break: keep-all; margin: 12px 0 8px; padding: 0 !important; font-size: 12px; line-height: 1.55; text-align: left; }
+body[data-layout-skin="valentine_choco"] .location-ticket-copy { position: relative; display: inline-flex; border: 0; padding: 2px 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; text-decoration-color: rgba(74,42,31,0.25); text-underline-offset: 4px; cursor: pointer; }
+body[data-layout-skin="valentine_choco"] .location-ticket-stub { display: grid; align-content: center; justify-items: center; border-left: 2px dashed rgba(74,42,31,0.16); padding: 16px 4px; text-align: center; }
+body[data-layout-skin="valentine_choco"] .ticket-year,
+body[data-layout-skin="valentine_choco"] .ticket-day { color: var(--muted); font-family: "Playfair Display", serif !important; font-size: 10px; letter-spacing: 0.22em; }
+body[data-layout-skin="valentine_choco"] .ticket-date { margin: 2px 0 1px; color: #7d2236; font-family: "Playfair Display", serif !important; font-size: 25px; font-weight: 400; line-height: 1.1; }
+body[data-layout-skin="valentine_choco"] .ticket-rule { display: block; width: 22px; height: 1px; margin: 10px 0 9px; background: rgba(74,42,31,0.22); }
+body[data-layout-skin="valentine_choco"] .ticket-time { color: var(--choco); font-family: "Playfair Display", serif !important; font-size: 15px; line-height: 1; }
+body[data-layout-skin="valentine_choco"] .ticket-time small { margin-left: 3px; color: var(--muted); font-size: 10px; letter-spacing: 0.12em; }
+/* 지도 앱: 이름이 붙은 둥근 버튼(주소 복사는 티켓 안으로) */
+body[data-layout-skin="valentine_choco"] #location .map-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 0; }
+body[data-layout-skin="valentine_choco"] #location .map-links .btn[data-map-app] { display: flex !important; align-items: center; justify-content: center; gap: 6px; width: auto !important; height: auto !important; min-height: 44px !important; border: 1px solid rgba(74,42,31,0.16) !important; background: #fffdf9 !important; padding: 0 8px !important; font-size: 12px !important; line-height: 1 !important; }
+body[data-layout-skin="valentine_choco"] #location .map-links .btn[data-map-app]::before { width: 18px !important; height: 18px !important; transform: none !important; }
+body[data-layout-skin="valentine_choco"] #location .map-links .btn[data-map-app="copy"] { display: none !important; }
+body[data-layout-skin="valentine_choco"] #location .map-app-name { display: inline; color: var(--choco); font-size: 12px; font-weight: 500; white-space: nowrap; }
+
+
+/* ===== 초콜릿 발렌타인 + 컬러테마 색: 레이아웃 모양은 그대로, 색은 고른 테마를 따름 ===== */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] { --choco: var(--accent-dark); --burgundy: color-mix(in srgb, var(--accent-dark) 70%, var(--accent)); --beige-light: var(--paper);
+  /* 하트·물결처럼 흰 글씨가 올라가는 채움색 / 밝은 테마는 진하게, 블랙(어두운) 테마는 배경보다 한 단계 밝은 중간 톤 */
+  --skin-fill: color-mix(in srgb, var(--accent-dark) 88%, #000); --skin-shadow: var(--accent-dark); }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"][data-theme="black"] { --skin-fill: color-mix(in srgb, var(--accent) 48%, var(--card)); --skin-shadow: #000; }
+/* 필기체 제목: 테마 글자색을 옅게(국문 제목과 구분) */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .section-label { color: color-mix(in srgb, var(--label) 35%, transparent) !important; }
+/* 카드·칸 바탕은 테마 카드색, 그림자는 테마 색 */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] :is(.parents, .information-panel, #gallery-more, .location-ticket, .profile-meta-chip, .profile-birthday, .transport-panel, .countdown-item, .tag) { background: var(--card) !important; color: var(--copy); }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #location .map-links .btn[data-map-app] { background: var(--card) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .parents, body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .transport-panel { box-shadow: 0 4px 14px color-mix(in srgb, var(--skin-shadow) 12%, transparent) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .location-ticket { box-shadow: 0 2px 10px color-mix(in srgb, var(--skin-shadow) 14%, transparent) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .gallery-item { border-color: var(--card) !important; box-shadow: 0 5px 12px color-mix(in srgb, var(--skin-shadow) 22%, transparent) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #gallery-more { filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--skin-shadow) 20%, transparent)) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .bottom-tabbar { background: var(--nav-bg) !important; border-color: var(--line) !important; }
+/* 글자 포인트 */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .parents-heart { color: var(--accent) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .profile-role, body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .location-hall { color: color-mix(in srgb, var(--accent-dark) 75%, var(--muted)) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .ticket-date { color: var(--accent-dark) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .profile-photo { border-color: var(--card) !important; outline-color: color-mix(in srgb, var(--accent-dark) 40%, transparent) !important; }
+/* 소개: 흐린 하트와 love 무늬도 테마 색 */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #about-us { background: none !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #about-us .section-label { position: relative; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #about-us .section-label::before { content: "" !important; position: absolute; z-index: -1; left: 50%; top: -58px; width: 130px; height: 122px; transform: translateX(-50%); background: var(--accent); opacity: .7; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 140 132'><defs><filter id='b' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='7'/></filter></defs><path filter='url(%23b)' fill='black' d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 140 132'><defs><filter id='b' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='7'/></filter></defs><path filter='url(%23b)' fill='black' d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z'/></svg>") center / contain no-repeat; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #about-us::after { background: var(--accent-dark) !important; opacity: .25 !important;
+  -webkit-mask: url("./source/love-pattern.webp") center top / 300px 300px repeat, linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); -webkit-mask-composite: source-in;
+  mask: url("./source/love-pattern.webp") center top / 300px 300px repeat intersect, linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); }
+/* 달력 하트: 모양만 쓰고 색은 테마로(기본 / 흰색 / 진한색) */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #wedding-day .calendar { position: relative; isolation: isolate; background: none !important; filter: drop-shadow(0 12px 26px color-mix(in srgb, var(--skin-shadow) 30%, transparent)) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #wedding-day .calendar::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, color-mix(in srgb, var(--skin-fill) 90%, #fff), var(--skin-fill)); -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92' preserveAspectRatio='none'><path d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z' fill='black'/></svg>") center 14px / 142% 472px no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92' preserveAspectRatio='none'><path d='M50 90C20 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 14C54 8 61 2 71 2c15 0 27 12 27 28 0 22-18 40-48 60z' fill='black'/></svg>") center 14px / 142% 472px no-repeat; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"][data-calendar-heart="white"] #wedding-day .calendar::before { background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--card) 90%, var(--accent-dark))); }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"][data-calendar-heart="choco"] #wedding-day .calendar::before { background: linear-gradient(180deg, color-mix(in srgb, var(--accent-dark) 70%, #000), color-mix(in srgb, var(--accent-dark) 55%, #000)); }
+/* 달력의 예식일 하트 */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #wedding-day .calendar .wedding-day span::before { background-color: var(--card) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #wedding-day .calendar .wedding-day span { color: var(--accent-dark) !important; }
+
+/* 버튼·카드·마지막 화면: 남아 있던 밝은 바탕(#fffdf9)과 흰 테두리를 테마 카드색으로 */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] :is(.btn, .btn-primary), body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .btn:hover { border-color: var(--line) !important; background: var(--card) !important; color: var(--choco) !important; box-shadow: 0 4px 14px color-mix(in srgb, var(--skin-shadow) 10%, transparent) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #gallery-more { border-color: var(--card) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] :is(.account-groups > :not(.copy-edit-handle), .guestbook-entry, .information-tab[aria-selected="true"], .information-tab.is-active) { background: var(--card) !important; box-shadow: 0 4px 14px color-mix(in srgb, var(--skin-shadow) 10%, transparent) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .ending { background: var(--card) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .ending .btn, body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] .ending .btn:hover { border-color: var(--line) !important; background: var(--card) !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #invitation .contact-row .btn { border-color: color-mix(in srgb, var(--accent-dark) 30%, transparent) !important; background: transparent !important; box-shadow: none !important; }
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"] #invitation .contact-row .btn:hover { background: color-mix(in srgb, var(--card) 60%, transparent) !important; }
+/* 블랙 테마: 종이 위 흰 빛 번짐이 어두운 바탕에서는 회색 얼룩처럼 보여 끔 */
+body[data-layout-skin="valentine_choco"][data-skin-colors="theme"][data-theme="black"] .invitation { background-image: var(--design-background-decoration) !important; }
+
+/* 아이폰은 16px보다 작은 입력칸을 누르면 화면을 확대함 → 청첩장 페이지의 모든 입력칸은 16px 이상(화면 확대 막기 설정은 사진 손가락 확대까지 막아서 쓰지 않음) */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]), textarea, select) { font-size: 16px !important; }

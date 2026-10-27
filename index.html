@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#eff7fa">
+    <meta name="theme-color" content="#eee8e1">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <meta name="description" content="청첩장에 소중한 분들을 초대합니다.">
     <meta property="og:type" content="website">
@@ -13,9 +13,24 @@
     <title>모바일 청첩장</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20261026-stickers3">
-    <link rel="stylesheet" href="./public.css?v=20260614-cache1">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- 봉투 진입화면 질감 이미지(합쳐서 약 65KB)를 스크립트보다 먼저 받기 시작해 첫 화면이 빨리 뜨게 함 -->
+    <link rel="preload" as="image" href="./source/backgrounds/envelope-paper-texture.webp?v=2" fetchpriority="high">
+    <link rel="preload" as="image" href="./source/backgrounds/envelope-seal-texture.webp?v=1" fetchpriority="high">
+    <link rel="stylesheet" href="./styles.css?v=20261027-refac4">
+    <link rel="stylesheet" href="./public.css?v=20261027-refac4">
+    <!-- 실제 테마가 적용되기 전에는 내용을 가리고, 배경만 테마 색으로 먼저 칠함.
+         배경색 우선순위: middleware.js가 넣은 현재 테마 색 > 이 브라우저가 마지막으로 본 테마 색 > 기본값 -->
+    <style>html:not(.theme-ready){background:var(--boot-bg,#eee8e1)}html:not(.theme-ready) body{visibility:hidden}</style>
+    <script>
+      try {
+        var bootBg = localStorage.getItem("wedding-theme-bg");
+        if (bootBg && !document.documentElement.hasAttribute("data-server-boot-bg") && /^#[0-9a-f]{3,8}$|^rgb/i.test(bootBg)) {
+          document.documentElement.style.setProperty("--boot-bg", bootBg);
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", bootBg);
+        }
+      } catch (error) {}
+    </script>
   </head>
   <body>
     <main id="app"></main>
@@ -23,13 +38,17 @@
     <script>
       (function () {
         var app = document.getElementById("app");
+        // 안전장치: 어떤 이유로든 테마 적용이 늦어지면 8초 뒤에는 화면을 보여 줌
+        setTimeout(function () { document.documentElement.classList.add("theme-ready"); }, 8000);
         var delayedMessageTimer = setTimeout(function () {
           if (!app || app.childElementCount) return;
+          document.documentElement.classList.add("theme-ready");
           app.innerHTML = '<section class="invitation-closed"><h1>청첩장을 불러오는 중입니다</h1><p>네트워크 응답이 지연되고 있습니다. 잠시만 기다려 주세요.</p></section>';
         }, 9000);
 
         function showBootError(message) {
           clearTimeout(delayedMessageTimer);
+          document.documentElement.classList.add("theme-ready");
           if (!app) return;
           app.innerHTML = '<section class="invitation-closed"><h1>청첩장을 불러오지 못했습니다</h1><p>' + message + '</p><button type="button" class="btn" onclick="location.reload()">새로고침</button></section>';
         }
@@ -78,37 +97,36 @@
           return null;
         });
 
-        loadWithRetry("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "https://unpkg.com/@supabase/supabase-js@2", 9000)
+        // 스크립트들을 한꺼번에 미리 내려받기 시작하고(preload), 실행은 아래 순서대로 함
+        var supabaseSdk = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+        var localScripts = [
+          "./invitation-data.js?v=20261026-stickers1",
+          "./shared-utils.js?v=20261027-refac3",
+          "./section-registry.js?v=20261026-nosnap1",
+          "./design-system.js?v=20261027-refac5",
+          "./supabase-config.js?v=20260614-cache1",
+          "./rsvp-storage.js?v=20261027-refac3",
+          "./kakao-config.js?v=20261026-kakao1",
+          "./stickers.js?v=20261027-ui51",
+          "./app.js?v=20261027-intro1"
+        ];
+        [supabaseSdk].concat(localScripts).forEach(function (src) {
+          var hint = document.createElement("link");
+          hint.rel = "preload";
+          hint.as = "script";
+          hint.href = src;
+          document.head.appendChild(hint);
+        });
+
+        loadWithRetry(supabaseSdk, "https://unpkg.com/@supabase/supabase-js@2", 9000)
           .catch(function () {
             window.PUBLIC_SUPABASE_UNAVAILABLE = true;
             return null;
           })
           .then(function () {
-            return loadScript("./invitation-data.js?v=20261026-stickers1", 9000);
-          })
-          .then(function () {
-            return loadScript("./shared-utils.js?v=20260826-infotabs1", 9000);
-          })
-          .then(function () {
-            return loadScript("./section-registry.js?v=20260826-infotabs1", 9000);
-          })
-          .then(function () {
-            return loadScript("./stickers.js?v=20261026-stickers5", 9000);
-          })
-          .then(function () {
-            return loadScript("./design-system.js?v=20260614-cache1", 9000);
-          })
-          .then(function () {
-            return loadScript("./supabase-config.js?v=20260614-cache1", 9000);
-          })
-          .then(function () {
-            return loadScript("./rsvp-storage.js?v=20260629-music2", 9000);
-          })
-          .then(function () {
-            return loadScript("./kakao-config.js?v=20260614-cache1", 9000);
-          })
-          .then(function () {
-            return loadScript("./app.js?v=20261026-stickers2", 9000);
+            return localScripts.reduce(function (previous, src) {
+              return previous.then(function () { return loadScript(src, 9000); });
+            }, Promise.resolve());
           })
           .then(function () {
             clearTimeout(delayedMessageTimer);

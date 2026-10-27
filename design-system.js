@@ -107,6 +107,39 @@
     document.head.appendChild(style);
   }
 
+  // normalize() 기본값 (호출마다 새로 만들지 않도록 모듈 상수로 둠. 결과에는 복사본만 들어감)
+  const DEFAULT_AI_PROMPTS = {
+    base: "고급 모바일 청첩장 디자인 시스템을 만든다. 결과는 과하게 장식적이지 않고, 모바일 세로 화면에서 읽기 쉬워야 한다. 메인 사진을 가리지 않는 프레임, 한국어 이름과 날짜가 잘 보이는 문구 구조, 섹션 사이를 부드럽게 이어주는 작은 아이콘을 우선한다. 색상은 한 가지 색만 반복하지 말고 배경, 카드, 본문, 보조 글자, 포인트, 라인이 서로 구분되게 제안한다.",
+    colorTheme: "컬러테마는 색상값 추천에 집중한다. 배경, 카드, 본문 글자, 보조 글자, 포인트, 라인 색상을 모바일 청첩장에 맞게 제안한다.",
+    movieTheme: "영화테마는 사용자의 문장 속 장면, 계절, 감정, 시대감, 질감에서 색감 조합, 폰트, 메인 이미지 꾸밈, 메인 문구 테마, 섹션 아이콘, 갤러리 프레임, 버튼 모양을 함께 제안한다.",
+    frameAsset: "메인이미지꾸밈은 사진 가장자리 또는 바깥을 보조하며 인물 얼굴을 가리지 않는다. 사진 위 오버레이 또는 바깥 프레임으로 쓸 수 있게 단순하고 고급스럽게 제안한다.",
+    textThemeAsset: "메인문구테마는 이름과 날짜의 위계, 정렬, 폰트, 그림자, 박스 여부를 제안한다. 상업적 무료 폰트만 사용한다.",
+    iconAsset: "섹션아이콘은 작고 단순하며 단색 또는 2색으로 쓴다. 참고 레퍼런스 이미지는 분위기와 구조만 참고하고 그대로 복제하지 않는다.",
+    transport: "예식장 기준 자가용, 버스, 지하철 3가지를 기본으로 안내한다. 자가용은 식장 공식 안내를 우선해 주차장 위치와 외부 주차장 여부를 확인한다. 버스/지하철은 먼저 식장 도보 20분 이내에 버스정류장과 철도역이 각각 있는지 판정한다. 철도역은 지하철역을 우선하고, 지하철역이 없으면 기차역/KTX역/일반철도역으로 대체한다. 둘 다 있으면 각 이름과 도보 시간을 적고, 하나만 있으면 가까운 접근수단은 이름과 도보 시간을, 다른 접근수단은 그 지점에서 가까운 접근수단 또는 식장까지 이어지는 버스 번호/타는 정류장과 택시 시간을 함께 적는다. 불확실한 정보는 확인 필요라고 표시한다.",
+    venue: "식장 공식홈페이지나 공식 안내 정보를 우선한다고 가정하고, 모르는 사실은 지어내지 않는다. 기본 안내사항은 주차와 식사다. 식사 안내에는 식권 받는 곳과 연회장 위치를 포함하고, 주차 안내에는 주차권 받는 곳, 주차권 필요 여부, 여러 주차장이 있으면 가능한 주차장을 정리한다.",
+  };
+  const BUILT_IN_LAYOUTS = [
+    { id: "classic", name: "클래식", description: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.", previewBg: "#f7f0e7", previewAccent: "#8d3440", builtIn: true },
+    { id: "editorial_red", name: "스칼렛 데이", description: "딥레드 + 흑백 사진. 잡지형 큰 타이포·폴라로이드 프로필 구도.", previewBg: "#f8f3ec", previewAccent: "#c41230", baseLayout: "editorial", builtIn: true },
+    { id: "garden_doodle", name: "러브 두들", description: "초록 낙서 프레임 + 하트 사진. 손그림 감성의 사랑스러운 결혼식.", previewBg: "#eef2eb", previewAccent: "#c23b2a", baseLayout: "classic", builtIn: true },
+    { id: "navy_arch", name: "달빛 서약", description: "파란 배경 + 아치 사진. 단정하고 품격 있는 커플의 웨딩.", previewBg: "#f5f7fa", previewAccent: "#1a2456", baseLayout: "arch", builtIn: true },
+    { id: "cream_organic", name: "봄날 연가", description: "크림 + 라벤더 아치 패널. 둥글고 부드러운 봄 웨딩 무드.", previewBg: "#faf8f4", previewAccent: "#7c6d9a", baseLayout: "classic", builtIn: true },
+    { id: "valentine_choco", name: "초콜릿 발렌타인", description: "꽉 찬 메인 사진 아래로 초콜릿이 녹아 흐르고, 하트 안에 달력이 담긴 발렌타인 웨딩.", previewBg: "#efe4d8", previewAccent: "#7d2236", baseLayout: "classic", splitEyebrow: true, builtIn: true },
+    { id: "crimson_silk", name: "벨벳 나이트", description: "진홍 다크 히어로 + 크림 본문. 연인의 열정을 담은 스플릿 구조.", previewBg: "#f8f2ec", previewAccent: "#8b1a2f", baseLayout: "split", builtIn: true },
+  ];
+  const DEFAULT_SECTION_TITLES = {
+    invitation: { en: "Invitation", ko: "" },
+    aboutUs: { en: "About Us", ko: "저희를 소개합니다" },
+    weddingDay: { en: "Wedding Day", ko: "" },
+    location: { en: "Location", ko: "오시는 길" },
+    gallery: { en: "Gallery", ko: "갤러리" },
+    information: { en: "Information", ko: "식장 안내" },
+    attendance: { en: "Rsvp", ko: "참석 의사 전달" },
+    weddingSnap: { en: "Guest Album", ko: "함께만드는 웨딩스냅" },
+    account: { en: "Account", ko: "마음 전하는 곳" },
+    guestbook: { en: "Guestbook", ko: "축하 메시지" },
+  };
+
   function normalize(data = {}, library = null) {
     data.appearance ||= {};
     data.designSystem ||= {};
@@ -135,29 +168,11 @@
       subText: "noto-sans-kr",
       ...(catalog.fontDefaults || {}),
     };
-    const defaultPrompts = {
-      base: "고급 모바일 청첩장 디자인 시스템을 만든다. 결과는 과하게 장식적이지 않고, 모바일 세로 화면에서 읽기 쉬워야 한다. 메인 사진을 가리지 않는 프레임, 한국어 이름과 날짜가 잘 보이는 문구 구조, 섹션 사이를 부드럽게 이어주는 작은 아이콘을 우선한다. 색상은 한 가지 색만 반복하지 말고 배경, 카드, 본문, 보조 글자, 포인트, 라인이 서로 구분되게 제안한다.",
-      colorTheme: "컬러테마는 색상값 추천에 집중한다. 배경, 카드, 본문 글자, 보조 글자, 포인트, 라인 색상을 모바일 청첩장에 맞게 제안한다.",
-      movieTheme: "영화테마는 사용자의 문장 속 장면, 계절, 감정, 시대감, 질감에서 색감 조합, 폰트, 메인 이미지 꾸밈, 메인 문구 테마, 섹션 아이콘, 갤러리 프레임, 버튼 모양을 함께 제안한다.",
-      frameAsset: "메인이미지꾸밈은 사진 가장자리 또는 바깥을 보조하며 인물 얼굴을 가리지 않는다. 사진 위 오버레이 또는 바깥 프레임으로 쓸 수 있게 단순하고 고급스럽게 제안한다.",
-      textThemeAsset: "메인문구테마는 이름과 날짜의 위계, 정렬, 폰트, 그림자, 박스 여부를 제안한다. 상업적 무료 폰트만 사용한다.",
-      iconAsset: "섹션아이콘은 작고 단순하며 단색 또는 2색으로 쓴다. 참고 레퍼런스 이미지는 분위기와 구조만 참고하고 그대로 복제하지 않는다.",
-      transport: "예식장 기준 자가용, 버스, 지하철 3가지를 기본으로 안내한다. 자가용은 식장 공식 안내를 우선해 주차장 위치와 외부 주차장 여부를 확인한다. 버스/지하철은 먼저 식장 도보 20분 이내에 버스정류장과 철도역이 각각 있는지 판정한다. 철도역은 지하철역을 우선하고, 지하철역이 없으면 기차역/KTX역/일반철도역으로 대체한다. 둘 다 있으면 각 이름과 도보 시간을 적고, 하나만 있으면 가까운 접근수단은 이름과 도보 시간을, 다른 접근수단은 그 지점에서 가까운 접근수단 또는 식장까지 이어지는 버스 번호/타는 정류장과 택시 시간을 함께 적는다. 불확실한 정보는 확인 필요라고 표시한다.",
-      venue: "식장 공식홈페이지나 공식 안내 정보를 우선한다고 가정하고, 모르는 사실은 지어내지 않는다. 기본 안내사항은 주차와 식사다. 식사 안내에는 식권 받는 곳과 연회장 위치를 포함하고, 주차 안내에는 주차권 받는 곳, 주차권 필요 여부, 여러 주차장이 있으면 가능한 주차장을 정리한다.",
-    };
-    system.aiSettings = { enabled: true, provider: "Claude", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: defaultPrompts, referenceImages: "", ...(catalog.aiSettings || {}), provider: "Claude", mockMode: false };
-    system.aiSettings.prompts = { ...defaultPrompts, ...(system.aiSettings.prompts || {}) };
-    const builtInLayouts = [
-      { id: "classic", name: "클래식", description: "세로 스크롤 카드형. 히어로 사진 전체, 섹션별 깔끔한 구분.", previewBg: "#f7f0e7", previewAccent: "#8d3440", builtIn: true },
-      { id: "editorial_red", name: "스칼렛 데이", description: "딥레드 + 흑백 사진. 잡지형 큰 타이포·폴라로이드 프로필 구도.", previewBg: "#f8f3ec", previewAccent: "#c41230", baseLayout: "editorial", builtIn: true },
-      { id: "garden_doodle", name: "러브 두들", description: "초록 낙서 프레임 + 하트 사진. 손그림 감성의 사랑스러운 결혼식.", previewBg: "#eef2eb", previewAccent: "#c23b2a", baseLayout: "classic", builtIn: true },
-      { id: "navy_arch", name: "달빛 서약", description: "파란 배경 + 아치 사진. 단정하고 품격 있는 커플의 웨딩.", previewBg: "#f5f7fa", previewAccent: "#1a2456", baseLayout: "arch", builtIn: true },
-      { id: "cream_organic", name: "봄날 연가", description: "크림 + 라벤더 아치 패널. 둥글고 부드러운 봄 웨딩 무드.", previewBg: "#faf8f4", previewAccent: "#7c6d9a", baseLayout: "classic", builtIn: true },
-      { id: "crimson_silk", name: "벨벳 나이트", description: "진홍 다크 히어로 + 크림 본문. 연인의 열정을 담은 스플릿 구조.", previewBg: "#f8f2ec", previewAccent: "#8b1a2f", baseLayout: "split", builtIn: true },
-    ];
+    system.aiSettings = { enabled: true, provider: "Claude", model: "server-managed", endpoint: "/api/ai-design", removeWhiteBackground: true, whiteTolerance: 24, convertSvg: false, savePng: true, prompts: DEFAULT_AI_PROMPTS, referenceImages: "", ...(catalog.aiSettings || {}), provider: "Claude", mockMode: false };
+    system.aiSettings.prompts = { ...DEFAULT_AI_PROMPTS, ...(system.aiSettings.prompts || {}) };
     // built-in 항목은 항상 최신 코드 기준으로 덮어씀. 사용자가 직접 만든 커스텀(AI) 레이아웃만 Supabase에서 유지.
     const savedCustomLayouts = (Array.isArray(catalog.layoutTemplates) ? catalog.layoutTemplates : []).filter((t) => !t.builtIn);
-    system.layoutTemplates = mergeUnique(builtInLayouts, savedCustomLayouts);
+    system.layoutTemplates = mergeUnique(BUILT_IN_LAYOUTS, savedCustomLayouts);
     system.activeLayoutId = system.activeLayoutId || "classic";
     const legacyCustom = !data.appearance.design && ((data.appearance.heroDecoration && data.appearance.heroDecoration !== "none") || (data.appearance.heroTextTheme && data.appearance.heroTextTheme !== "auto"));
     const previousDesign = data.appearance.design;
@@ -209,19 +224,7 @@
         ...(data.adminDefaults?.fieldLabels || {}),
       },
     };
-    const sectionTitles = {
-      invitation: { en: "Invitation", ko: "" },
-      aboutUs: { en: "About Us", ko: "저희를 소개합니다" },
-      weddingDay: { en: "Wedding Day", ko: "" },
-      location: { en: "Location", ko: "오시는 길" },
-      gallery: { en: "Gallery", ko: "갤러리" },
-      information: { en: "Information", ko: "식장 안내" },
-      attendance: { en: "Rsvp", ko: "참석 의사 전달" },
-      weddingSnap: { en: "Guest Album", ko: "함께만드는 웨딩스냅" },
-      account: { en: "Account", ko: "마음 전하는 곳" },
-      guestbook: { en: "Guestbook", ko: "축하 메시지" },
-    };
-    data.sectionTitles = Object.fromEntries(Object.entries(sectionTitles).map(([key, value]) => [key, { ...value, ...(data.sectionTitles?.[key] || {}) }]));
+    data.sectionTitles = Object.fromEntries(Object.entries(DEFAULT_SECTION_TITLES).map(([key, value]) => [key, { ...value, ...(data.sectionTitles?.[key] || {}) }]));
     data.sectionDescriptions = {
       attendance: "신랑, 신부에게 참석의사를\n미리 전달할 수 있어요.",
       weddingSnap: "오늘의 추억은 여러분의 한 장에서 완성돼요!",
@@ -283,7 +286,14 @@
     const appliedPalette = normalizedPalette(resolved.palette);
     root.dataset.theme = resolved.theme.type === "color" && builtInThemes.some((item) => item.id === resolved.theme.id) ? resolved.theme.id : "sky";
     root.dataset.movieConcept = resolved.theme.type === "movie" ? resolved.theme.id : "none";
-    if (data.designSystem?.activeLayoutId) root.dataset.layout = data.designSystem.activeLayoutId;
+    if (data.designSystem?.activeLayoutId) {
+      // 스킨 레이아웃(baseLayout 있음)은 기본 레이아웃 구조 + data-layout-skin 으로 적용 (app.js applyLayoutTemplate 과 동일)
+      const layoutId = data.designSystem.activeLayoutId;
+      const skinBase = data.designSystem.layoutTemplates?.find((item) => item.id === layoutId)?.baseLayout;
+      root.dataset.layout = skinBase || layoutId;
+      if (skinBase) root.dataset.layoutSkin = layoutId;
+      else delete root.dataset.layoutSkin;
+    }
     root.dataset.heroDecoration = resolved.heroDecorationAsset?.heroDecoration || resolved.heroDecoration || "none";
     root.dataset.heroTextTheme = resolved.heroTextTheme || "auto";
     root.dataset.heroTextLayout = resolved.heroTextThemeAsset?.layout || "default";
@@ -296,6 +306,22 @@
     root.classList?.toggle("hide-hero-names", data.appearance.design.heroNamesEnabled === false);
     root.classList?.toggle("hide-hero-date", data.appearance.design.heroDateEnabled === false);
     root.classList?.toggle("custom-hero-positioned", Number.isFinite(Number(resolved.heroTextThemeAsset?.xPercent)) && Number.isFinite(Number(resolved.heroTextThemeAsset?.yPercent)));
+    // 관리자에서 위치를 직접 정한 경우(슬라이더·끌어서 이동)에만 레이아웃 고정 위치 대신 그 값을 씀
+    const heroDesign = data.appearance?.design || {};
+    const heroY = Number(heroDesign.heroTextYPercent);
+    const userPositioned = typeof heroDesign.heroTextPositioned === "boolean" ? heroDesign.heroTextPositioned : (Number.isFinite(heroY) && heroY !== 76);
+    root.classList?.toggle("hero-text-user-positioned", userPositioned);
+    // 발렌타인 달력 하트 색: burgundy(기본) / white / choco
+    root.dataset.calendarHeart = ["white", "choco"].includes(heroDesign.calendarHeart) ? heroDesign.calendarHeart : "burgundy";
+    // 스킨 레이아웃 색: layout(레이아웃 대표색, 기본) / theme(고른 컬러테마 색을 따름)
+    root.dataset.skinColors = heroDesign.skinColors === "theme" ? "theme" : "layout";
+    const heroScale = (value) => (Number(value) > 0 ? Number(value) / 100 : 1);
+    root.style.setProperty("--hero-text-scale", String(heroScale(heroDesign.heroTextScale)));
+    root.style.setProperty("--hero-eyebrow-scale", String(heroScale(heroDesign.heroEyebrowScale)));
+    root.style.setProperty("--hero-names-scale", String(heroScale(heroDesign.heroNamesScale)));
+    root.style.setProperty("--hero-date-scale", String(heroScale(heroDesign.heroDateScale)));
+    root.style.setProperty("--hero-gap-top", `${Number(heroDesign.heroGapTop) || 0}px`);
+    root.style.setProperty("--hero-gap-bottom", `${Number(heroDesign.heroGapBottom) || 0}px`);
     root.classList?.toggle("has-custom-background-decoration", Boolean(resolved.backgroundDecoration));
     const vars = {
       background: ["--paper", "--hero-bg", "--media-start"],
@@ -386,6 +412,8 @@
   function applyTextStyles(data, root = document) {
     const styles = data?.textStyles || {};
     Object.entries(styles).forEach(([name, style]) => {
+      // 메인 문구(영문·이름·날짜)는 appearance.design 의 크기·위치 값으로만 조정
+      if (["hero.eyebrow", "coupleNames", "wedding.displayDateCustom"].includes(name)) return;
       const selector = textStyleSelector(name);
       if (!selector || !style) return;
       root.querySelectorAll(selector).forEach((element) => {
@@ -399,5 +427,8 @@
     });
   }
 
-  window.WEDDING_DESIGN = { builtInThemes, builtInAssets, normalize, resolve, apply, applyTextStyles };
+  // 스킨 레이아웃: 기본 레이아웃(구조)은 그대로 쓰고 색·장식만 덧입힘 (app.js·rsvp-storage.js 공용)
+  const layoutSkins = { valentine_choco: "classic" };
+
+  window.WEDDING_DESIGN = { builtInThemes, builtInAssets, layoutSkins, normalize, resolve, apply, applyTextStyles };
 })();

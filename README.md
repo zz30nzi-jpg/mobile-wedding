@@ -2,16 +2,17 @@
 
 ## 소개
 
-개인 취향에 따라 커스텀하여 만들 수 있는 모바일 청첩장입니다.
+개인 취향에 따라 커스텀하여 만들 수 있는 모바일 청첩장입니다. 
 
-신랑, 신부 정보와 예식 안내, 갤러리, 참석 여부, 계좌 안내, 교통 안내 등을 모바일 화면에 맞게 구성할 수 있습니다. 일반관리자는 청첩장 내용을 편집하고, 공개 청첩장은 저장된 테마와 레이아웃 템플릿을 그대로 반영합니다.
+신랑 신부 정보와 예식 안내, 갤러리, 참석 여부, 계좌 안내, 교통 안내 등을 모바일 화면에 맞게 구성할 수 있습니다. 일반관리자는 청첩장 내용을 편집하고, 공개 청첩장은 저장된 테마와 레이아웃 템플릿을 그대로 반영합니다.
 
 ## 주요 기능
 
 - 모바일 반응형 청첩장 페이지
 - 일반관리자용 청첩장 편집 화면
 - 메인 이미지, 갤러리, 프로필 이미지 업로드
-- 참석 여부, 방명록, 하객 사진/영상 업로드
+- 참석 여부, 방명록
+- 봉투 진입화면, 손그림 스티커, 배경음악
 - 계좌번호 복사, 지도 링크, 교통/식장 안내
 - Supabase 기반 사용자별 청첩장 데이터 저장
 - AI 교통/식장 안내 생성 연동을 위한 서버 함수 구조
@@ -29,10 +30,10 @@ cd <project-folder>
 
 ### 2. 실행방법
 
-정적 파일 기반 프로젝트이므로 로컬 서버로 실행하는 것을 권장합니다.
+빌드 과정이 없는 정적 파일 프로젝트입니다. `/api/*` 서버 함수까지 함께 동작하도록 동봉된 로컬 서버로 실행합니다.
 
 ```bash
-python -m http.server 5500
+node local-server.js
 ```
 
 브라우저에서 아래 주소를 엽니다.
@@ -76,11 +77,23 @@ index.html                  청첩장 공개 페이지
 admin.html                  일반관리자 페이지
 app.js                      청첩장 화면 렌더링
 admin.js                    관리자 화면 기능
-design-system.js            테마/디자인 시스템
+admin-ai-service.js         관리자 AI 요청 도우미
+design-system.js            테마/레이아웃/디자인 시스템
+shared-utils.js             청첩장·관리자 공용 함수, 봉투 진입화면
+section-registry.js         섹션 목록과 순서 규칙
+stickers.js                 손그림 스티커
 invitation-data.js          기본 청첩장 데이터
-rsvp-storage.js             Supabase 저장/조회 연결
+rsvp-storage.js             Supabase 저장/조회, 이미지 업로드
+styles.css                  공용 스타일
+public.css                  공개 청첩장 전용 스타일
+admin.css                   관리자 전용 스타일
+middleware.js               첫 화면 배경색·공유 태그 주입 (Vercel)
 api/ai-design.js            AI 서버 함수
-styles.css                  전체 스타일
+api/share.js                공유 링크 미리보기 페이지
+api/map.js                  카카오 공유 "위치 보기" 지도 연결
+api/music-list.js           배경음악 목록
+api/_lib/                   서버 함수 공용 코드
+local-server.js             로컬 실행 서버
 supabase-setup.sql          Supabase 설정 SQL
 ```
 

@@ -1,5 +1,4 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://djjspxgkdinimcpkdxme.supabase.co";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
+const { SUPABASE_URL, normalizeSlug, fetchPublicInvitationContent } = require("./_lib/public-invitation");
 
 function escapeAttribute(value = "") {
   return String(value).replace(/[&<>"']/g, (character) => ({
@@ -21,16 +20,6 @@ function mediaPublicUrl(value = "") {
   return `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/invitation-media/${encodeURIComponent(clean).replace(/%2F/g, "/")}${query}`;
 }
 
-function normalizeSlug(value = "") {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 48);
-}
-
 module.exports = async function sharePage(request, response) {
   const protocol = request.headers["x-forwarded-proto"] || "https";
   const host = request.headers["x-forwarded-host"] || request.headers.host;
@@ -40,19 +29,7 @@ module.exports = async function sharePage(request, response) {
   let invitation = {};
 
   try {
-    const result = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_invitation`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ invitation_slug: slug }),
-    });
-    if (result.ok) {
-      const publicInvitation = (await result.json())[0] || {};
-      if (publicInvitation.status === "ok" && publicInvitation.content) invitation = publicInvitation.content;
-    }
+    invitation = (await fetchPublicInvitationContent(slug)) || {};
   } catch {
     invitation = {};
   }
@@ -60,7 +37,7 @@ module.exports = async function sharePage(request, response) {
   const hasInvitation = invitation && Object.keys(invitation).length > 0;
   const title = hasInvitation ? (invitation.meta?.title || "모바일 청첩장") : "청첩장을 확인할 수 없습니다";
   const description = hasInvitation
-    ? `${invitation.wedding?.displayDate || ""} · ${invitation.wedding?.venue || ""}`.replace(/^ · | · $/g, "").slice(0, 180)
+    ? (String(invitation.meta?.description || "").trim() || `${invitation.wedding?.displayDate || ""} · ${invitation.wedding?.venue || ""}`.replace(/^ · | · $/g, "")).slice(0, 180)
     : "청첩장 주소를 다시 확인해 주세요.";
   const image = mediaPublicUrl(invitation.meta?.shareImage || invitation.hero?.image || "");
   const imageMeta = image ? `

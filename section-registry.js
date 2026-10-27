@@ -1,5 +1,5 @@
 (function () {
-  const defaultOrder = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"];
+  const defaultOrder = ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "attendance", "account", "guestbook"];
   const labels = {
     invitation: "초대글",
     "about-us": "두 사람 소개",
@@ -7,7 +7,6 @@
     "photo-interlude": "포토 섹션",
     location: "오시는 길",
     gallery: "갤러리",
-    "wedding-snap": "하객 사진·영상 업로드",
     information: "식장 안내",
     attendance: "참석 여부",
     account: "마음 전하기",
@@ -19,7 +18,6 @@
     "wedding-day": "weddingDay",
     location: "location",
     gallery: "gallery",
-    "wedding-snap": "weddingSnap",
     information: "information",
     attendance: "attendance",
     account: "account",

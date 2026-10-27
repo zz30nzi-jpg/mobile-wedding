@@ -65,22 +65,6 @@ function getSupabaseClient() {
   return supabaseClientInstance;
 }
 
-function clearStoredSupabaseAuth() {
-  try {
-    const projectRef = new URL(window.RSVP_CONFIG?.supabaseUrl || "").hostname.split(".")[0];
-    const keys = [];
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
-      if ((projectRef && key === `sb-${projectRef}-auth-token`) || (key?.startsWith("sb-") && key.endsWith("-auth-token"))) {
-        keys.push(key);
-      }
-    }
-    keys.forEach((key) => localStorage.removeItem(key));
-  } catch (error) {
-    console.warn("[supabase auth cleanup]", error);
-  }
-}
-
 function readLocalResponses() {
   return JSON.parse(localStorage.getItem(RSVP_LOCAL_KEY) || "[]");
 }
@@ -406,6 +390,13 @@ async function loadGuestbookEntries() {
 async function loadAdminGuestbookEntries() {
   const client = getSupabaseClient();
   if (!client) return readLocalGuestbookEntries();
+  // 로그인이 풀린 채 조회하면 손님 권한이라 'permission denied'가 나므로 먼저 로그인 여부를 확인해 알맞게 안내
+  const { data: sessionData } = await client.auth.getSession();
+  if (!sessionData?.session) {
+    const expired = new Error("로그인이 만료됐어요. 다시 로그인해 주세요.");
+    expired.code = "AUTH_EXPIRED";
+    throw expired;
+  }
   const { data, error } = await client.from("guestbook_entries").select("*").eq("invitation_id", getActiveInvitationSlug()).order("created_at", { ascending: false });
   if (error) throw error;
   return data.map((entry) => ({ hidden: false, ...entry }));
@@ -437,32 +428,6 @@ async function submitGuestbookEntry(entry) {
 }
 
 const INVITATION_CACHE_TTL = 60 * 60 * 1000; // 1시간 (밀리초)
-
-function invitationCacheKey(slug) {
-  return `wedding-inv-cache:${slug || DEFAULT_INVITATION_ID}`;
-}
-
-function readInvitationCache(slug) {
-  try {
-    const raw = localStorage.getItem(invitationCacheKey(slug));
-    if (!raw) return null;
-    const { data, cachedAt } = JSON.parse(raw);
-    if (!data || Date.now() - cachedAt > INVITATION_CACHE_TTL) return null;
-    return data;
-  } catch { return null; }
-}
-
-function writeInvitationCache(slug, data) {
-  try {
-    localStorage.setItem(invitationCacheKey(slug), JSON.stringify({ data, cachedAt: Date.now() }));
-  } catch (error) {
-    console.warn("[invitation cache write]", error);
-  }
-}
-
-function clearInvitationCache(slug) {
-  try { localStorage.removeItem(invitationCacheKey(slug)); } catch (error) { console.warn("[invitation cache clear]", error); }
-}
 
 const DESIGN_LIBRARY_ID = "_design_library";
 const DESIGN_LIBRARY_CACHE_KEY = "wedding-design-library-cache";
@@ -525,9 +490,7 @@ async function fetchAndCacheInvitation(client, fallback, slug) {
   if (data.status === "empty" || isEmptyInvitationContent(data.content)) {
     throw publicInvitationError("empty", "청첩장 설정이 아직 완료되지 않았습니다.");
   }
-  const publicContent = compactPublicDesignData(data.content);
-  writeInvitationCache(slug, publicContent);
-  return normalizeInvitationData(fallback, publicContent, null);
+  return normalizeInvitationData(fallback, compactPublicDesignData(data.content), null);
 }
 
 async function fetchOwnedInvitation(client, fallback, slug, library) {
@@ -569,18 +532,86 @@ async function loadInvitationData(fallback) {
   return fetchOwnedInvitation(client, fallback, slug, library);
 }
 
-async function loadSafeInvitationData(fallback = window.INVITATION_DATA) {
+// 청첩장 테마의 실제 배경색(--body-bg)을 계산합니다. 공개 페이지와 같은 CSS·디자인 시스템을
+// 빈 iframe에 적용해 읽으므로 기본 테마·커스텀 팔레트 모두 화면과 같은 색이 나옵니다.
+// 저장해 두면 middleware.js가 첫 화면 배경을 이 색으로 미리 칠해 테마 깜빡임을 없앱니다.
+async function computeBootBackground(content) {
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.cssText = "position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0;visibility:hidden";
+  const frameLoaded = new Promise((resolve, reject) => { frame.onload = resolve; setTimeout(() => reject(new Error("timeout")), 4000); });
+  frame.srcdoc = '<!doctype html><html><head><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/public.css"></head><body></body></html>';
+  document.body.append(frame);
   try {
-    const invitation = await loadInvitationData(fallback);
-    return invitation && typeof invitation === "object" ? invitation : {};
+    await frameLoaded;
+    const frameWindow = frame.contentWindow;
+    const script = frameWindow.document.createElement("script");
+    script.src = "/design-system.js";
+    frameWindow.document.head.append(script);
+    await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = reject; setTimeout(() => reject(new Error("timeout")), 4000); });
+    frameWindow.WEDDING_DESIGN.apply(JSON.parse(JSON.stringify(content)));
+    // 스킨 레이아웃(예: 초콜릿 발렌타인)은 자체 배경색을 쓰므로 공개 페이지와 똑같이 표시해서 계산
+    const layoutId = content.designSystem?.activeLayoutId || "classic";
+    const skinBase = frameWindow.WEDDING_DESIGN.layoutSkins[layoutId];
+    frameWindow.document.body.dataset.layout = skinBase || layoutId;
+    if (skinBase) frameWindow.document.body.dataset.layoutSkin = layoutId;
+    frameWindow.document.body.style.background = "var(--body-bg)";
+    const color = frameWindow.getComputedStyle(frameWindow.document.body).backgroundColor;
+    if (/^rgba?\(/.test(color)) return color;
+    throw new Error("no color");
   } catch {
-    return fallback && typeof fallback === "object" ? fallback : {};
+    // iframe 계산이 안 되는 기기에서는 현재 문서(관리자도 같은 테마가 적용됨)의 배경 변수를 읽음
+    try {
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px;background:var(--body-bg)";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return /^rgba?\(/.test(color) && color !== "rgba(0, 0, 0, 0)" ? color : "";
+    } catch {
+      return "";
+    }
+  } finally {
+    frame.remove();
+  }
+}
+
+// 진입화면의 흐린 배경용으로 메인 사진을 아주 작게(긴 변 32px) 줄인 그림을 만들어 함께 저장합니다(약 1KB).
+// 작게 줄였다 크게 늘리면 자연스럽게 흐려 보여, 방문자 휴대폰에서 무거운 blur 계산이나 추가 다운로드가 필요 없습니다.
+// 메인 사진이 바뀌었을 때만 다시 만듭니다.
+async function attachIntroBlurImage(content) {
+  const hero = content.hero || {};
+  if (!hero.image) {
+    if (hero.introBlur) content.hero = { ...hero, introBlur: "", introBlurSource: "" };
+    return;
+  }
+  if (hero.introBlur && hero.introBlurSource === hero.image) return;
+  try {
+    const source = hero.image.startsWith("data:") ? hero.image : mediaPublicUrl(hero.image);
+    if (!source) return;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.src = source;
+    await Promise.race([image.decode(), new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 6000))]);
+    const scale = 32 / Math.max(image.naturalWidth, image.naturalHeight);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    content.hero = { ...hero, introBlur: canvas.toDataURL("image/jpeg", 0.7), introBlurSource: hero.image };
+  } catch (error) {
+    console.warn("[intro blur image]", error);
   }
 }
 
 async function saveInvitationData(content) {
   const client = getSupabaseClient();
   const slug = getActiveInvitationSlug();
+  const bootBackground = await computeBootBackground(content);
+  if (bootBackground) content.appearance = { ...(content.appearance || {}), bootBackground };
+  await attachIntroBlurImage(content);
   if (!client) {
     localStorage.setItem(invitationLocalKey(slug), JSON.stringify(content));
     return;
@@ -589,7 +620,6 @@ async function saveInvitationData(content) {
     .from("invitation_settings")
     .upsert({ id: slug, content, updated_at: new Date().toISOString() });
   if (error) throw error;
-  clearInvitationCache(slug); // 저장 후 캐시 즉시 무효화
   const { error: siteError } = await client.from("invitation_sites").update({
     title: `${content.couple?.groom?.name || ""} · ${content.couple?.bride?.name || ""}`.trim() || "청첩장",
     groom_name: content.couple?.groom?.name || "",
@@ -661,6 +691,16 @@ async function encodeCanvasBlob(canvas, quality) {
   return jpeg && (!webp || jpeg.size < webp.size) ? jpeg : webp;
 }
 
+// 긴 변이 maxDimension을 넘지 않게 줄여 그린 canvas
+function drawScaledCanvas(bitmap, maxDimension) {
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 async function optimizeInvitationImage(file) {
   if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
     throw new Error("JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.");
@@ -668,12 +708,7 @@ async function optimizeInvitationImage(file) {
   if (!("createImageBitmap" in window)) throw new Error("이 브라우저에서는 이미지 최적화를 지원하지 않습니다.");
   try {
     const bitmap = await createImageBitmap(file);
-    const maxDimension = 1200;
-    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const canvas = drawScaledCanvas(bitmap, 1200);
     bitmap.close();
     const blob = await encodeCanvasBlob(canvas, 0.78);
     if (!blob) throw new Error("이미지를 변환하지 못했습니다.");
@@ -699,14 +734,7 @@ async function createGalleryImageVariants(file) {
   if (!("createImageBitmap" in window)) throw new Error("이 브라우저에서는 이미지 최적화를 지원하지 않습니다.");
   try {
     const bitmap = await createImageBitmap(file);
-    const renderVariant = (maxDimension, quality) => {
-      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      return encodeCanvasBlob(canvas, quality);
-    };
+    const renderVariant = (maxDimension, quality) => encodeCanvasBlob(drawScaledCanvas(bitmap, maxDimension), quality);
     const [display, thumb] = await Promise.all([renderVariant(1280, 0.82), renderVariant(480, 0.75)]);
     bitmap.close();
     if (!display || !thumb) throw new Error("이미지를 변환하지 못했습니다.");
@@ -753,216 +781,6 @@ async function uploadInvitationImage(file, slot) {
   return `${path}?v=${Date.now()}`;
 }
 
-async function uploadInvitationMedia(file, slot) {
-  if (file.type.startsWith("image/")) return uploadInvitationImage(file, slot);
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  if (!["video/mp4", "video/webm", "video/quicktime"].includes(file.type) || file.size > 50 * 1024 * 1024) {
-    throw new Error("50MB 이하 MP4, WebM 또는 MOV 영상만 업로드할 수 있습니다.");
-  }
-  const extension = file.type === "video/webm" ? "webm" : file.type === "video/quicktime" ? "mov" : "mp4";
-  const path = `invitations/${getStorageSlug()}/hero/hero-video.${extension}`;
-  const { error } = await client.storage.from("invitation-media").upload(path, file, { cacheControl: "31536000", contentType: file.type, upsert: true });
-  if (error) {
-    if (/mime type|not supported/i.test(error.message || "")) {
-      throw new Error("영상 MIME 정책이 적용되지 않았습니다. Supabase SQL Editor에서 supabase-guest-photo-policy-fix.sql을 다시 실행해 주세요.");
-    }
-    throw error;
-  }
-  return path;
-}
-
-async function uploadDesignAsset(file, slot = "asset") {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const fontTypes = ["font/woff", "font/woff2", "application/font-woff", "application/font-woff2", "application/x-font-woff", "application/x-font-woff2", "font/ttf", "font/otf", "application/x-font-ttf", "application/x-font-otf"];
-  const inferredFontType = /\.(woff2?)$/i.test(file.name || "") ? `font/${file.name.split(".").pop().toLowerCase()}` : /\.(ttf|otf)$/i.test(file.name || "") ? `font/${file.name.split(".").pop().toLowerCase()}` : "";
-  const contentType = file.type || inferredFontType;
-  if (contentType === "image/svg+xml" || /\.svg$/i.test(file.name || "")) {
-    throw new Error("보안을 위해 SVG 파일은 업로드할 수 없습니다. PNG, JPG 또는 WebP 파일로 변환해 주세요.");
-  }
-  const allowed = ["image/png", "image/webp", "image/jpeg", ...fontTypes];
-  const isFont = fontTypes.includes(file.type) || /\.(woff2?|ttf|otf)$/i.test(file.name || "");
-  const limit = isFont ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
-  if (!allowed.includes(contentType) || file.size > limit) {
-    throw new Error("PNG/WebP/JPG는 2MB 이하, 폰트는 4MB 이하만 등록할 수 있습니다. SVG는 업로드할 수 없습니다.");
-  }
-  const extension = file.name.split(".").pop()?.toLowerCase() || "png";
-  const filename = `${slot}-${Date.now()}-${crypto.randomUUID?.() || "asset"}.${extension}`.replace(/[^a-z0-9가-힣._-]/gi, "-");
-  const path = `invitations/${getStorageSlug()}/design-assets/${filename}`;
-  const { error } = await client.storage.from("invitation-media").upload(path, file, { cacheControl: "31536000", contentType, upsert: true });
-  if (error) throw error;
-  return path;
-}
-
-function isGuestPhotoThumbPath(path = "") {
-  return /--thumb\.webp$/i.test(String(path || ""));
-}
-
-function guestPhotoThumbPath(path = "") {
-  const value = String(path || "");
-  return value.replace(/(\.[^.\/]+)$/i, "--thumb.webp");
-}
-
-function isGuestImageFile(fileOrName = "") {
-  const type = typeof fileOrName === "object" ? fileOrName.type || "" : "";
-  const name = typeof fileOrName === "object" ? fileOrName.name || "" : String(fileOrName || "");
-  return type.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(name);
-}
-
-function guestPhotoSize(photo = {}) {
-  return Number(photo.metadata?.size || photo.metadata?.contentLength || photo.metadata?.content_length || photo.size || 0);
-}
-
-function canUseOriginalAsPreview(photo = {}) {
-  return isGuestImageFile(photo.name || photo.path) && guestPhotoSize(photo) > 0 && guestPhotoSize(photo) <= 300 * 1024;
-}
-
-async function createGuestPhotoThumb(file) {
-  if (file.size <= 300 * 1024 || !isGuestImageFile(file) || file.type === "image/svg+xml" || !("createImageBitmap" in window)) return null;
-  try {
-    const bitmap = await createImageBitmap(file);
-    const maxDimension = 360;
-    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    return await encodeCanvasBlob(canvas, 0.58);
-  } catch {
-    return null;
-  }
-}
-
-async function uploadGuestPhotos(files, onProgress = () => {}) {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const session = await ensureGuestPhotoSession(client);
-  const invitation = await loadSafeInvitationData();
-  const uploadSlug = storageSlug(invitation.guestPhotos?.uploadSlug) || "wedding-day";
-  const uploaded = [];
-  for (let index = 0; index < files.length; index += 1) {
-    const file = files[index];
-    if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name || "")) {
-      throw new Error("보안을 위해 SVG 파일은 업로드할 수 없습니다. PNG, JPG, WebP 또는 지원되는 영상 파일을 선택해 주세요.");
-    }
-    const isSupported = file.type.startsWith("image/") || ["video/mp4", "video/webm", "video/quicktime"].includes(file.type);
-    if (!isSupported || file.size > 50 * 1024 * 1024) {
-      throw new Error("사진 또는 영상은 파일당 50MB 이하 이미지, MP4, WebM, MOV만 업로드할 수 있습니다.");
-    }
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${uploadSlug}/${session.user.id}/${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}.${extension}`;
-    const thumb = await createGuestPhotoThumb(file);
-    const { error } = await client.storage
-      .from("guest-photos")
-      .upload(path, file, { cacheControl: "3600", contentType: file.type });
-    if (error) {
-      if (/row-level security|rls|mime type|not supported/i.test(error.message || "")) {
-        throw new Error("사진·영상 업로드 권한 정책이 적용되지 않았습니다. Supabase SQL Editor에서 supabase-guest-photo-policy-fix.sql을 실행해 주세요.");
-      }
-      throw error;
-    }
-    if (thumb) {
-      const { error: thumbError } = await client.storage
-        .from("guest-photos")
-        .upload(guestPhotoThumbPath(path), thumb, { cacheControl: "604800", contentType: thumb.type, upsert: true });
-      if (thumbError) console.warn("하객 사진 썸네일 업로드 실패", thumbError);
-    }
-    uploaded.push(path);
-    onProgress({ completed: index + 1, total: files.length, percent: Math.round(((index + 1) / files.length) * 100), path });
-  }
-  return uploaded;
-}
-
-async function ensureGuestPhotoSession(client) {
-  const { data } = await client.auth.getSession();
-  if (data.session) return data.session;
-  const { data: signedIn, error } = await client.auth.signInAnonymously();
-  if (error || !signedIn.session) {
-    throw new Error("익명 파일 업로드 세션을 만들지 못했습니다. Supabase Authentication > Providers에서 Anonymous Sign-Ins가 활성화되어 있는지 확인해 주세요.");
-  }
-  return signedIn.session;
-}
-
-async function signedGuestPhotos(client, photos, expiresIn = 3600) {
-  if (!photos.length) return [];
-  const paths = photos.flatMap((photo) => photo.thumbPath ? [photo.path, photo.thumbPath] : [photo.path]);
-  const { data, error } = await client.storage.from("guest-photos").createSignedUrls(paths, expiresIn);
-  if (error) throw error;
-  let index = 0;
-  return photos.map((photo) => {
-    const signedUrl = data[index]?.signedUrl || "";
-    index += 1;
-    const thumbSignedUrl = photo.thumbPath ? data[index]?.signedUrl || "" : canUseOriginalAsPreview(photo) ? signedUrl : "";
-    if (photo.thumbPath) index += 1;
-    return { ...photo, signedUrl, thumbSignedUrl };
-  });
-}
-
-function pairGuestPhotoThumbs(files = []) {
-  const thumbPaths = new Set(files.filter((file) => isGuestPhotoThumbPath(file.path)).map((file) => file.path));
-  return files
-    .filter((file) => !isGuestPhotoThumbPath(file.path))
-    .map((photo) => {
-      const thumbPath = guestPhotoThumbPath(photo.path);
-      return thumbPaths.has(thumbPath) ? { ...photo, thumbPath } : photo;
-    });
-}
-
-async function listOwnGuestPhotos() {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const session = await ensureGuestPhotoSession(client);
-  const invitation = await loadSafeInvitationData();
-  const folder = `${storageSlug(invitation.guestPhotos?.uploadSlug) || "wedding-day"}/${session.user.id}`;
-  const folders = [folder, session.user.id];
-  const results = await Promise.all(folders.map(async (target) => {
-    const { data: files, error } = await client.storage
-      .from("guest-photos")
-      .list(target, { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
-    if (error) throw error;
-    return files.filter((file) => file.id).map((photo) => ({ ...photo, path: `${target}/${photo.name}` }));
-  }));
-  const photos = pairGuestPhotoThumbs(results.flat()).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  return signedGuestPhotos(client, photos);
-}
-
-async function listGuestPhotoFolder(client, folder = "") {
-  const { data: entries, error } = await client.storage
-    .from("guest-photos")
-    .list(folder, { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
-  if (error) throw error;
-  const files = entries.filter((entry) => entry.id).map((entry) => ({ ...entry, path: folder ? `${folder}/${entry.name}` : entry.name }));
-  const folders = entries.filter((entry) => !entry.id);
-  const nested = await Promise.all(folders.map((entry) => listGuestPhotoFolder(client, folder ? `${folder}/${entry.name}` : entry.name)));
-  return files.concat(...nested);
-}
-
-async function listGuestPhotos() {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const invitation = await loadSafeInvitationData();
-  const folder = storageSlug(invitation.guestPhotos?.uploadSlug || getActiveInvitationSlug()) || "wedding-day";
-  const photos = pairGuestPhotoThumbs(await listGuestPhotoFolder(client, folder)).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  return signedGuestPhotos(client, photos, 30 * 24 * 60 * 60);
-}
-
-async function removeOwnGuestPhoto(path) {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  await ensureGuestPhotoSession(client);
-  const { error } = await client.storage.from("guest-photos").remove([path, guestPhotoThumbPath(path)]);
-  if (error) throw error;
-}
-
-async function removeGuestPhoto(path) {
-  const client = getSupabaseClient();
-  if (!client) throw new Error("Supabase가 연결되지 않았습니다.");
-  const { error } = await client.storage.from("guest-photos").remove([path, guestPhotoThumbPath(path)]);
-  if (error) throw error;
-}
-
 window.RSVP_STORAGE = {
   getSupabaseClient,
   mediaPublicUrl,
@@ -981,12 +799,5 @@ window.RSVP_STORAGE = {
   submitAttendanceResponse,
   submitGuestbookEntry,
   setGuestbookEntryHidden,
-  listGuestPhotos,
-  listOwnGuestPhotos,
-  removeGuestPhoto,
-  removeOwnGuestPhoto,
-  uploadGuestPhotos,
-  uploadDesignAsset,
   uploadInvitationImage,
-  uploadInvitationMedia,
 };

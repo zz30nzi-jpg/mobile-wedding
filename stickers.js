@@ -185,7 +185,9 @@
     return Math.max(min, Math.min(max, Number.isFinite(number) ? number : fallback));
   };
 
-  // x / y are the sticker centre as a percentage of its section's width / height.
+  // x: 스티커 가운데의 가로 위치(섹션 너비의 %).
+  // top: 섹션 맨 위에서 스티커 가운데까지의 거리(px). 섹션 안 토글을 열거나 방명록이 늘어나 섹션이 길어져도 제자리에 있게 함.
+  // y: 예전 방식(섹션 높이의 %). top이 없는 예전 스티커만 씀(처음 그릴 때 px로 바꿔 고정, app.js).
   function normalize(item = {}) {
     return {
       id: String(item.id || `st-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`),
@@ -193,8 +195,9 @@
       section: String(item.section || "invitation"),
       x: Math.round(clamp(item.x, 82, 0, 100) * 10) / 10,
       y: Math.round(clamp(item.y, 12, 0, 100) * 10) / 10,
-      size: clamp(item.size, 84, 40, 160),
-      rotate: clamp(item.rotate, 0, -30, 30),
+      top: item.top == null || item.top === "" || !Number.isFinite(Number(item.top)) ? null : Math.round(clamp(item.top, 0, 0, 20000)),
+      size: clamp(item.size, 84, 28, 240),
+      rotate: clamp(item.rotate, 0, -180, 180),
       color: /^#[0-9a-f]{6}$/i.test(String(item.color || "")) ? String(item.color).toLowerCase() : "",
     };
   }
@@ -202,7 +205,7 @@
   function markup(item) {
     const sticker = list.find((entry) => entry.id === item.sticker);
     if (!sticker) return "";
-    const style = `left:${item.x}%;top:${item.y}%;--sticker-size:${item.size}px;--sticker-rotate:${item.rotate}deg;${item.color ? `--sticker-color:${item.color};` : ""}`;
+    const style = `left:${item.x}%;top:${item.top == null ? `${item.y}%` : `${item.top}px`};--sticker-size:${item.size}px;--sticker-rotate:${item.rotate}deg;${item.color ? `--sticker-color:${item.color};` : ""}`;
     return `<span class="invitation-sticker" data-sticker-id="${item.id}" style="${style}">${sticker.svg}</span>`;
   }
 

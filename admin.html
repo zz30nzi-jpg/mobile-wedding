@@ -3,15 +3,28 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#eff7fa">
+    <meta name="theme-color" content="#ffffff">
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <title>청첩장 일반관리자</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=20261026-stickers3">
-    <link rel="stylesheet" href="./admin.css?v=20260629-music1">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Noto+Serif+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang&family=Gowun+Dodum&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css?v=20261027-refac4">
+    <link rel="stylesheet" href="./admin.css?v=20261027-refac4">
+    <!-- 실제 청첩장 테마가 적용될 때까지 내용을 가리고, 배경은 마지막으로 본 테마 색으로 칠함 (admin.js revealAdminPage) -->
+    <style>html:not(.theme-ready){background:var(--boot-bg,#ffffff)}html:not(.theme-ready) body{visibility:hidden}</style>
+    <script>
+      try {
+        var bootBg = localStorage.getItem("wedding-theme-bg");
+        if (bootBg && /^#[0-9a-f]{3,8}$|^rgb/i.test(bootBg)) {
+          document.documentElement.style.setProperty("--boot-bg", bootBg);
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", bootBg);
+        }
+      } catch (error) {}
+      // 안전장치: 스크립트 로딩이 늦거나 실패해도 8초 뒤에는 화면을 보여 줌
+      setTimeout(function () { document.documentElement.classList.add("theme-ready"); }, 8000);
+    </script>
   </head>
   <body data-admin-area="general" data-theme="white">
     <main class="admin-page">
@@ -31,6 +44,7 @@
         app.innerHTML = '<section class="admin-card admin-login"><p class="section-label">Network</p><h2>관리자페이지를 불러오는 중입니다</h2><p class="admin-message">모바일 Safari에서 네트워크 응답이 늦어지고 있습니다. 잠시 후에도 화면이 바뀌지 않으면 새로고침해 주세요.</p><button class="btn btn-primary" type="button" onclick="location.reload()">새로고침</button></section>';
       }, 30000);
       function showAdminLoadError(message) {
+        document.documentElement.classList.add("theme-ready");
         var app = document.getElementById("admin-app");
         if (!app) return;
         app.innerHTML = '<section class="admin-card admin-login"><p class="section-label">Load Error</p><h2>관리자페이지를 불러오지 못했습니다</h2><p class="admin-message">' + message + '</p><button class="btn btn-primary" type="button" onclick="location.reload()">새로고침</button></section>';
@@ -67,14 +81,14 @@
           .catch(function () { return null; });
         loadScript("https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js", 9000).catch(function () {});
         await loadScript("./invitation-data.js?v=20261026-stickers1", 12000);
-        await loadScript("./shared-utils.js?v=20260826-infotabs1", 12000);
-        await loadScript("./section-registry.js?v=20260826-infotabs1", 12000);
-        await loadScript("./stickers.js?v=20261026-stickers5", 12000);
-        await loadScript("./design-system.js?v=20260614-cache1", 12000);
+        await loadScript("./shared-utils.js?v=20261027-refac3", 12000);
+        await loadScript("./section-registry.js?v=20261026-nosnap1", 12000);
+        await loadScript("./design-system.js?v=20261027-refac5", 12000);
         await loadScript("./supabase-config.js?v=20260614-cache1", 12000);
-        await loadScript("./rsvp-storage.js?v=20260629-music2", 12000);
+        await loadScript("./rsvp-storage.js?v=20261027-refac3", 12000);
         await loadScript("./admin-ai-service.js?v=20260629-transport1", 12000);
-        await loadScript("./admin.js?v=20261026-stickers2", 12000);
+        await loadScript("./stickers.js?v=20261027-ui51", 12000);
+        await loadScript("./admin.js?v=20261027-refac3", 12000);
       }
       bootAdminScripts().catch(function (error) {
         showAdminLoadError("필수 스크립트 로딩에 실패했습니다. 네트워크를 바꾸거나 새로고침해 주세요. (" + String(error.message || error).replace(/[<>&]/g, "") + ")");

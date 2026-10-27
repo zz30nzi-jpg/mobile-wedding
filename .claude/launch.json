@@ -7,6 +7,13 @@
       "runtimeArgs": ["local-server.js"],
       "port": 5599,
       "autoPort": true
+    },
+    {
+      "name": "wedding-0pil-sein",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/dev/personal/wedding-0pil-sein/local-server.js"],
+      "port": 5610,
+      "autoPort": true
     }
   ]
 }

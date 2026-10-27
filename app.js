@@ -1,12 +1,13 @@
 let data = window.INVITATION_DATA;
 const app = document.querySelector("#app");
 const modalRoot = document.querySelector("#modal-root");
+const pageParams = new URLSearchParams(location.search);
+// 이 값이 있으면 특정 청첩장·미리보기를 보는 중이라 관리자 페이지로 보내지 않음
+const hasCardContext = ["card", "invitation", "__layout", "__thumb", "previewSectionMode", "copyEditorPreview"].some((key) => pageParams.has(key));
 
 function redirectOAuthCallbackToAdmin() {
-  const params = new URLSearchParams(location.search);
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
-  const hasAuthCallback = params.has("code") || params.has("error") || hashParams.has("access_token") || hashParams.has("refresh_token") || hashParams.has("error");
-  const hasCardContext = params.has("card") || params.has("invitation") || params.has("__layout") || params.has("__thumb") || params.has("previewSectionMode") || params.has("copyEditorPreview");
+  const hasAuthCallback = pageParams.has("code") || pageParams.has("error") || hashParams.has("access_token") || hashParams.has("refresh_token") || hashParams.has("error");
   if (hasAuthCallback && !hasCardContext) {
     location.replace(`${location.origin}/admin.html${location.search}${location.hash}`);
   }
@@ -15,8 +16,6 @@ function redirectOAuthCallbackToAdmin() {
 redirectOAuthCallbackToAdmin();
 
 async function redirectSignedInAdminFromRoot() {
-  const params = new URLSearchParams(location.search);
-  const hasCardContext = params.has("card") || params.has("invitation") || params.has("__layout") || params.has("__thumb") || params.has("previewSectionMode") || params.has("copyEditorPreview");
   const isRootInvitationPage = ["/", "/index.html"].includes(location.pathname);
   if (!isRootInvitationPage || hasCardContext) return;
   try {
@@ -33,14 +32,27 @@ redirectSignedInAdminFromRoot();
 
 const sharedUtils = window.WEDDING_UTILS || {};
 const sectionRegistry = window.WEDDING_SECTIONS || {};
-const escapeHtml = sharedUtils.escapeHtml || ((value = "") =>
-  String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]));
-const escapeLineHtml = sharedUtils.escapeLineHtml || ((value = "") => escapeHtml(value).replace(/\n/g, "<br>"));
-const TRANSPORT_TYPES = sharedUtils.TRANSPORT_TYPES || [];
-const normalizeTransportTitle = sharedUtils.normalizeTransportTitle || ((title = "") => title);
-const normalizeTransportLines = sharedUtils.normalizeTransportLines || (() => []);
-const noticeRowsHtml = sharedUtils.noticeRowsHtml || (() => "");
+// shared-utils.js는 index.html에서 항상 먼저 로드됩니다(실패 시 부팅 중단).
+const { escapeHtml, escapeLineHtml, emphasisHtml, dateInputToday, TRANSPORT_TYPES, normalizeTransportTitle, normalizeTransportLines, noticeRowsHtml } = sharedUtils;
+const WEEKDAYS_EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const stripEmphasis = (value = "") => String(value).replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 const transportType = (title) => TRANSPORT_TYPES.find((type) => type.label === normalizeTransportTitle(title)) || TRANSPORT_TYPES[0];
+// 티켓 오른쪽 칸: 날짜가 주인공, 시간은 그 아래 한 줄로
+const locationTicketStub = () => {
+  if (!weddingDate || Number.isNaN(weddingDate.getTime())) return "";
+  const pad = (value) => String(value).padStart(2, "0");
+  const hours = weddingDate.getHours();
+  const time = `${hours % 12 || 12}:${pad(weddingDate.getMinutes())}`;
+  return `<div class="location-ticket-stub" aria-label="예식 일시">
+    <span class="ticket-year">${weddingDate.getFullYear()}</span>
+    <strong class="ticket-date">${pad(weddingDate.getMonth() + 1)}.${pad(weddingDate.getDate())}</strong>
+    <span class="ticket-day">${WEEKDAYS_EN[weddingDate.getDay()]}</span>
+    <i class="ticket-rule" aria-hidden="true"></i>
+    <span class="ticket-time">${time}<small>${hours < 12 ? "AM" : "PM"}</small></span>
+  </div>`;
+};
+
 const transportPanelHtml = (item) => {
   const type = transportType(item.title);
   const lines = normalizeTransportLines(item);
@@ -50,12 +62,8 @@ const transportPanelHtml = (item) => {
 const mediaUrl = (src = "") => window.RSVP_STORAGE?.mediaPublicUrl?.(src) || src || "";
 const mediaStyle = (src) => mediaUrl(src) ? `style="background-image:url('${escapeHtml(mediaUrl(src))}')"` : "";
 const lazyMediaStyle = (src) => mediaUrl(src) ? `data-lazy-background="${escapeHtml(mediaUrl(src))}"` : "";
-const heroActiveMedia = () => data.hero.activeMedia === "video" && data.hero.video ? "video" : "image";
-const heroMediaMarkup = () => heroActiveMedia() === "video"
-  ? `<video class="hero-video" src="${escapeHtml(mediaUrl(data.hero.video))}" poster="${escapeHtml(mediaUrl(data.hero.image))}" autoplay muted loop playsinline preload="metadata" onerror="this.hidden=true"></video>`
-  : "";
+// 메인 영상은 방문마다 파일 전체를 내려받아 egress가 커서 사용하지 않음 — 첫 화면은 항상 이미지
 const tel = (number) => `tel:${String(number).replace(/[^0-9+]/g, "")}`;
-const isVideoMedia = (value = "") => /\.(mp4|webm|mov)(?:$|[?#])/i.test(value);
 let invitationMusicAudio = null;
 let invitationMusicButton = null;
 let invitationMusicResumeBound = false;
@@ -74,8 +82,7 @@ function weddingDisplayDateText(value, format = "long_ko") {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-  const day = weekdays[date.getDay()];
+  const day = WEEKDAYS_KO[date.getDay()];
   const year = date.getFullYear();
   const shortYear = String(year).slice(2);
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -106,7 +113,7 @@ function invitationMusicConfig() {
   const src = String(music.src || "").trim();
   if (!src || music.enabled === false) return null;
   const rawVolume = Number(music.volume);
-  const volume = Number.isFinite(rawVolume) ? rawVolume : 0.45;
+  const volume = Number.isFinite(rawVolume) ? rawVolume : 0.25;
   return { src: mediaUrl(src), volume: Math.max(0, Math.min(1, volume)) };
 }
 
@@ -126,7 +133,6 @@ function updateInvitationMusicButton(isPlaying = false) {
   invitationMusicButton.classList.toggle("is-playing", isPlaying);
   invitationMusicButton.setAttribute("aria-label", isPlaying ? "배경음악 끄기" : "배경음악 켜기");
   invitationMusicButton.setAttribute("title", `${invitationMusicStoryLabel()} ${isPlaying ? "on" : "off"}`);
-  invitationMusicButton.textContent = isPlaying ? "♪ ON" : "♪ OFF";
 }
 
 function showInvitationMusicToast() {
@@ -178,11 +184,13 @@ function setupInvitationMusic() {
   if (!config) return;
   invitationMusicAudio = new Audio(config.src);
   invitationMusicAudio.loop = true;
-  invitationMusicAudio.preload = "auto";
+  // 곡 전체를 페이지 열 때 받지 않고, 재생할 때 받아 오며 재생(음악을 안 켜는 방문자는 받지 않음, 봉투 애니메이션과 다운로드가 겹치지 않음)
+  invitationMusicAudio.preload = "metadata";
   invitationMusicAudio.volume = config.volume;
   invitationMusicButton = document.createElement("button");
   invitationMusicButton.type = "button";
   invitationMusicButton.className = "music-toggle";
+  invitationMusicButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g class="music-toggle-note"><path d="M9 17.5V6.2l10-2.2v11.3"/><circle cx="6.6" cy="17.6" r="2.4"/><circle cx="16.6" cy="15.4" r="2.4"/></g><path class="music-toggle-slash" d="M4 4l16 16"/></svg>';
   invitationMusicButton.setAttribute("aria-label", "배경음악 켜기");
   invitationMusicButton.addEventListener("click", () => {
     if (!invitationMusicAudio) return;
@@ -212,42 +220,11 @@ let guestbookVisibleCount = 3;
 let galleryPreviewImages = [];
 const galleryImagePreloads = new Set();
 let modalScrollY = 0;
-const themes = ["beige", "sky", "pink", "gray", "black", "white", "green"];
-const movieConcepts = ["none", "about_time", "la_la_land", "spirited_away", "you_are_the_apple"];
-const heroDecorations = ["none", "doodle_hearts", "organic_heart", "wedding_rings", "poster_card"];
-const heroTextThemes = ["auto", "default_center", "editorial_left", "minimal_center"];
-const defaultSectionSettings = sectionRegistry.defaultSettings || {
-  preWedding: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"],
-  weddingDay: ["invitation", "about-us", "wedding-day", "photo-interlude", "location", "information", "gallery", "wedding-snap", "attendance", "account", "guestbook"],
-};
+// section-registry.js·design-system.js는 index.html에서 항상 먼저 로드됩니다(실패 시 부팅 중단).
+const defaultSectionSettings = sectionRegistry.defaultSettings;
 
-function applyTheme(theme) {
-  const selected = themes.includes(theme) ? theme : "sky";
-  document.body.dataset.theme = selected;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", getComputedStyle(document.body).getPropertyValue("--body-bg").trim());
-}
-
-function applyMovieConcept(movieConcept) {
-  document.body.dataset.movieConcept = movieConcepts.includes(movieConcept) ? movieConcept : "none";
-}
-
-function applyHeroDecoration(heroDecoration) {
-  const legacyDecorations = { line_frame: "doodle_hearts", heart_frame: "organic_heart" };
-  const selected = legacyDecorations[heroDecoration] || heroDecoration;
-  document.body.dataset.heroDecoration = heroDecorations.includes(selected) ? selected : "none";
-}
-
-function applyHeroTextTheme(heroTextTheme) {
-  document.body.dataset.heroTextTheme = heroTextThemes.includes(heroTextTheme) ? heroTextTheme : "auto";
-}
-
-function applyAppearance(appearance = {}) {
-  if (window.WEDDING_DESIGN) return window.WEDDING_DESIGN.apply(data);
-  const legacyPoster = appearance.heroDecoration === "poster";
-  applyTheme(appearance.theme);
-  applyMovieConcept(appearance.movieConcept);
-  applyHeroDecoration(legacyPoster ? "none" : appearance.heroDecoration);
-  applyHeroTextTheme(legacyPoster && (!appearance.heroTextTheme || appearance.heroTextTheme === "auto") ? "editorial_left" : appearance.heroTextTheme);
+function applyAppearance() {
+  return window.WEDDING_DESIGN.apply(data);
 }
 
 function setMetaProperty(property, content) {
@@ -262,7 +239,7 @@ function setMetaProperty(property, content) {
 }
 
 function updateSocialMeta() {
-  const invitationText = data.invitation?.paragraphs?.join(" ") || data.meta.description;
+  const invitationText = stripEmphasis(data.invitation?.paragraphs?.join(" ") || "") || data.meta.description;
   const description = `${data.wedding.displayDate} · ${data.wedding.venue} · ${invitationText}`.slice(0, 180);
   setMetaProperty("og:title", data.meta.title);
   setMetaProperty("og:description", description);
@@ -297,6 +274,60 @@ function venueParts() {
   return match ? { venue: match[1], hall: match[2] } : { venue, hall: "" };
 }
 
+// 메인 이름 사이 구분 기호(관리자 '문구' 탭): 가운뎃점 또는 하트
+function heroNameSeparatorHtml(kind) {
+  return kind === "heart" ? '<span class="hero-name-sep is-heart" role="img" aria-label="하트"><svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21.6 10.3 20C4.2 14.5 0 10.7 0 6.1 0 2.6 2.7 0 6.1 0c2 0 3.9.9 5.9 3.1C14 .9 15.9 0 17.9 0 21.3 0 24 2.6 24 6.1c0 4.6-4.2 8.4-10.3 13.9z"/></svg></span>' : "<span>·</span>";
+}
+
+// 메인 사진 보이는 영역(관리자 '보이는 영역 맞추기'): 원본은 그대로 두고 확대·중심점만 적용
+function applyHeroImageFrame(element, frame) {
+  if (!element) return null;
+  const enabled = frame && frame.enabled && (Number(frame.zoom) > 100 || Number(frame.x) !== 50 || Number(frame.y) !== 50);
+  if (!enabled) {
+    element.style.removeProperty("background-size");
+    element.style.removeProperty("background-position");
+    delete element.dataset.imageFrame;
+    return null;
+  }
+  const zoom = Math.max(1, (Number(frame.zoom) || 100) / 100);
+  const x = Math.max(0, Math.min(100, Number(frame.x) || 0));
+  const y = Math.max(0, Math.min(100, Number(frame.y) || 0));
+  const boxWidth = element.clientWidth || 1;
+  const boxHeight = element.clientHeight || 1;
+  const ratio = Number(frame.ratio) || boxWidth / boxHeight;
+  // cover 기준 크기 × 확대
+  const coverScale = Math.max(boxWidth / ratio, boxHeight);
+  const imageHeight = coverScale * zoom;
+  const imageWidth = imageHeight * ratio;
+  element.dataset.imageFrame = "on";
+  element.style.setProperty("background-size", `${Math.round(imageWidth)}px ${Math.round(imageHeight)}px`, "important");
+  element.style.setProperty("background-position", `${x}% ${y}%`, "important");
+  return { boxWidth, boxHeight, imageWidth, imageHeight };
+}
+
+function syncHeroImageFrame() {
+  const element = document.querySelector(".hero-media");
+  if (!element || !data?.hero) return;
+  const frame = data.hero.imageFrame;
+  if (frame?.enabled && !(Number(frame.ratio) > 0) && data.hero.image) {
+    const probe = new Image();
+    probe.onload = () => {
+      frame.ratio = probe.naturalWidth / probe.naturalHeight;
+      applyHeroImageFrame(element, frame);
+    };
+    probe.src = mediaUrl(data.hero.image);
+    return;
+  }
+  applyHeroImageFrame(element, frame);
+}
+
+function syncInterludeFrame() {
+  const element = document.querySelector(".photo-interlude-media");
+  if (!element) return;
+  const frame = data?.media?.interludeFrame;
+  applyHeroImageFrame(element, frame && Number(frame.ratio) > 0 ? frame : null);
+}
+
 function fitSingleLineText() {
   document.querySelectorAll(".single-line-fit").forEach((element) => {
     element.style.fontSize = "";
@@ -310,7 +341,6 @@ function fitSingleLineText() {
 
 function renderDayStrip() {
   if (!weddingDate) return "";
-  const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
   let cells = "";
   for (let off = -2; off <= 2; off++) {
@@ -318,7 +348,7 @@ function renderDayStrip() {
     d.setDate(weddingDate.getDate() + off);
     const isWed = off === 0;
     cells += `<div class="day-cell${isWed ? " day-wedding" : ""}">
-      <span class="day-week">${weekdays[d.getDay()]}</span>
+      <span class="day-week">${WEEKDAYS_EN[d.getDay()]}</span>
       <span class="day-num">${d.getDate()}</span>
     </div>`;
   }
@@ -340,8 +370,8 @@ function renderCalendar() {
   for (let index = 0; index < cells.length; index += 7) weeks.push(cells.slice(index, index + 7));
   return `
     <table class="calendar">
-      <caption>${year}. ${String(month + 1).padStart(2, "0")}</caption>
-      <thead><tr>${["일", "월", "화", "수", "목", "금", "토"].map((item) => `<th>${item}</th>`).join("")}</tr></thead>
+      <caption><span class="calendar-month-name">${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][month]}</span><span class="calendar-year-month">${year}. ${String(month + 1).padStart(2, "0")}</span></caption>
+      <thead><tr>${WEEKDAYS_KO.map((item) => `<th>${item}</th>`).join("")}</tr></thead>
       <tbody>${weeks.map((week) => `<tr>${week.map((item) => `<td class="${item === day ? "wedding-day" : ""}">${item === day ? `<span>${item}</span>` : item}</td>`).join("")}</tr>`).join("")}</tbody>
     </table>`;
 }
@@ -372,7 +402,8 @@ function parentDisplay(person = {}) {
   const parents = String(person.parents || "").split("·").map((item) => item.trim()).filter(Boolean).join(" · ");
   if (!parents) return "";
   const relation = String(person.relation || "").trim();
-  return [parents, relation].filter(Boolean).join(" ");
+  // "의 아들"처럼 조사로 시작하면 부모 이름에 붙여 씀
+  return relation.startsWith("의") ? `${parents}${relation}` : [parents, relation].filter(Boolean).join(" ");
 }
 
 function hasAnyParent(person = {}) {
@@ -380,19 +411,16 @@ function hasAnyParent(person = {}) {
 }
 
 function invitationParentLine(role, person = {}) {
-  const parentText = parentDisplay(person);
   const name = String(person.name || "").trim();
   if (!name) return "";
-  return `<span class="parents-line"><span class="parents-relation">${parentText ? escapeHtml(parentText) : ""}</span><strong>${escapeHtml(name)}</strong></span>`;
-}
-
-function todayInputDate() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+  // 세로 2줄: [부모님의 아들] / [이름]
+  const parentText = parentDisplay(person);
+  return `<span class="parents-line"><span class="parents-names">${escapeHtml(parentText)}</span><strong>${escapeHtml(name)}</strong></span>`;
 }
 
 function publicPeriodStatus() {
   if (isCopyEditorPreview) return { visible: true };
-  const today = todayInputDate();
+  const today = dateInputToday();
   const openDate = String(data.publicPeriod?.openDate || "").slice(0, 10);
   const closeDate = String(data.publicPeriod?.closeDate || "").slice(0, 10);
   if (openDate && today < openDate) {
@@ -402,15 +430,6 @@ function publicPeriodStatus() {
     return { visible: false, title: "공개 기간이 종료되었습니다", text: `청첩장 공개 종료일은 ${closeDate}입니다.` };
   }
   return { visible: true };
-}
-
-function guestPhotoStatus() {
-  const settings = data.guestPhotos || {};
-  const today = todayInputDate();
-  return {
-    canUpload: settings.previewVisible || today === settings.eventDate,
-    showSection: settings.previewVisible || today >= settings.eventDate,
-  };
 }
 
 function galleryImages() {
@@ -430,14 +449,27 @@ function preloadGalleryImage(url = "") {
   image.src = source;
 }
 
+// egress 절약: 큰 원본은 실제로 볼 때만 받고, 다음 사진은 작은 사진(17~58KB)만 미리 받아 넘길 때 바로 보이게 함
 function warmGalleryNeighbors(index = 0) {
   const images = galleryImages();
   if (!images.length) return;
   const center = Number.isFinite(Number(index)) ? Number(index) : 0;
-  [center, center + 1].forEach((candidate) => {
-    const next = (candidate + images.length) % images.length;
-    preloadGalleryImage(images[next]);
-  });
+  const next = (center + 1 + images.length) % images.length;
+  preloadGalleryImage(galleryThumbAt(next) || images[next]);
+}
+
+// 아래 작은 사진 목록: 지금 사진 앞뒤 2장씩 최대 5장만(보이는 만큼만 받음)
+function galleryThumbStrip(index = 0) {
+  const images = galleryImages();
+  const count = Math.min(5, images.length);
+  const start = Math.max(0, Math.min(index - 2, images.length - count));
+  const thumbs = Array.from({ length: count }, (_, offset) => start + offset).map((thumbIndex) =>
+    `<button type="button" class="${thumbIndex === index ? "is-active" : ""}" data-gallery-jump="${thumbIndex}" aria-label="${thumbIndex + 1}번째 사진 보기"><img src="${escapeHtml(mediaUrl(galleryThumbAt(thumbIndex)) || mediaUrl(images[thumbIndex]))}" alt="" decoding="async"></button>`).join("");
+  // 앞뒤에 사진이 더 있으면 끝에 반투명 칸(+장 수)으로 알려 줌. 사진은 불러오지 않고, 누르면 그쪽으로 이동
+  const before = start;
+  const after = images.length - (start + count);
+  const hint = (left, target) => `<button type="button" class="gallery-thumb-more" data-gallery-jump="${target}" aria-label="${left}장 더 보기">+${left}</button>`;
+  return `${before > 0 ? hint(before, start - 1) : ""}${thumbs}${after > 0 ? hint(after, start + count) : ""}`;
 }
 
 function shuffledGalleryPreview(images) {
@@ -518,19 +550,19 @@ function guestbookMarkup() {
 }
 
 function activeSectionOrder() {
-  const previewMode = new URLSearchParams(location.search).get("previewSectionMode");
+  const previewMode = pageParams.get("previewSectionMode");
   if (previewMode === "preWedding" || previewMode === "weddingDay") {
     const previewOrder = data.sectionSettings?.[previewMode];
     return Array.isArray(previewOrder) ? previewOrder : defaultSectionSettings[previewMode];
   }
-  const eventDate = data.guestPhotos?.eventDate || "2026-10-04";
-  const today = todayInputDate();
+  const eventDate = String(data.wedding?.date || "").slice(0, 10) || "2026-10-04";
+  const today = dateInputToday();
   const mode = today < eventDate ? "preWedding" : "weddingDay";
   const configured = data.sectionSettings?.[mode];
   return Array.isArray(configured) ? configured : defaultSectionSettings[mode];
 }
 
-const isCopyEditorPreview = new URLSearchParams(location.search).get("copyEditorPreview") === "1";
+const isCopyEditorPreview = pageParams.get("copyEditorPreview") === "1";
 
 function applySectionOrder() {
   const article = document.querySelector(".invitation");
@@ -562,62 +594,70 @@ function sortedTransport() {
   });
 }
 
-function render() {
+// 진입화면(봉투 또는 타이핑) 마크업
+function introHtml() {
   const { groom, bride } = data.couple;
-  const displaySettings = data.displaySettings || {};
-  const period = publicPeriodStatus();
-  if (!period.visible) {
-    app.innerHTML = `
-      <main class="invitation-closed" role="main">
-        <div>
-          <p class="section-label">Wedding Invitation</p>
-          <h1>${escapeHtml(period.title)}</h1>
-          <p>${escapeHtml(period.text)}</p>
-        </div>
-      </main>`;
-    return;
-  }
   const introDesign = data.hero.introDesign || {};
   const introAlign = ["left", "center", "right"].includes(introDesign.align) ? introDesign.align : "center";
   const introNumber = (value, fallback, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
-  const introStyle = `--intro-align:${introAlign};--intro-eyebrow-size:${introNumber(introDesign.eyebrowSize, 11, 8, 24)}px;--intro-name-size:${introNumber(introDesign.nameSize, 30, 20, 54)}px;--intro-date-size:${introNumber(introDesign.dateSize, 11, 8, 20)}px;--intro-eyebrow-name-gap:${introNumber(introDesign.eyebrowNameGap, 10, 0, 40)}px;--intro-name-date-gap:${introNumber(introDesign.nameDateGap, 10, -24, 40)}px;--intro-offset-y:${introNumber(introDesign.offsetY, 0, -160, 160)}px`;
-  const guestPhotos = guestPhotoStatus();
-  const gallery = galleryImages();
-  const location = venueParts();
+  const introStyle = `--intro-align:${introAlign};--intro-eyebrow-size:${introNumber(introDesign.eyebrowSize, 11, 8, 24)}px;--intro-name-size:${introNumber(introDesign.nameSize, 30, 20, 54)}px;--intro-date-size:${introNumber(introDesign.dateSize, 11, 8, 20)}px;--intro-eyebrow-name-gap:${introNumber(introDesign.eyebrowNameGap, 10, 0, 40)}px;--intro-name-date-gap:${introNumber(introDesign.nameDateGap, 10, -24, 40)}px;--intro-offset-y:${introNumber(introDesign.offsetY, 0, -160, 160)}px${window.ENVELOPE_INTRO.koFont(introDesign.koFont) ? `;--intro-ko-font:${window.ENVELOPE_INTRO.koFont(introDesign.koFont)}` : ""}`;
+  const introEyebrow = escapeHtml(data.hero.introEyebrow || data.hero.eyebrow || "our wedding day");
+  const introDateText = escapeHtml(data.hero.introDate || data.wedding.displayDate);
+  const introNameText = escapeHtml(data.hero.introName || `${groom.name} · ${bride.name}`);
+  // 봉투 모양·색 계산과 마크업은 관리자 미리보기와 같이 쓰도록 shared-utils.js(ENVELOPE_INTRO)에 있음
+  const envelopeIntro = window.ENVELOPE_INTRO.render({ script: data.hero.introScript, name: data.hero.introName || `${groom.name} · ${bride.name}`, date: data.hero.introDate || data.wedding.displayDate, design: introDesign, unit: "cqw" });
+  // 봉투 진입화면: 문구가 봉투 위에 이미 쓰여 있고, 탭하면 실링이 떨어지고 덮개가 열린 뒤 봉투가 내려가며 청첩장이 드러남
+  const introMarkup = (introDesign.style || "typing") === "envelope"
+    ? `
+    <div class="invitation-intro envelope-intro" data-invitation-intro ${envelopeIntro.attrs}>
+      ${envelopeIntro.stage}
+    </div>`
+    : `
+    <div class="invitation-intro${introBlurImage() ? " has-soft-bg" : ""}" data-invitation-intro${introBackgroundStyle()}>
+      <div class="invitation-intro-copy" style="${introStyle}">
+        <p>${introEyebrow}</p>
+        <strong data-intro-name></strong>
+        <span>${introDateText}</span>
+      </div>
+    </div>`;
+  return introMarkup;
+}
+
+// ── 청첩장 섹션별 마크업 (render()가 순서대로 이어 붙임) ──
+function heroHtml() {
+  const { groom, bride } = data.couple;
+  return `<header class="hero">
+        <div class="media hero-media" ${mediaStyle(data.hero.image)} data-active-media="image"></div>
+        <div class="hero-content hero-content-${escapeHtml(data.hero.contentPosition || "bottom")}">
+          <p class="hero-eyebrow" data-main="${escapeHtml(data.hero.eyebrowMain || "Our Wedding")}" data-script="${escapeHtml(data.hero.eyebrowScript || "Day")}">${escapeHtml(data.hero.eyebrow)}</p>
+          <h1 class="hero-names">${escapeHtml(groom.name)} ${heroNameSeparatorHtml(data.appearance?.design?.heroNameSeparator)} ${escapeHtml(bride.name)}</h1>
+          <p class="hero-date single-line-fit">${escapeHtml(data.wedding.displayDate)}</p>
+        </div>
+      </header>`;
+}
+
+function invitationSectionHtml() {
+  const { groom, bride } = data.couple;
+  const displaySettings = data.displaySettings || {};
   const showParentLines = displaySettings.showInvitationParents !== false && hasAnyParent(groom) && hasAnyParent(bride);
   const parentsMarkup = showParentLines
     ? `${invitationParentLine("신랑", groom)}<span class="parents-heart">♥</span>${invitationParentLine("신부", bride)}`
     : `<span class="parents-line parents-line-simple"><strong>${escapeHtml(groom.name)}</strong> ♥ <strong>${escapeHtml(bride.name)}</strong></span>`;
-  galleryPreviewImages = shuffledGalleryPreview(gallery);
-  app.innerHTML = `
-    <div class="invitation-intro" data-invitation-intro>
-      <div class="invitation-intro-copy" style="${introStyle}">
-        <p>${escapeHtml(data.hero.introEyebrow || data.hero.eyebrow || "our wedding day")}</p>
-        <strong data-intro-name></strong>
-        <span>${escapeHtml(data.hero.introDate || data.wedding.displayDate)}</span>
-      </div>
-    </div>
-    <article class="invitation">
-      <header class="hero">
-        <div class="media hero-media" ${mediaStyle(data.hero.image)} data-active-media="${heroActiveMedia()}">${heroMediaMarkup()}</div>
-        <div class="hero-content hero-content-${escapeHtml(data.hero.contentPosition || "bottom")}">
-          <p class="hero-eyebrow">${escapeHtml(data.hero.eyebrow)}</p>
-          <h1 class="hero-names">${escapeHtml(groom.name)} <span>·</span> ${escapeHtml(bride.name)}</h1>
-          <p class="hero-date single-line-fit">${escapeHtml(data.wedding.displayDate)}</p>
-        </div>
-      </header>
-
-      <section class="section" id="invitation">
+  return `<section class="section" id="invitation">
         ${sectionCopy("invitation", "Invitation", data.invitation.title)}
-        ${data.invitation.paragraphs.map((text) => `<p class="invitation-copy">${escapeHtml(text)}</p>`).join("")}
+        ${data.invitation.paragraphs.map((text) => `<p class="invitation-copy">${emphasisHtml(text)}</p>`).join("")}
         ${parentsMarkup ? `<p class="parents">${parentsMarkup}</p>` : ""}
         <div class="contact-row">
           <a class="btn" href="${tel(groom.phone)}">신랑에게 연락</a>
           <a class="btn" href="${tel(bride.phone)}">신부에게 연락</a>
         </div>
-      </section>
+      </section>`;
+}
 
-      <section class="section" id="about-us">
+function aboutUsSectionHtml() {
+  const { groom, bride } = data.couple;
+  const displaySettings = data.displaySettings || {};
+  return `<section class="section" id="about-us">
         ${sectionCopy("aboutUs", "About Us", "저희를 소개합니다")}
         <div class="profile-grid">
           ${[["신랑", groom], ["신부", bride]].map(([role, person]) => `
@@ -632,28 +672,41 @@ function render() {
               </div>
             </article>`).join("")}
         </div>
-      </section>
+      </section>`;
+}
 
-      <section class="section" id="wedding-day">
+function weddingDaySectionHtml() {
+  return `<section class="section" id="wedding-day">
         ${weddingDayTitleMarkup()}
         ${renderCalendar()}
         ${renderDayStrip()}
         <div class="countdown" id="countdown"></div>
         <p class="subtle" id="countdown-message"></p>
-      </section>
+      </section>`;
+}
 
-      <section class="section photo-interlude" id="photo-interlude">
+function photoInterludeSectionHtml() {
+  return `<section class="section photo-interlude" id="photo-interlude">
         <div class="photo-interlude-media media" ${lazyMediaStyle(data.media?.interludePhoto)}></div>
-      </section>
+      </section>`;
+}
 
-      <section class="section" id="location">
+function locationSectionHtml() {
+  const location = venueParts();
+  return `<section class="section" id="location">
         ${sectionCopy("location", "Location", "오시는 길")}
-        <h3 class="location-venue single-line-fit">${escapeHtml(location.venue)}</h3>
-        ${location.hall ? `<p class="location-hall">${escapeHtml(location.hall)}</p>` : ""}
-        <p class="location-address">${escapeHtml(data.wedding.address)}</p>
+        <div class="location-ticket">
+          <div class="location-ticket-main">
+            <h3 class="location-venue single-line-fit">${escapeHtml(location.venue)}</h3>
+            ${location.hall ? `<p class="location-hall">${escapeHtml(location.hall)}</p>` : ""}
+            <p class="location-address">${escapeHtml(data.wedding.address)}</p>
+            <button class="location-ticket-copy copy-btn" type="button" data-copy="${escapeHtml(data.wedding.address)}">주소 복사하기<span class="copy-toast" aria-hidden="true">복사완료</span></button>
+          </div>
+          ${locationTicketStub()}
+        </div>
         <div class="map-links">
           <button class="btn copy-btn" data-map-app="copy" data-copy="${escapeHtml(data.wedding.address)}" aria-label="주소 복사" title="주소 복사"><span class="map-icon-label" aria-hidden="true"></span><span class="copy-toast" aria-hidden="true">복사완료</span></button>
-          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener" aria-label="${escapeHtml(link.label)}" title="${escapeHtml(link.label)}"><span class="map-icon-label" aria-hidden="true"></span></a>`).join("")}
+          ${mapLinksForAddress(data.wedding.address).map((link) => `<a class="btn" data-map-app="${link.app}" ${link.fallbackUrl ? `data-map-fallback="${escapeHtml(link.fallbackUrl)}"` : ""} href="${escapeHtml(link.url)}" target="_blank" rel="noopener" aria-label="${escapeHtml(link.label)}" title="${escapeHtml(link.label)}"><span class="map-icon-label" aria-hidden="true"></span><span class="map-app-name">${escapeHtml(link.label)}</span></a>`).join("")}
         </div>
         <div class="transport">
           <div class="transport-list">
@@ -661,9 +714,11 @@ function render() {
               <div class="transport-panel" data-transport-panel="${index}">${transportPanelHtml(item)}</div>`).join("")}
           </div>
         </div>
-      </section>
+      </section>`;
+}
 
-      <section class="section" id="gallery">
+function gallerySectionHtml(gallery) {
+  return `<section class="section" id="gallery">
         ${sectionCopy("gallery", "Gallery", "갤러리")}
         <div class="gallery-grid">
           ${galleryPreviewImages.map((image, index) => `<button class="gallery-item" data-gallery="${gallery.indexOf(image)}" aria-label="사진 ${index + 1} 크게 보기"><span class="media" ${lazyMediaStyle(galleryThumbAt(gallery.indexOf(image)))}></span></button>`).join("")}
@@ -671,50 +726,91 @@ function render() {
         <div class="gallery-footer">
           <button class="btn gallery-more" id="gallery-more" aria-label="사진 더보기" title="사진 더보기">사진 더보기</button>
         </div>
-      </section>
+      </section>`;
+}
 
-      ${guestPhotos.showSection ? `
-        <section class="section guest-photo-section" id="wedding-snap">
-          ${sectionCopy("weddingSnap", "Guest Album", "함께만드는 웨딩스냅")}
-          <p class="subtle">${guestPhotos.canUpload ? escapeLineHtml(data.sectionDescriptions?.weddingSnap || "오늘의 추억은 여러분의 한 장에서 완성돼요!") : escapeLineHtml(data.guestPhotos?.manageDescription || "이 휴대폰에서 보낸 사진과 영상을 확인하거나 삭제할 수 있습니다.")}</p>
-          ${guestPhotos.canUpload ? '<p class="guest-photo-note">※ 영상은 가능하시다면, 카카오톡으로 전달부탁드립니다!</p>' : ""}
-          <div class="guest-photo-actions">
-            ${guestPhotos.canUpload ? '<button class="btn btn-primary" id="guest-photo-open">사진·영상 업로드</button>' : ""}
-            <button class="btn" id="guest-photo-manage">내가 보낸 파일</button>
-          </div>
-          ${isCopyEditorPreview ? '<button class="btn copy-preview-detail-edit" type="button" data-preview-detail-edit="wedding-snap">✎ 세부내용 수정</button>' : ""}
-          ${guestPhotos.canUpload ? '<p class="action-footnote">결혼식 당일부터 업로드 가능합니다.</p>' : ""}
-        </section>` : ""}
-
-      ${(data.notices || []).filter((notice) => !notice.hidden && notice.text?.trim()).length ? `<section class="section" id="information">
+function informationSectionHtml() {
+  return (data.notices || []).filter((notice) => !notice.hidden && notice.text?.trim()).length ? `<section class="section" id="information">
         ${sectionCopy("information", "Information", "식장 안내")}
         ${informationTabsMarkup()}
-      </section>` : ""}
+      </section>` : "";
+}
 
-      <section class="section" id="attendance">
+function attendanceSectionHtml() {
+  return `<section class="section" id="attendance">
         ${sectionCopy("attendance", "Rsvp", "참석 의사 전달")}
         <p class="subtle">${escapeLineHtml(data.sectionDescriptions?.attendance || "신랑신부에게 참석의사를 미리 전달해주세요")}</p>
         <button class="btn btn-primary" id="attendance-open">전달하기</button>
         ${isCopyEditorPreview ? '<button class="btn copy-preview-detail-edit" type="button" data-preview-detail-edit="rsvp">✎ 세부내용 수정</button>' : ""}
-      </section>
+      </section>`;
+}
 
-      <section class="section" id="account">
+function accountSectionHtml() {
+  return `<section class="section" id="account">
         ${sectionCopy("account", "Account", "마음 전하는 곳")}
         <p class="subtle">${escapeLineHtml(data.sectionDescriptions?.account || "참석이 어려우신 분들을 위해\n계좌번호를 안내해 드립니다.")}</p>
         <div class="account-groups">${renderAccounts("신랑측")}${renderAccounts("신부측")}</div>
-      </section>
+      </section>`;
+}
 
-      <section class="section" id="guestbook">
+function guestbookSectionHtml() {
+  return `<section class="section" id="guestbook">
         ${sectionCopy("guestbook", "Guestbook", "축하 메시지")}
         <p class="subtle">${escapeLineHtml(data.sectionDescriptions?.guestbook || "따뜻한 마음을 짧게 남겨 주세요.")}</p>
         <button class="btn btn-primary" id="guestbook-open">작성하기</button>
         <div class="guestbook-list" id="guestbook-list">${guestbookMarkup()}</div>
-      </section>
+      </section>`;
+}
 
-      <section class="ending">
+function endingHtml() {
+  const { groom, bride } = data.couple;
+  return `<section class="ending">
         <div class="media" ${lazyMediaStyle(data.ending.image)}></div>
         <div class="ending-content"><p class="preserve">${escapeHtml(data.ending.text)}</p><p class="ending-names">${escapeHtml(groom.name)} · ${escapeHtml(bride.name)}</p><button class="btn" id="share-button">청첩장 공유하기</button></div>
-      </section>
+      </section>`;
+}
+
+function render() {
+  const period = publicPeriodStatus();
+  if (!period.visible) {
+    app.innerHTML = `
+      <main class="invitation-closed" role="main">
+        <div>
+          <p class="section-label">Wedding Invitation</p>
+          <h1>${escapeHtml(period.title)}</h1>
+          <p>${escapeHtml(period.text)}</p>
+        </div>
+      </main>`;
+    return;
+  }
+  const gallery = galleryImages();
+  galleryPreviewImages = shuffledGalleryPreview(gallery);
+  app.innerHTML = `
+    ${introHtml()}
+    <article class="invitation">
+      ${heroHtml()}
+
+      ${invitationSectionHtml()}
+
+      ${aboutUsSectionHtml()}
+
+      ${weddingDaySectionHtml()}
+
+      ${photoInterludeSectionHtml()}
+
+      ${locationSectionHtml()}
+
+      ${gallerySectionHtml(gallery)}
+
+      ${informationSectionHtml()}
+
+      ${attendanceSectionHtml()}
+
+      ${accountSectionHtml()}
+
+      ${guestbookSectionHtml()}
+
+      ${endingHtml()}
       <footer class="footer"></footer>
       <nav class="bottom-tabbar" aria-label="주요 메뉴">
         <a href="#wedding-day"><span>일정</span></a>
@@ -735,12 +831,19 @@ function renderInvitationStickers() {
   app.querySelectorAll(".invitation-sticker").forEach((node) => node.remove());
   data.stickers.map(stickers.normalize).forEach((item) => {
     const target = item.section === "ending" ? app.querySelector(".ending") : app.querySelector(`.section[id="${item.section}"]`);
-    target?.insertAdjacentHTML("beforeend", stickers.markup(item));
+    if (!target) return;
+    target.insertAdjacentHTML("beforeend", stickers.markup(item));
+    // 예전 스티커(섹션 높이 %): 지금 섹션 높이로 px로 바꿔 고정 → 토글을 열어도 따라 움직이지 않음
+    if (item.top == null) target.lastElementChild.style.top = `${Math.round((item.y / 100) * target.offsetHeight)}px`;
   });
+  // 편집 미리보기: 메인 사진은 스티커를 붙일 수 없는 곳이라 스티커 탭에서 흐리게 덮어 표시
+  if (isCopyEditorPreview && !app.querySelector(".hero .sticker-no-place")) {
+    app.querySelector(".hero")?.insertAdjacentHTML("beforeend", '<div class="sticker-no-place" aria-hidden="true"><span>메인 사진에는 스티커를 붙일 수 없어요</span></div>');
+  }
 }
 
 // Admin sticker page embeds the invitation with ?stickerEditor=1 and talks to it via postMessage.
-const isStickerEditorPreview = new URLSearchParams(location.search).get("stickerEditor") === "1";
+const isStickerEditorPreview = pageParams.get("stickerEditor") === "1";
 
 function stickerTargetAt(x, y) {
   return document.elementsFromPoint(x, y)
@@ -755,7 +858,7 @@ function stickerTargetId(target) {
 function stickerPlacement(target, x, y) {
   const rect = target.getBoundingClientRect();
   const percent = (value) => Math.round(Math.max(0, Math.min(100, value)) * 10) / 10;
-  return { section: stickerTargetId(target), x: percent(((x - rect.left) / rect.width) * 100), y: percent(((y - rect.top) / rect.height) * 100) };
+  return { section: stickerTargetId(target), x: percent(((x - rect.left) / rect.width) * 100), y: percent(((y - rect.top) / rect.height) * 100), top: Math.round(Math.max(0, y - rect.top)) };
 }
 
 function selectEditorSticker(id = "") {
@@ -767,78 +870,205 @@ function postStickerEditor(message) {
 }
 
 function bindStickerEditor() {
-  document.body.classList.add("sticker-editor-preview");
-  let drag = null;
+  // 청첩장 화면 편집 미리보기 안에서 '스티커' 탭일 때만 켜짐(관리자가 mode 메시지로 켜고 끔)
+  // 인스타그램 스토리처럼: 고른 손그림은 놓을 곳을 눌러 붙이고, 스티커를 끌어 옮기고, 두 손가락으로 크기·기울기를 바꿈.
+  // 스티커가 아닌 곳을 한 손가락으로 쓸면 그대로 스크롤됨
+  let active = false;
+  const layer = document.createElement("div");
+  layer.className = "sticker-gesture-layer";
+  layer.hidden = true;
+  const hint = document.createElement("p");
+  hint.className = "sticker-place-hint";
+  hint.hidden = true;
+  hint.textContent = "스티커를 놓을 곳을 눌러 주세요";
+  document.body.append(layer, hint);
 
-  app.addEventListener("pointerdown", (event) => {
-    const sticker = event.target.closest(".invitation-sticker");
-    if (!sticker) return;
-    event.preventDefault();
-    const rect = sticker.getBoundingClientRect();
-    drag = {
-      sticker,
-      startX: event.clientX,
-      startY: event.clientY,
-      offsetX: event.clientX - (rect.left + rect.width / 2),
-      offsetY: event.clientY - (rect.top + rect.height / 2),
-      moved: false,
-    };
-    sticker.classList.add("is-dragging");
-    selectEditorSticker(sticker.dataset.stickerId);
+  let selectedId = "";
+  let pendingItem = null;
+  const pointers = new Map();
+  let gesture = null;
+  const stickerElement = () => (selectedId ? app.querySelector(`.invitation-sticker[data-sticker-id="${selectedId}"]`) : null);
+  const setSelected = (id) => {
+    selectedId = id || "";
+    selectEditorSticker(selectedId);
+    layer.hidden = !selectedId;
+  };
+  const setPending = (item) => {
+    pendingItem = item;
+    hint.hidden = !item;
+    document.body.classList.toggle("sticker-placing", Boolean(item));
+  };
+  const setActive = (on) => {
+    active = Boolean(on);
+    document.body.classList.toggle("sticker-editor-preview", active);
+    document.body.classList.toggle("sticker-mode", active);
+    // 스티커는 메인 사진에 붙일 수 없어서 스티커 탭에서는 메인 사진을 빼고 초대글부터 보여 줌
+    if (active) window.scrollTo(0, 0);
+    if (!active) {
+      setPending(null);
+      setSelected("");
+      pointers.clear();
+      gesture = null;
+    }
+  };
+  const currentTransform = (sticker) => ({
+    size: Number.parseFloat(sticker.style.getPropertyValue("--sticker-size")) || 84,
+    rotate: Number.parseFloat(sticker.style.getPropertyValue("--sticker-rotate")) || 0,
   });
+  const center = (sticker) => {
+    const rect = sticker.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  };
+  // 제스처 레이어가 덮고 있어도 손가락 아래 스티커를 찾음
+  const stickerAtPoint = (x, y) => document.elementsFromPoint(x, y).map((node) => node.closest?.(".invitation-sticker")).find(Boolean) || null;
+  const twoPointers = () => [...pointers.values()].slice(0, 2);
+  const distance = ([a, b]) => Math.hypot(b.x - a.x, b.y - a.y);
+  const angle = ([a, b]) => (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+  const startGesture = ({ afterPinch = false } = {}) => {
+    const sticker = stickerElement();
+    if (!sticker) return;
+    const { size, rotate } = currentTransform(sticker);
+    if (pointers.size >= 2) {
+      const pair = twoPointers();
+      gesture = { type: "pinch", sticker, size, rotate, distance: distance(pair) || 1, angle: angle(pair) };
+      return;
+    }
+    const point = [...pointers.values()][0];
+    if (point.onSticker) {
+      const middle = center(sticker);
+      gesture = { type: "drag", sticker, size, rotate, offsetX: point.x - middle.x, offsetY: point.y - middle.y, startX: point.x, startY: point.y, moved: afterPinch };
+    } else {
+      // 스티커 밖 한 손가락: 스크롤은 브라우저에 맡기고, 그냥 톡 누른 경우만 선택 해제
+      gesture = { type: "tap", sticker, startX: point.x, startY: point.y, moved: afterPinch };
+    }
+  };
 
-  window.addEventListener("pointermove", (event) => {
-    if (!drag) return;
-    if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 4) return;
-    drag.moved = true;
-    const x = event.clientX - drag.offsetX;
-    const y = event.clientY - drag.offsetY;
+  const onDown = (event) => {
+    if (!active) return;
+    if (pendingItem) {
+      // 놓을 곳을 누르면 그 자리에 붙임
+      event.preventDefault();
+      const target = stickerTargetAt(event.clientX, event.clientY);
+      if (!target) {
+        // 메인 사진처럼 붙일 수 없는 곳: 그대로 기다리며 안내만 바꿈
+        hint.textContent = "여기에는 붙일 수 없어요. 다른 곳을 눌러 주세요";
+        clearTimeout(hint._resetTimer);
+        hint._resetTimer = setTimeout(() => { hint.textContent = "스티커를 놓을 곳을 눌러 주세요"; }, 1800);
+        return;
+      }
+      postStickerEditor({ type: "placed", item: { ...pendingItem, ...stickerPlacement(target, event.clientX, event.clientY) } });
+      setPending(null);
+      return;
+    }
+    const hit = stickerAtPoint(event.clientX, event.clientY);
+    if (hit && hit.dataset.stickerId !== selectedId) {
+      setSelected(hit.dataset.stickerId);
+      postStickerEditor({ type: "select", id: selectedId });
+    }
+    if (!selectedId) return;
+    const onSticker = hit?.dataset.stickerId === selectedId;
+    if (onSticker) {
+      event.preventDefault();
+      try { event.target.setPointerCapture?.(event.pointerId); } catch {}
+    }
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, onSticker });
+    startGesture();
+  };
+  const onMove = (event) => {
+    if (!pointers.has(event.pointerId) || !gesture) return;
+    pointers.set(event.pointerId, { ...pointers.get(event.pointerId), x: event.clientX, y: event.clientY });
+    const sticker = gesture.sticker;
+    if (gesture.type === "pinch" && pointers.size >= 2) {
+      const pair = twoPointers();
+      const size = Math.round(Math.max(28, Math.min(240, gesture.size * (distance(pair) / gesture.distance))));
+      let rotate = Math.round(gesture.rotate + (angle(pair) - gesture.angle));
+      rotate = ((rotate + 540) % 360) - 180;
+      sticker.style.setProperty("--sticker-size", `${size}px`);
+      sticker.style.setProperty("--sticker-rotate", `${rotate}deg`);
+      gesture.changed = true;
+      return;
+    }
+    if (gesture.type === "tap") {
+      if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) > 6) gesture.moved = true;
+      return;
+    }
+    if (gesture.type !== "drag") return;
+    if (!gesture.moved && Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) < 4) return;
+    gesture.moved = true;
+    const x = event.clientX - gesture.offsetX;
+    const y = event.clientY - gesture.offsetY;
     const target = stickerTargetAt(x, y);
     if (target) {
-      if (drag.sticker.parentElement !== target) target.appendChild(drag.sticker);
+      if (sticker.parentElement !== target) target.appendChild(sticker);
       const placement = stickerPlacement(target, x, y);
-      drag.sticker.style.left = `${placement.x}%`;
-      drag.sticker.style.top = `${placement.y}%`;
-      drag.placement = placement;
+      sticker.style.left = `${placement.x}%`;
+      sticker.style.top = `${placement.top}px`;
+      gesture.placement = placement;
     }
     if (event.clientY < 48) window.scrollBy(0, -10);
     else if (event.clientY > window.innerHeight - 48) window.scrollBy(0, 10);
-  });
-
-  const finish = () => {
-    if (!drag) return;
-    const { sticker, moved, placement } = drag;
-    sticker.classList.remove("is-dragging");
-    drag = null;
-    const id = sticker.dataset.stickerId;
-    if (moved && placement) postStickerEditor({ type: "moved", id, ...placement });
-    else postStickerEditor({ type: "select", id });
   };
-  window.addEventListener("pointerup", finish);
-  window.addEventListener("pointercancel", finish);
+  const onUp = (event) => {
+    if (!pointers.has(event.pointerId)) return;
+    pointers.delete(event.pointerId);
+    const ended = gesture;
+    gesture = null;
+    if (ended) {
+      const { size, rotate } = currentTransform(ended.sticker);
+      if (ended.type === "pinch" && ended.changed) postStickerEditor({ type: "transformed", id: selectedId, size, rotate });
+      if (ended.type === "drag" && ended.moved && ended.placement) postStickerEditor({ type: "moved", id: selectedId, ...ended.placement });
+      // 스티커 밖을 톡 누르면 선택 해제(스크롤하느라 손가락이 움직였거나 브라우저가 가져간 경우는 그대로)
+      if (ended.type === "tap" && !ended.moved && event.type === "pointerup") {
+        setSelected("");
+        postStickerEditor({ type: "select", id: "" });
+      }
+    }
+    if (pointers.size && selectedId) startGesture({ afterPinch: ended?.type === "pinch" });
+  };
+  document.addEventListener("pointerdown", onDown, { passive: false });
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+  // 컴퓨터: 고른 스티커 위에서 휠 = 크기, Shift+휠 = 기울기(스티커 밖에서는 평소처럼 스크롤)
+  document.addEventListener("wheel", (event) => {
+    const sticker = stickerElement();
+    if (!active || !sticker || stickerAtPoint(event.clientX, event.clientY) !== sticker) return;
+    event.preventDefault();
+    const { size, rotate } = currentTransform(sticker);
+    if (event.shiftKey) sticker.style.setProperty("--sticker-rotate", `${Math.max(-180, Math.min(180, rotate + Math.sign(event.deltaY) * 3))}deg`);
+    else sticker.style.setProperty("--sticker-size", `${Math.max(28, Math.min(240, size - Math.sign(event.deltaY) * 4))}px`);
+    clearTimeout(sticker._wheelTimer);
+    sticker._wheelTimer = setTimeout(() => postStickerEditor({ type: "transformed", id: selectedId, ...currentTransform(sticker) }), 200);
+  }, { passive: false });
 
   window.addEventListener("message", (event) => {
     if (event.origin !== location.origin || event.data?.source !== "wedding-sticker-admin") return;
     const message = event.data;
-    if (message.type === "set") {
+    if (message.type === "mode") {
+      setActive(message.active);
+    } else if (message.type === "scroll") {
+      // 저장 뒤 미리보기를 새로 그려도 보던 위치 그대로(부드러운 스크롤 없이 바로)
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo(0, Number(message.y) || 0);
+      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ""; });
+    } else if (message.type === "set") {
       data.stickers = Array.isArray(message.stickers) ? message.stickers : [];
       renderInvitationStickers();
-      selectEditorSticker(message.selectedId || "");
+      setSelected(active ? message.selectedId || "" : "");
     } else if (message.type === "focus") {
       app.querySelector(`.invitation-sticker[data-sticker-id="${message.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
-    } else if (message.type === "place") {
-      // New stickers land in the middle of whatever part of the invitation is on screen.
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
-      const target = stickerTargetAt(centerX, centerY) || app.querySelector(".section[id]");
-      if (!target) return;
-      postStickerEditor({ type: "placed", item: { ...message.item, ...stickerPlacement(target, centerX, centerY) } });
+    } else if (message.type === "arm") {
+      // 팔레트에서 고른 스티커: 다음에 누르는 곳에 붙음
+      setSelected("");
+      setPending(message.item);
     }
   });
+  setActive(isStickerEditorPreview);
   postStickerEditor({ type: "ready" });
 }
 
 function renderInvitationLoadError(error) {
+  document.documentElement.classList.add("theme-ready");
   const status = error?.publicInvitationStatus || "network_error";
   const titleMap = {
     not_found: "존재하지 않는 청첩장입니다",
@@ -904,21 +1134,6 @@ function closeModal() {
   });
 }
 
-function showUploadStatus({ completed = 0, total = 1, percent = 0, state = "uploading", message = "" } = {}) {
-  let status = document.querySelector("[data-upload-status]");
-  if (!status) {
-    status = document.createElement("aside");
-    status.className = "upload-status";
-    status.dataset.uploadStatus = "";
-    document.body.append(status);
-  }
-  clearTimeout(status.removeTimer);
-  status.classList.toggle("is-complete", state === "complete");
-  status.classList.toggle("is-error", state === "error");
-  status.innerHTML = `<div><strong>${state === "complete" ? "업로드 완료" : state === "error" ? "업로드 확인 필요" : "사진·영상 업로드 중"}</strong><span>${message || `${completed} / ${total} · ${percent}%`}</span></div><progress max="100" value="${percent}"></progress>`;
-  if (state !== "uploading") status.removeTimer = setTimeout(() => status.remove(), 3600);
-}
-
 function shareModal() {
   const url = sharePageUrl();
   return `
@@ -943,18 +1158,17 @@ function shareWithKakaoTalk() {
 
   const configuredShareUrl = window.KAKAO_SHARE_CONFIG?.shareBaseUrl?.trim();
   const shareUrl = configuredShareUrl || sharePageUrl();
-  const locationUrl = publicInvitationUrl("location");
+  const locationUrl = mapRedirectUrl();
   const imageUrl = mediaUrl(data.meta.shareImage || data.hero.image);
 
-  if (!imageUrl) {
-    throw new Error("카카오톡 공유용 이미지 또는 메인 사진을 먼저 등록해 주세요.");
-  }
+  // 카카오 카드는 이미지가 필수라, 공유 이미지·메인 사진이 없으면 기본 공유(앱 공유/링크 복사)로 넘긴다.
+  if (!imageUrl) return false;
 
   window.Kakao.Share.sendDefault({
     objectType: "feed",
     content: {
       title: data.meta.title,
-      description: `${data.wedding.displayDate}\n${data.wedding.venue}`,
+      description: String(data.meta.description || "").trim() || `${data.wedding.displayDate}\n${data.wedding.venue}`,
       imageUrl,
       imageWidth: 600,
       imageHeight: 800,
@@ -984,6 +1198,18 @@ function shareWithKakaoTalk() {
   return true;
 }
 
+// 진입화면 흐린 배경: 저장 시 만들어 둔 아주 작은 사진(hero.introBlur)을 늘려 쓰면 blur 계산 없이 부드럽게 흐려 보임.
+// 아직 없으면(관리자에서 저장 전) 원본 메인 사진에 CSS blur를 한 번 그려 사용
+function introBlurImage() {
+  const blur = String(data.hero?.introBlur || "");
+  return blur.startsWith("data:image/") && data.hero?.introBlurSource === data.hero?.image ? blur : "";
+}
+
+function introBackgroundStyle() {
+  const source = introBlurImage() || mediaUrl(data.hero.image);
+  return source ? ` style="--intro-bg-image:url('${escapeHtml(source)}')"` : "";
+}
+
 function playInvitationIntro() {
   const intro = document.querySelector("[data-invitation-intro]");
   const target = document.querySelector("[data-intro-name]");
@@ -992,52 +1218,99 @@ function playInvitationIntro() {
     playInvitationMusic();
     return;
   }
-  const scrollTop = window.scrollY;
   const preventIntroAction = (event) => event.preventDefault();
   const preventIntroKey = (event) => {
     if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " ", "Tab"].includes(event.key)) event.preventDefault();
   };
+  // 진입화면 동안 스크롤만 막음. 예전처럼 body를 position:fixed로 고정했다 풀면
+  // 끝나는 순간 페이지 전체 배치를 다시 계산해 버벅이고 화면이 살짝 흔들렸음
+  document.documentElement.classList.add("intro-lock");
   document.body.classList.add("intro-open");
-  document.body.style.top = `-${scrollTop}px`;
   window.addEventListener("wheel", preventIntroAction, { passive: false });
   window.addEventListener("touchmove", preventIntroAction, { passive: false });
   window.addEventListener("keydown", preventIntroKey);
-  const unlock = () => {
+  const unlockScroll = () => {
+    document.documentElement.classList.remove("intro-lock");
     document.body.classList.remove("intro-open");
-    document.body.style.top = "";
-    window.scrollTo(0, scrollTop);
     window.removeEventListener("wheel", preventIntroAction);
     window.removeEventListener("touchmove", preventIntroAction);
     window.removeEventListener("keydown", preventIntroKey);
   };
+  const unlock = () => {
+    unlockScroll();
+    // 다 사라진 진입화면 레이어(흐린 사진)를 치워 스크롤할 때 그래픽 메모리를 차지하지 않게 함
+    intro.remove();
+  };
+  if (intro.dataset.introStyle === "envelope") {
+    const stage = intro.querySelector("[data-envelope-open]");
+    let opened = false;
+    const open = () => {
+      if (opened) return;
+      opened = true;
+      // 탭 동작 안에서 음악을 시작해야 브라우저 자동재생 차단에 걸리지 않음
+      playInvitationMusic();
+      intro.classList.add("is-opening");
+      // 봉투 아래·씰은 뚜껑이 열린 직후(0.7s)부터 0.85s 동안 내려감 → 1.55s에 끝.
+      // 그때부터 배경이 사라지는 동안(0.7s)에도 바로 스크롤할 수 있게 하고(is-finished는 터치를 통과시킴),
+      // 레이어는 다 사라진 뒤에 치움
+      setTimeout(() => {
+        intro.classList.add("is-finished");
+        unlockScroll();
+        showInvitationMusicToast();
+      }, 1550);
+      setTimeout(() => intro.remove(), 2300);
+    };
+    stage?.addEventListener("click", open);
+    stage?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") open();
+    });
+    return;
+  }
   const text = data.hero.introName || `${data.couple.groom.name} · ${data.couple.bride.name}`;
+  // 타이핑하는 동안 메인 사진을 미리 받아 해독해 두어, 진입화면이 사라질 때 사진 해독이 겹쳐 끊기지 않게 함
+  const heroSource = mediaUrl(data.hero.image);
+  const heroReady = heroSource
+    ? Promise.race([
+      (() => { const image = new Image(); image.src = heroSource; return image.decode(); })().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
+    : Promise.resolve();
   let index = 0;
-  const typeNext = () => {
-    target.textContent = text.slice(0, index += 1);
-    if (index < text.length) setTimeout(typeNext, 95);
-    else setTimeout(() => {
+  // 글꼴이 페이드 도중에 늦게 도착하면 글자를 다시 그리며 끊기므로, 사진과 함께 준비된 뒤 시작(최대 1.5초)
+  const fontsReady = document.fonts?.ready ? Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 1500))]) : Promise.resolve();
+  const finish = async () => {
+    await Promise.all([heroReady, fontsReady]);
+    // 다음 프레임에 시작해야 클래스 변경이 한 프레임 안에서 레이아웃 작업과 겹치지 않음
+    requestAnimationFrame(() => {
       intro.classList.add("is-finished");
       setTimeout(() => {
         unlock();
         showInvitationMusicToast();
         playInvitationMusic();
       }, 720);
-    }, 850);
+    });
+  };
+  const typeNext = () => {
+    target.textContent = text.slice(0, index += 1);
+    if (index < text.length) setTimeout(typeNext, 95);
+    else setTimeout(finish, 850);
   };
   setTimeout(typeNext, 350);
 }
 
-function sharePageUrl() {
+// 기본 청첩장(main)이 아니면 ?card=슬러그 를 붙임
+function cardQuery() {
   const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
-  const query = slug && slug !== "main" ? `?card=${encodeURIComponent(slug)}` : "";
-  return `${location.origin}/api/share${query}`;
+  return slug && slug !== "main" ? `?card=${encodeURIComponent(slug)}` : "";
 }
 
-function publicInvitationUrl(section = "") {
-  const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
-  const path = slug && slug !== "main" ? `/index.html?card=${encodeURIComponent(slug)}` : "/";
-  const hash = section ? `#${encodeURIComponent(section)}` : "";
-  return `${location.origin}${path}${hash}`;
+function sharePageUrl() {
+  return `${location.origin}/api/share${cardQuery()}`;
+}
+
+// 카카오 공유 "위치 보기" 버튼: /api/map 이 예식장 주소의 카카오맵 검색으로 넘겨 준다
+function mapRedirectUrl() {
+  return `${location.origin}/api/map${cardQuery()}`;
 }
 
 async function copyInvitationLink() {
@@ -1047,18 +1320,6 @@ async function copyInvitationLink() {
 }
 
 function bindShareModal() {
-  document.querySelector("[data-kakao-share]")?.addEventListener("click", async () => {
-    try {
-      if (!shareWithKakaoTalk()) {
-        alert("카카오톡 카드 공유를 사용하려면 kakao-config.js에 JavaScript 키를 등록해 주세요. 앱 공유를 대신 열겠습니다.");
-        const shareData = { title: data.meta.title, text: data.meta.description, url: sharePageUrl() };
-        if (navigator.share) await navigator.share(shareData);
-        else await copyInvitationLink();
-      }
-    } catch (error) {
-      alert(error.message || "카카오톡 공유를 열지 못했습니다. Kakao Developers의 JavaScript SDK 도메인과 제품 링크 웹 도메인을 확인해 주세요.");
-    }
-  });
   document.querySelector("[data-native-share]")?.addEventListener("click", async () => {
     const shareData = { title: data.meta.title, text: data.meta.description, url: sharePageUrl() };
     try {
@@ -1128,6 +1389,16 @@ function guestbookForm() {
     </form>`;
 }
 
+// 좌우로 45px 넘게 밀면 move(-1: 이전 / 1: 다음)
+function bindSwipe(element, move) {
+  let touchStartX = 0;
+  element.addEventListener("touchstart", (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+  element.addEventListener("touchend", (event) => {
+    const distance = event.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(distance) > 45) move(distance > 0 ? -1 : 1);
+  }, { passive: true });
+}
+
 function visibleNotices() {
   return data.notices.filter((notice) => !notice.hidden && notice.text?.trim());
 }
@@ -1145,7 +1416,6 @@ function bindInformationTabs() {
   const root = document.querySelector(".information-tabs");
   if (!root) return;
   const notices = visibleNotices();
-  let touchStartX = 0;
   const draw = () => {
     const index = Number(root.dataset.informationIndex);
     root.querySelector("[data-information-panel]").innerHTML = noticeRowsHtml(notices[index]);
@@ -1159,11 +1429,7 @@ function bindInformationTabs() {
     root.dataset.informationIndex = tab.dataset.informationTab;
     draw();
   }));
-  root.addEventListener("touchstart", (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
-  root.addEventListener("touchend", (event) => {
-    const distance = event.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(distance) > 45) move(distance > 0 ? -1 : 1);
-  }, { passive: true });
+  bindSwipe(root, move);
   draw();
 }
 
@@ -1177,17 +1443,17 @@ function gallerySlider(index = 0) {
   return `
     <div class="gallery-slider" data-gallery-index="${safeIndex}">
       <div class="gallery-slider-head">
-        <h2>Gallery</h2>
-        <button class="gallery-close" type="button" data-close aria-label="닫기">×</button>
+        <p class="gallery-page" data-gallery-page>${safeIndex + 1} / ${images.length}</p>
+        <button class="gallery-close" type="button" data-close aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       <div class="gallery-slide">
-        <button class="gallery-nav gallery-prev" type="button" data-gallery-move="-1" aria-label="이전 사진">‹</button>
+        <button class="gallery-nav gallery-prev" type="button" data-gallery-move="-1" aria-label="이전 사진"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div class="gallery-slide-photo ${data.galleryDisplayMode === "original" ? "is-original" : "is-portrait"}">
           <img src="${escapeHtml(initialSource)}" alt="갤러리 사진 ${safeIndex + 1}" data-gallery-image class="${isLoadingFull ? "is-loading" : ""}" decoding="async" loading="eager" fetchpriority="high">
         </div>
-        <button class="gallery-nav gallery-next" type="button" data-gallery-move="1" aria-label="다음 사진">›</button>
+        <button class="gallery-nav gallery-next" type="button" data-gallery-move="1" aria-label="다음 사진"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <p class="gallery-page" data-gallery-page>${safeIndex + 1} / ${images.length}</p>
+      <div class="gallery-thumbs" data-gallery-thumbs>${galleryThumbStrip(safeIndex)}</div>
     </div>`;
 }
 
@@ -1209,6 +1475,9 @@ function renderGallerySlide(slider, index = 0) {
   if (previewSource && image.getAttribute("src") !== previewSource) image.src = previewSource;
   image.classList.toggle("is-loading", Boolean(fullSource && previewSource !== fullSource));
   page.textContent = `${safeIndex + 1} / ${images.length}`;
+  // 아래 작은 사진 목록: 지금 사진 앞뒤로 다시 그림
+  const strip = slider.querySelector("[data-gallery-thumbs]");
+  if (strip) strip.innerHTML = galleryThumbStrip(safeIndex);
   if (fullSource && previewSource !== fullSource) {
     galleryImagePreloads.add(fullSource);
     const fullImage = new Image();
@@ -1228,9 +1497,10 @@ function renderGallerySlide(slider, index = 0) {
 
 function openGallerySlider(index = 0) {
   openModal(gallerySlider(index));
+  // 사진 보기는 카드 대신 화면 전체(어두운 배경)로
+  document.querySelector("#modal-backdrop")?.classList.add("is-gallery");
   const slider = document.querySelector(".gallery-slider");
   renderGallerySlide(slider, Number(slider?.dataset.galleryIndex || index));
-  let touchStartX = 0;
   const move = (step) => {
     const images = galleryImages();
     const current = Number(slider.dataset.galleryIndex);
@@ -1240,80 +1510,101 @@ function openGallerySlider(index = 0) {
   document.querySelectorAll("[data-gallery-move]").forEach((button) => {
     button.addEventListener("click", () => move(Number(button.dataset.galleryMove)));
   });
-  slider.addEventListener("touchstart", (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
-  slider.addEventListener("touchend", (event) => {
-    const distance = event.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(distance) > 45) move(distance > 0 ? -1 : 1);
-  }, { passive: true });
+  slider.querySelector("[data-gallery-thumbs]")?.addEventListener("click", (event) => {
+    const thumb = event.target.closest("[data-gallery-jump]");
+    if (thumb) renderGallerySlide(slider, Number(thumb.dataset.galleryJump));
+  });
+  // 컴퓨터에서는 ←/→로 넘기고 Esc로 닫기(팝업이 닫히면 스스로 해제)
+  const onKey = (event) => {
+    if (!slider.isConnected) {
+      document.removeEventListener("keydown", onKey);
+      return;
+    }
+    if (event.key === "ArrowLeft") move(-1);
+    if (event.key === "ArrowRight") move(1);
+    if (event.key === "Escape") closeModal();
+  };
+  document.addEventListener("keydown", onKey);
+  bindSwipe(slider, move);
 }
 
-function guestPhotoForm() {
-  return `
-    <div class="snap-modal-head">
-      <div class="snap-modal-hero" ${mediaStyle(data.hero.image)}>
-        <span>하객 앨범</span><small>${escapeHtml(data.couple.groom.name)} · ${escapeHtml(data.couple.bride.name)}</small>
-        <h2>소중한 추억을 함께 남겨주세요</h2>
-      </div>
-      <div class="snap-modal-guide"><strong>${escapeHtml(data.guestPhotos?.modalGuideTitle || "여러분의 사진첩이 우리 앨범이 됩니다.")}</strong><p>${escapeLineHtml(data.guestPhotos?.modalGuideText || "1. 두 사람의 설렘 가득한 스냅\n2. 멋진 입장 & 환한 행진\n3. 가족·친구와의 찰칵 한 컷\n4. 당신의 시선으로 포착한 장면들")}</p><em>${escapeHtml(data.guestPhotos?.modalGuideFootnote || "작은 한 컷이 우리에게 큰 선물이 돼요.")}</em></div>
-    </div>
-    <form class="form-grid snap-upload-form" id="guest-photo-form">
-      <label class="field"><span>이름(폴더명)</span><input name="guest_name" required maxlength="20" placeholder="예: 홍길동"></label>
-      <label class="consent"><input type="checkbox" required> <span>사진·영상 파일 수집 및 이용 동의 <button type="button" class="consent-detail" data-photo-consent-detail>[자세히보기]</button></span></label>
-      <p class="consent-detail-text" id="guest-photo-consent-detail" hidden>수집 항목: 업로드 이름, 사진·영상 파일, 파일명·형식·용량, 업로드 일시, 브라우저별 업로드 식별 정보. 이용 목적: 신랑·신부에게 하객 사진과 영상을 전달하고, 관리자가 파일을 확인·다운로드·삭제할 수 있도록 하기 위함. 보유 및 이용 기간: 하객 앨범 운영 기간 동안 보관하며, 청첩장 관리자 또는 업로드 사용자가 삭제하거나 이용 종료를 요청하는 경우 지체 없이 삭제합니다. 동의를 거부할 권리가 있으며, 동의 거부 시 사진·영상 업로드 기능을 이용할 수 없습니다.</p>
-      <section class="snap-upload-box">
-        <strong>사진·영상 업로드</strong>
-        <p class="upload-selection" id="guest-photo-selection">예식 당일 함께한 사진과 영상을 업로드해 주세요.</p>
-        <label class="btn guest-photo-picker"><span>파일 첨부하기</span><input type="file" id="guest-photo-files" accept="image/*,video/mp4,video/webm,video/quicktime" multiple></label>
-        <div class="guest-photo-selection-grid" id="guest-photo-selection-grid"></div>
-      </section>
-      <ul class="snap-upload-notes"><li>파일은 장당 50MB 이하만 올릴 수 있어요.</li><li>사진과 영상을 한 번에 여러 개 선택할 수 있어요.</li><li>추가 업로드도 같은 이름으로 남겨 주세요.</li></ul>
-      <div class="modal-actions"><button class="btn" type="button" data-close>취소</button><button class="btn btn-primary" id="guest-photo-submit">신랑 신부에게 공유하기</button></div>
-    </form>`;
-}
+// 참석 의사 전달 모달: 열고 선택 버튼·동의·전송을 연결
+function openAttendanceModal() {
+  openModal(attendanceForm());
+  const form = document.querySelector("#attendance-form");
+  const consent = document.querySelector("#attendance-consent");
+  const consentDetail = document.querySelector("#attendance-consent-detail");
+  const submitButton = document.querySelector("#attendance-submit");
 
-function ownGuestPhotoGallery(photos) {
-  const previewUrl = (photo = {}) => photo.thumbSignedUrl || "";
-  return `
-    <h2>내가 보낸 파일</h2>
-    <p class="form-guide">이 휴대폰 브라우저에서 업로드한 사진과 영상입니다. 잘못 올린 파일은 삭제할 수 있습니다.</p>
-    <div class="own-photo-grid">
-      ${photos.length ? photos.map((photo) => `
-        <article class="own-photo">
-          <a href="${escapeHtml(photo.signedUrl)}" target="_blank" rel="noopener">${isVideoMedia(photo.name || photo.path)
-            ? `<span class="guest-video-file"><strong>VIDEO</strong><small>저장해서 확인하기</small></span>`
-            : previewUrl(photo)
-              ? `<img src="${escapeHtml(previewUrl(photo))}" alt="내가 보낸 사진" loading="lazy" decoding="async">`
-              : `<span class="guest-video-file"><strong>IMAGE</strong><small>원본으로 확인하기</small></span>`}</a>
-          <button class="btn" type="button" data-remove-guest-photo="${escapeHtml(photo.path)}">삭제</button>
-        </article>`).join("") : '<p class="subtle">아직 이 휴대폰에서 보낸 파일이 없습니다.</p>'}
-    </div>
-    <p class="form-guide">브라우저 데이터 삭제, 시크릿 모드 종료, 휴대폰 변경 후에는 기존 파일을 직접 관리할 수 없습니다.</p>
-    <div class="modal-actions"><button class="btn" type="button" data-close>닫기</button></div>`;
-}
-
-async function openOwnGuestPhotos() {
-  openModal('<h2>내가 보낸 파일</h2><p class="form-guide">파일을 불러오고 있습니다.</p><div class="modal-actions"><button class="btn" type="button" data-close>닫기</button></div>');
-  try {
-    const photos = await window.RSVP_STORAGE.listOwnGuestPhotos();
-    openModal(ownGuestPhotoGallery(photos));
-    document.querySelectorAll("[data-remove-guest-photo]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        if (!confirm("이 파일을 삭제할까요?")) return;
-        button.disabled = true;
-        button.textContent = "삭제 중...";
-        try {
-          await window.RSVP_STORAGE.removeOwnGuestPhoto(button.dataset.removeGuestPhoto);
-          await openOwnGuestPhotos();
-        } catch {
-          button.disabled = false;
-          button.textContent = "삭제";
-          alert("파일을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-        }
+  form.querySelectorAll("[data-rsvp-toggle]").forEach((group) => {
+    const input = group.querySelector("input[type=hidden]");
+    group.querySelectorAll("button[data-value]").forEach((button) => {
+      button.addEventListener("click", () => {
+        input.value = button.dataset.value;
+        group.querySelectorAll("button[data-value]").forEach((other) => other.classList.toggle("is-active", other === button));
       });
     });
-  } catch {
-    openModal('<h2>내가 보낸 파일</h2><p class="form-guide">파일을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p><div class="modal-actions"><button class="btn" type="button" data-close>닫기</button></div>');
-  }
+  });
+
+  consent?.addEventListener("change", () => { submitButton.disabled = !consent.checked; });
+
+  form.querySelector("[data-consent-detail]")?.addEventListener("click", () => {
+    consentDetail.hidden = !consentDetail.hidden;
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const fields = new FormData(form);
+    submitButton.disabled = true;
+    submitButton.textContent = "전달 중...";
+    try {
+      const result = await window.RSVP_STORAGE.submitAttendanceResponse({
+        guest_name: fields.get("guest_name").trim(),
+        attendance: fields.get("attendance"),
+        side: fields.get("side"),
+        meal: fields.get("meal"),
+      });
+      closeModal();
+      alert(result.isPreview
+        ? "미리보기 모드로 저장했습니다. 실제 수집을 시작하려면 Supabase 설정을 완료해 주세요."
+        : "참석 정보를 전달했습니다. 감사합니다.");
+    } catch {
+      submitButton.disabled = false;
+      submitButton.textContent = "전달하기";
+      alert("저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+  });
+}
+
+// 방명록 작성 모달: 열고 동의 안내·전송을 연결
+function openGuestbookModal() {
+  openModal(guestbookForm());
+  const form = document.querySelector("#guestbook-form");
+  const guestbookConsentDetail = document.querySelector("#guestbook-consent-detail");
+  form.querySelector("[data-guestbook-consent-detail]")?.addEventListener("click", () => {
+    if (guestbookConsentDetail) guestbookConsentDetail.hidden = !guestbookConsentDetail.hidden;
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = document.querySelector("#guestbook-submit");
+    const fields = new FormData(form);
+    button.disabled = true;
+    button.textContent = "등록 중...";
+    try {
+      await window.RSVP_STORAGE.submitGuestbookEntry({
+        guest_name: fields.get("guest_name").trim(),
+        message: fields.get("message").trim(),
+      });
+      guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries();
+      guestbookVisibleCount = Math.max(3, guestbookVisibleCount);
+      document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
+      closeModal();
+    } catch {
+      button.disabled = false;
+      button.textContent = "메시지 남기기";
+      alert("메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+  });
 }
 
 function bindEvents() {
@@ -1350,8 +1641,9 @@ function bindEvents() {
   });
 
   document.addEventListener("pointerover", (event) => {
+    if (event.pointerType !== "mouse") return;
     const galleryButton = event.target.closest("[data-gallery]");
-    if (galleryButton) warmGalleryNeighbors(Number(galleryButton.dataset.gallery));
+    if (galleryButton) preloadGalleryImage(galleryImages()[Number(galleryButton.dataset.gallery)]);
   }, { passive: true });
 
   document.querySelector("#gallery-more")?.addEventListener("click", () => {
@@ -1361,133 +1653,9 @@ function bindEvents() {
 
   bindInformationTabs();
 
-  document.querySelector("#attendance-open")?.addEventListener("click", () => {
-    openModal(attendanceForm());
-    const form = document.querySelector("#attendance-form");
-    const consent = document.querySelector("#attendance-consent");
-    const consentDetail = document.querySelector("#attendance-consent-detail");
-    const submitButton = document.querySelector("#attendance-submit");
+  document.querySelector("#attendance-open")?.addEventListener("click", openAttendanceModal);
 
-    form.querySelectorAll("[data-rsvp-toggle]").forEach((group) => {
-      const input = group.querySelector("input[type=hidden]");
-      group.querySelectorAll("button[data-value]").forEach((button) => {
-        button.addEventListener("click", () => {
-          input.value = button.dataset.value;
-          group.querySelectorAll("button[data-value]").forEach((other) => other.classList.toggle("is-active", other === button));
-        });
-      });
-    });
-
-    consent?.addEventListener("change", () => { submitButton.disabled = !consent.checked; });
-
-    form.querySelector("[data-consent-detail]")?.addEventListener("click", () => {
-      consentDetail.hidden = !consentDetail.hidden;
-    });
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const fields = new FormData(form);
-      submitButton.disabled = true;
-      submitButton.textContent = "전달 중...";
-      try {
-        const result = await window.RSVP_STORAGE.submitAttendanceResponse({
-          guest_name: fields.get("guest_name").trim(),
-          attendance: fields.get("attendance"),
-          side: fields.get("side"),
-          meal: fields.get("meal"),
-        });
-        closeModal();
-        alert(result.isPreview
-          ? "미리보기 모드로 저장했습니다. 실제 수집을 시작하려면 Supabase 설정을 완료해 주세요."
-          : "참석 정보를 전달했습니다. 감사합니다.");
-      } catch {
-        submitButton.disabled = false;
-        submitButton.textContent = "전달하기";
-        alert("저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-      }
-    });
-  });
-
-  document.querySelector("#guest-photo-open")?.addEventListener("click", () => {
-    openModal(guestPhotoForm());
-    const form = document.querySelector("#guest-photo-form");
-    const files = document.querySelector("#guest-photo-files");
-    const selection = document.querySelector("#guest-photo-selection");
-    const selectionGrid = document.querySelector("#guest-photo-selection-grid");
-    const photoConsentDetail = document.querySelector("#guest-photo-consent-detail");
-    let selectedPhotos = [];
-    const renderSelectedPhotos = () => {
-      const checkedCount = selectedPhotos.filter((photo) => photo.checked).length;
-      selection.textContent = selectedPhotos.length
-        ? `${selectedPhotos.length}개 중 ${checkedCount}개를 업로드합니다. 제외할 파일은 체크를 해제해 주세요.`
-        : "선택된 파일이 없습니다.";
-      selectionGrid.innerHTML = selectedPhotos.map((photo, index) => `
-        <label class="guest-photo-selection-card">
-          ${photo.file.type.startsWith("video/") ? '<span class="guest-video-file"><strong>VIDEO</strong><small>업로드할 영상</small></span>' : `<img src="${escapeHtml(photo.previewUrl)}" alt="선택한 사진 ${index + 1} 미리보기">`}
-          <span><input type="checkbox" data-guest-photo-choice="${index}" ${photo.checked ? "checked" : ""}> 업로드 선택</span>
-        </label>`).join("");
-    };
-    files.addEventListener("change", () => {
-      selectedPhotos.push(...[...files.files].map((file) => ({ file, checked: true, previewUrl: URL.createObjectURL(file) })));
-      files.value = "";
-      renderSelectedPhotos();
-    });
-    selectionGrid.addEventListener("change", (event) => {
-      const checkbox = event.target.closest("[data-guest-photo-choice]");
-      if (!checkbox) return;
-      selectedPhotos[Number(checkbox.dataset.guestPhotoChoice)].checked = checkbox.checked;
-      renderSelectedPhotos();
-    });
-    form.querySelector("[data-photo-consent-detail]")?.addEventListener("click", () => {
-      if (photoConsentDetail) photoConsentDetail.hidden = !photoConsentDetail.hidden;
-    });
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const uploadFiles = selectedPhotos.filter((photo) => photo.checked).map((photo) => photo.file);
-      if (!uploadFiles.length) {
-        alert("업로드할 사진 또는 영상을 하나 이상 선택해 주세요.");
-        return;
-      }
-      selectedPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
-      closeModal();
-      showUploadStatus({ total: uploadFiles.length });
-      window.RSVP_STORAGE.uploadGuestPhotos(uploadFiles, showUploadStatus)
-        .then(() => showUploadStatus({ completed: uploadFiles.length, total: uploadFiles.length, percent: 100, state: "complete", message: "신랑 신부에게 소중한 순간을 전달했습니다." }))
-        .catch((error) => showUploadStatus({ total: uploadFiles.length, state: "error", message: error.message || "파일을 업로드하지 못했습니다." }));
-    });
-  });
-
-  document.querySelector("#guest-photo-manage")?.addEventListener("click", openOwnGuestPhotos);
-
-  document.querySelector("#guestbook-open")?.addEventListener("click", () => {
-    openModal(guestbookForm());
-    const form = document.querySelector("#guestbook-form");
-    const guestbookConsentDetail = document.querySelector("#guestbook-consent-detail");
-    form.querySelector("[data-guestbook-consent-detail]")?.addEventListener("click", () => {
-      if (guestbookConsentDetail) guestbookConsentDetail.hidden = !guestbookConsentDetail.hidden;
-    });
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const button = document.querySelector("#guestbook-submit");
-      const fields = new FormData(form);
-      button.disabled = true;
-      button.textContent = "등록 중...";
-      try {
-        await window.RSVP_STORAGE.submitGuestbookEntry({
-          guest_name: fields.get("guest_name").trim(),
-          message: fields.get("message").trim(),
-        });
-        guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries();
-        guestbookVisibleCount = Math.max(3, guestbookVisibleCount);
-        document.querySelector("#guestbook-list").innerHTML = guestbookMarkup();
-        closeModal();
-      } catch {
-        button.disabled = false;
-        button.textContent = "메시지 남기기";
-        alert("메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-      }
-    });
-  });
+  document.querySelector("#guestbook-open")?.addEventListener("click", openGuestbookModal);
 
   document.querySelector("#guestbook-list")?.addEventListener("click", (event) => {
     const moreButton = event.target.closest("#guestbook-more");
@@ -1502,15 +1670,18 @@ function bindEvents() {
   });
 }
 
+const LAYOUT_SKINS = window.WEDDING_DESIGN.layoutSkins;
+
 function applyLayoutTemplate(layoutId) {
-  const params = new URLSearchParams(location.search);
-  const urlOverride = params.get("__layout");
-  const isThumb = params.get("__thumb") === "1";
+  const urlOverride = pageParams.get("__layout");
+  const isThumb = pageParams.get("__thumb") === "1";
   if (isThumb) document.body.classList.add("is-thumb");
-  // 미리보기(썸네일/레이아웃 미리보기)는 영상 대신 이미지로 표시
-  if ((isThumb || params.get("__heroimg") === "1") && data?.hero?.image) data.hero.activeMedia = "image";
   const id = urlOverride || layoutId || "classic";
-  document.body.dataset.layout = id;
+  // 스킨 레이아웃: 기본 레이아웃(구조)은 그대로 쓰고 색·장식만 덧입힘 (public.css 의 data-layout-skin 규칙)
+  const skinBase = LAYOUT_SKINS[id];
+  document.body.dataset.layout = skinBase || id;
+  if (skinBase) document.body.dataset.layoutSkin = id;
+  else delete document.body.dataset.layoutSkin;
   // 레이아웃 템플릿 커스텀 속성 적용 (heroBgImage, textScale)
   const templates = data?.designSystem?.layoutTemplates || [];
   const tpl = templates.find((t) => t.id === id);
@@ -1528,7 +1699,7 @@ function applyLayoutTemplate(layoutId) {
 }
 
 function applyAIThemePreviewOverride() {
-  if (new URLSearchParams(location.search).get("__aiPreview") !== "1") return;
+  if (pageParams.get("__aiPreview") !== "1") return;
   let payload;
   try { payload = JSON.parse(sessionStorage.getItem("ai_theme_preview") || "null"); } catch { payload = null; }
   if (!payload?.palette || !Object.keys(payload.palette).length) return;
@@ -1546,7 +1717,6 @@ function applyAIThemePreviewOverride() {
 }
 
 async function start() {
-  applyAppearance(data.appearance);
   try {
     data = await window.RSVP_STORAGE.loadInvitationData(data);
   } catch (error) {
@@ -1555,15 +1725,23 @@ async function start() {
   }
   normalizeWeddingDisplayDate();
   applyAIThemePreviewOverride();
-  try { guestbookEntries = await window.RSVP_STORAGE.loadGuestbookEntries(); }
-  catch { guestbookEntries = []; }
-  applyAppearance(data.appearance);
+  // 방명록은 첫 화면을 늦추지 않도록 렌더링 뒤에 불러와 목록만 채움
+  const guestbookLoaded = window.RSVP_STORAGE.loadGuestbookEntries().catch(() => []);
+  applyAppearance();
   applyLayoutTemplate(data.designSystem?.activeLayoutId);
   weddingDate = new Date(data.wedding.date);
   document.title = data.meta.title;
   document.querySelector('meta[name="description"]')?.setAttribute("content", data.meta.description);
   updateSocialMeta();
   render();
+  document.documentElement.classList.add("theme-ready");
+  guestbookLoaded.then((entries) => {
+    guestbookEntries = entries || [];
+    const list = document.querySelector("#guestbook-list");
+    if (list) list.innerHTML = guestbookMarkup();
+  });
+  // 다음 방문 때 첫 화면 배경을 이 테마 색으로 바로 칠할 수 있게 기억해 둠 (index.html 참고)
+  try { localStorage.setItem("wedding-theme-bg", getComputedStyle(document.body).getPropertyValue("--body-bg").trim()); } catch {}
   if (isCopyEditorPreview) {
     document.documentElement.classList.add("copy-editor-public-preview-root");
     document.body.classList.add("copy-editor-public-preview");
@@ -1572,7 +1750,7 @@ async function start() {
     document.body.style.overflowY = "auto";
     document.body.style.touchAction = "pan-y";
     document.querySelector("[data-invitation-intro]")?.remove();
-    if (isStickerEditorPreview) bindStickerEditor();
+    bindStickerEditor();
   } else {
     setupInvitationMusic();
     playInvitationIntro();
@@ -1585,8 +1763,26 @@ async function start() {
   setInterval(updateCountdown, 1000);
 }
 
+// 관리자 수정모드 미리보기: 편집 중인 값으로 실제 화면을 다시 그림(admin.js renderPreviewNow)
+window.renderCopyEditorPreview = (next) => {
+  if (!isCopyEditorPreview || !next) return;
+  data = next;
+  // 예식 일시를 바꿨을 수 있으니 달력·카운트다운 기준 날짜도 다시 계산
+  weddingDate = new Date(data.wedding.date);
+  render();
+  applyLayoutTemplate(data.designSystem?.activeLayoutId);
+  window.WEDDING_DESIGN?.apply(data);
+  document.querySelector("[data-invitation-intro]")?.remove();
+  applyResponsiveText();
+  loadLazyBackgrounds();
+  arrangeEditorialGallery();
+  updateCountdown();
+};
+
 function applyResponsiveText() {
   fitSingleLineText();
+  syncHeroImageFrame();
+  syncInterludeFrame();
   window.WEDDING_DESIGN?.applyTextStyles?.(data, document);
 }
 
