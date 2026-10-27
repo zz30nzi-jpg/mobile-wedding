@@ -47,6 +47,44 @@ const defaultWelcomeOverlay = {
   shadowOpacity: 24,
 };
 
+// 저장하면 편집 화면을 다시 그리므로, 보던 섹션 탭(결혼식 전/당일)과 펼쳐 둔 기본 정보 단계를 기억했다가 되돌림
+function captureEditorUiState() {
+  const basic = adminApp.querySelector(".view-basic");
+  return {
+    sectionMode: adminApp.querySelector("[data-section-columns]")?.dataset.active || "",
+    openStep: basic ? basic.querySelector(".guided-step:not(.is-collapsed)")?.id || "none" : "",
+  };
+}
+
+function restoreEditorUiState({ sectionMode, openStep }) {
+  if (sectionMode) adminApp.querySelector(`[data-section-mode="${sectionMode}"]`)?.click();
+  if (openStep) adminApp.querySelectorAll(".view-basic .guided-step").forEach((step) => step.classList.toggle("is-collapsed", step.id !== openStep));
+}
+
+// 저장이 끝났다는 걸 확실히 보여 줌: 아래쪽에 잠깐 뜨는 알림 + 저장 버튼이 잠시 '저장됨'으로 바뀜
+function showSaveDone() {
+  document.querySelector(".admin-save-toast")?.remove();
+  const toast = document.createElement("div");
+  toast.className = "admin-save-toast";
+  toast.setAttribute("role", "status");
+  toast.innerHTML = '<span aria-hidden="true">✓</span>저장했어요. 청첩장에 반영됐어요';
+  document.body.append(toast);
+  requestAnimationFrame(() => toast.classList.add("is-shown"));
+  setTimeout(() => {
+    toast.classList.remove("is-shown");
+    setTimeout(() => toast.remove(), 300);
+  }, 2400);
+  const button = document.querySelector('.admin-floating-save[form="invitation-editor"]');
+  if (!button) return;
+  button.classList.add("is-saved");
+  button.innerHTML = "<span>✓</span> 저장됨";
+  setTimeout(() => {
+    if (!button.isConnected || button.disabled) return;
+    button.classList.remove("is-saved");
+    button.innerHTML = "<span>✓</span> 저장";
+  }, 2400);
+}
+
 function notifySaveFailure(error, context = "저장") {
   alert(`${context}하지 못했습니다.\n${error?.message || "네트워크와 관리자 권한 설정을 확인해 주세요."}`);
 }
@@ -2392,7 +2430,7 @@ function renderEditor(message = "", focus = "") {
         <details class="editor-details section-pane" open data-guided-step="sections" data-step-requires="wedding"><summary>섹션 순서와 노출 설정</summary><div class="editor-details-body">
           <ul class="section-order-tips">
             <li><b>☑</b>체크를 끄면 그 섹션이 청첩장에서 숨겨져요.</li>
-            <li><b>☰</b>오른쪽 손잡이를 누른 채 위아래로 끌면 순서가 바뀌어요.</li>
+            <li><b>☰</b>오른쪽 손잡이를 꾹 누르고 있다가 색이 바뀌면 위아래로 끌어요.</li>
           </ul>
           <div class="section-order-columns" data-section-columns data-active="${isWeddingDayNow() ? "weddingDay" : "preWedding"}">
             ${sectionOrderEditor("sectionSettings.preWedding", "결혼식 전까지", invitationData.sectionSettings?.preWedding, "preWedding")}
@@ -5318,25 +5356,56 @@ function bindEditor() {
       activePointerId = null;
       updateSectionOrder();
     };
+    // 손가락은 ☰를 꾹(0.35초) 누르고 있어야 잡힘 — 스크롤하다 손잡이에 닿아도 순서가 바뀌지 않게. 마우스는 바로 잡힘
+    let press = null;
+    const cancelPress = () => {
+      if (!press) return;
+      clearTimeout(press.timer);
+      press.item.classList.remove("is-pressing");
+      press = null;
+    };
+    const startDrag = (item, pointerId, handle) => {
+      draggedItem = item;
+      activePointerId = pointerId;
+      handle.setPointerCapture?.(pointerId);
+      item.classList.add("is-dragging");
+      navigator.vibrate?.(12);
+    };
     list?.addEventListener("pointerdown", (event) => {
       const handle = event.target.closest(".section-drag-handle");
-      if (!handle) return;
-      event.preventDefault();
-      draggedItem = handle.closest(".section-order-item");
-      if (!draggedItem) return;
-      activePointerId = event.pointerId;
-      handle.setPointerCapture?.(activePointerId);
-      draggedItem.classList.add("is-dragging");
+      const item = handle?.closest(".section-order-item");
+      if (!item) return;
+      if (event.pointerType === "mouse") {
+        event.preventDefault();
+        startDrag(item, event.pointerId, handle);
+        return;
+      }
+      cancelPress();
+      item.classList.add("is-pressing");
+      press = { item, handle, pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+      press.timer = setTimeout(() => {
+        const held = press;
+        cancelPress();
+        if (held) startDrag(held.item, held.pointerId, held.handle);
+      }, 350);
+    });
+    // 잡은 뒤에는 화면이 같이 스크롤되지 않게 막음
+    list?.addEventListener("touchmove", (event) => {
+      if (draggedItem) event.preventDefault();
+    }, { passive: false });
+    list?.addEventListener("contextmenu", (event) => {
+      if (event.target.closest(".section-drag-handle")) event.preventDefault();
     });
     list?.addEventListener("pointermove", (event) => {
+      if (press && event.pointerId === press.pointerId && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 8) cancelPress();
       if (!draggedItem || event.pointerId !== activePointerId) return;
       event.preventDefault();
       const after = itemAfterPointer(event.clientY);
       if (after) list.insertBefore(draggedItem, after);
       else list.appendChild(draggedItem);
     });
-    list?.addEventListener("pointerup", endDrag);
-    list?.addEventListener("pointercancel", endDrag);
+    list?.addEventListener("pointerup", (event) => { cancelPress(); endDrag(event); });
+    list?.addEventListener("pointercancel", (event) => { cancelPress(); endDrag(event); });
     editor.addEventListener("change", updateSectionOrder);
     editor.addEventListener("click", (event) => {
       const reset = event.target.closest("[data-section-reset]");
@@ -5585,9 +5654,12 @@ function bindEditor() {
       editorBaseline = null;
       const previewWindow = copyEditor.querySelector("[data-copy-editor-frame]")?.contentWindow;
       const pageY = window.scrollY;
+      const uiState = captureEditorUiState();
       pendingPreviewScroll = previewWindow ? { y: previewWindow.scrollY } : null;
-      renderEditor("저장했습니다. 현재 편집 화면에 계속 머무릅니다.", keepFocus);
+      renderEditor("", keepFocus);
+      restoreEditorUiState(uiState);
       requestAnimationFrame(() => window.scrollTo({ top: pageY, behavior: "instant" }));
+      showSaveDone();
     } catch (error) {
       buttons.forEach((button) => {
         button.disabled = false;

@@ -333,14 +333,24 @@ body[data-admin-area="general"] .section-drag-handle {
   font-size: 13px;
   line-height: 1;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-y; /* 손잡이에서 시작해도 스크롤은 됨. 꾹 눌러 잡은 뒤에만 admin.js가 스크롤을 막음 */
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
   user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 꾹 누르는 동안: 손잡이가 잡힐 준비 중이라는 표시 */
+body[data-admin-area="general"] .section-order-item.is-pressing .section-drag-handle {
+  background: var(--accent-dark);
+  color: #fff;
+  transition: background 0.35s ease, color 0.35s ease;
 }
 
 body[data-admin-area="general"] .section-order-item.is-dragging .section-drag-handle {
   cursor: grabbing;
+  background: var(--accent-dark);
+  color: #fff;
 }
 
 
@@ -646,3 +656,10 @@ body[data-admin-area="general"] .copy-frame-interaction-toggle.is-on .copy-frame
     color: var(--accent-dark);
   }
 }
+
+/* 저장 완료 알림 (admin.js showSaveDone) — 하단 탭 위 가운데 */
+.admin-save-toast { position: fixed; left: 50%; bottom: calc(64px + env(safe-area-inset-bottom) + 70px); z-index: 1500; display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 999px; background: var(--ink, #3a302b); color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22); opacity: 0; transform: translate(-50%, 10px); transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none; white-space: nowrap; }
+.admin-save-toast.is-shown { opacity: 1; transform: translate(-50%, 0); }
+.admin-save-toast span { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #3fa26b; font-size: 12px; }
+body[data-admin-area="general"] .admin-floating-save.is-saved { background: #3fa26b !important; }
+
