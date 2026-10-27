@@ -104,7 +104,9 @@ async function cachedRawHtml(origin) {
 
 async function fetchInvitationMeta(slug) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 600);
+  // 0.6초는 서버가 막 깨어난 첫 요청에서 넘기는 일이 있었음 → 카톡이 그 첫 응답(기본 카드)을 한동안 저장해 버림.
+  // 2초까지 기다리고, 그래도 늦으면 원래 index.html 그대로 (결과는 1분간 기억해 두 번째부터는 기다리지 않음)
+  const timer = setTimeout(() => controller.abort(), 2000);
   try {
     const result = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_invitation`, {
       method: "POST",
