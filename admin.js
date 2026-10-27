@@ -198,7 +198,7 @@ function adminHeader(active) {
   const ico = tabIcon;
   const coupleBadge = [invitationData.couple?.groom?.name, invitationData.couple?.bride?.name].filter(Boolean).join(" · ");
   const cardSlug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
-  const cardUrl = cardSlug && cardSlug !== "main" ? `./index.html?card=${encodeURIComponent(cardSlug)}` : "./index.html";
+  const cardUrl = cardSlug && cardSlug !== "main" && cardSlug !== window.RSVP_STORAGE?.SITE_CARD_SLUG ? `./index.html?card=${encodeURIComponent(cardSlug)}` : "./index.html";
   const generalMenu = `<nav class="admin-bottom-tabs" role="tablist">
     <button class="admin-tab-item ${active === "editor" ? "is-active" : ""}" data-admin-view="editor" role="tab">
       ${ico("M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", '<path d="M9 22V12h6v10"/>')}
@@ -1222,6 +1222,33 @@ function heroPositionControls(design = {}) {
     <p class="hero-tool-hint">미리보기에서 문구를 손가락으로 위아래로 끌어 옮길 수도 있어요.</p>`;
 }
 
+// 받는 분 위치 빠른 선택: 위아래(상·중·하) 높이, 좌우(좌측·중앙·우측)는 글자를 붙일 기준선 위치
+const HERO_TO_Y = { top: 12, middle: 50, bottom: 88 };
+const HERO_TO_X = { left: 8, center: 50, right: 92 };
+
+// 받는 분 이름(개인 링크 ?to=)을 메인 사진 위에 보일지와 위치·크기·색. 이름 넣은 링크로 들어왔을 때만 적용됨
+function heroToControls(design = {}) {
+  const number = (value, fallback) => (Number.isFinite(Number(value)) && value !== "" && value !== null && value !== undefined ? Number(value) : fallback);
+  const color = /^#[0-9a-f]{6}$/i.test(String(design.heroToColor || "")) ? design.heroToColor : "#ffffff";
+  const align = ["left", "right"].includes(design.heroToAlign) ? design.heroToAlign : "center";
+  const y = number(design.heroToYPercent, 12);
+  const button = (attr, value, label, active) => `<button type="button" ${attr}="${value}" class="${active ? "is-active" : ""}">${label}</button>`;
+  return `
+    <div class="hero-to-head">
+      <label class="hero-copy-toggle"><input type="checkbox" name="appearance.design.heroToEnabled" ${design.heroToEnabled === false ? "" : "checked"}><span>메인 사진에도 "to. 이름" 보이기</span></label>
+      <label class="hero-to-color"><span>색</span><input type="color" name="appearance.design.heroToColor" value="${escapeAdminHtml(color)}"></label>
+    </div>
+    <input type="hidden" name="appearance.design.heroToAlign" value="${align}">
+    <div class="hero-to-quick"><span>위아래</span><div class="hero-position-quick">${Object.entries(HERO_TO_Y).map(([key, value]) => button("data-hero-to-y", key, { top: "상", middle: "중", bottom: "하" }[key], y === value)).join("")}</div></div>
+    <div class="hero-to-quick"><span>좌우</span><div class="hero-position-quick">${Object.keys(HERO_TO_X).map((key) => button("data-hero-to-align", key, { left: "좌측", center: "중앙", right: "우측" }[key], align === key)).join("")}</div></div>
+    <div class="hero-to-steps">
+      ${frameStepControl("appearance.design.heroToYPercent", "위아래", y, 4, 96, 1)}
+      ${frameStepControl("appearance.design.heroToXPercent", "좌우", number(design.heroToXPercent, HERO_TO_X[align]), 4, 96, 1)}
+      ${frameStepControl("appearance.design.heroToScale", "크기", heroScaleValue(design.heroToScale), 60, 200, 5)}
+    </div>
+    <p class="hero-tool-hint">이름 넣은 링크로 들어온 분에게만 보여요. 미리보기에는 예시 이름(홍길동)으로 보여요.</p>`;
+}
+
 function isHeroTextUserPositioned(design = {}) {
   if (typeof design.heroTextPositioned === "boolean") return design.heroTextPositioned;
   const y = Number(design.heroTextYPercent);
@@ -1298,6 +1325,7 @@ function editorDesignPanel() {
         <button type="button" data-tooldock-tab="copy">문구</button>
         <button type="button" data-tooldock-tab="position">위치</button>
         <button type="button" data-tooldock-tab="size">크기·간격</button>
+        <button type="button" data-tooldock-tab="hero-to">받는 분</button>
         <button type="button" data-tooldock-tab="text">테마</button>
         <button type="button" data-tooldock-tab="style">글자/위치</button>
         <button type="button" data-tooldock-tab="items">항목관리</button>
@@ -1331,6 +1359,9 @@ function editorDesignPanel() {
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="position">
         ${heroPositionControls(design)}
+      </div>
+      <div class="editor-tooldock-pane" data-tooldock-pane="hero-to">
+        ${heroToControls(design)}
       </div>
       <div class="editor-tooldock-pane" data-tooldock-pane="size">
         <div class="hero-size-controls">
@@ -2157,6 +2188,15 @@ function renderEditor(message = "", focus = "") {
             <span class="share-link-copied" aria-hidden="true">복사됐어요</span>
           </button>
         </div>
+        <div class="share-pane share-link-box share-guest-link">
+          <label><strong>이름 넣은 링크</strong><span>봉투에 "to. 이름"이 보여요</span>
+            <input type="text" maxlength="20" placeholder="받는 분 이름" autocomplete="off" data-share-guest-name>
+          </label>
+          <button class="share-link-copy" type="button" data-share-guest-copy aria-label="이름 넣은 링크 복사" title="링크 복사">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+            <span class="share-link-copied" aria-hidden="true">복사됐어요</span>
+          </button>
+        </div>
         <fieldset class="share-pane" id="share-settings"><legend>미리보기</legend>
           <div class="kakao-card-preview" data-kakao-preview aria-label="카카오톡 공유 카드 미리보기">
             <div class="kakao-chat-row">
@@ -2456,17 +2496,28 @@ function bindKakaoPreview() {
 
   const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || currentInvitationSite?.slug || "";
   const link = adminApp.querySelector("[data-share-link]");
-  if (link) link.dataset.shareLink = `${location.origin}/api/share${slug && slug !== "main" ? `?card=${encodeURIComponent(slug)}` : ""}`;
-  adminApp.querySelector("[data-share-link-copy]")?.addEventListener("click", async (event) => {
-    const button = event.currentTarget;
+  // 이 배포의 기본 청첩장은 ?card= 없이 열리므로 짧은 주소(사이트 첫 주소)를 씀
+  const cardParam = slug && slug !== "main" && slug !== window.RSVP_STORAGE?.SITE_CARD_SLUG ? slug : "";
+  const invitationLink = (to = "") => {
+    const query = new URLSearchParams();
+    if (cardParam) query.set("card", cardParam);
+    if (to) query.set("to", to);
+    return `${location.origin}/${query.toString() ? `?${query}` : ""}`;
+  };
+  if (link) link.dataset.shareLink = invitationLink();
+  const copyLink = async (button, url) => {
     try {
-      await navigator.clipboard.writeText(link.dataset.shareLink);
+      await navigator.clipboard.writeText(url);
       button.classList.add("is-copied");
       setTimeout(() => button.classList.remove("is-copied"), 1600);
     } catch {
-      window.prompt("아래 링크를 길게 눌러 복사해 주세요", link.dataset.shareLink);
+      window.prompt("아래 링크를 길게 눌러 복사해 주세요", url);
     }
-  });
+  };
+  adminApp.querySelector("[data-share-link-copy]")?.addEventListener("click", (event) => copyLink(event.currentTarget, link.dataset.shareLink));
+  // 이름 넣은 링크: 비워 두고 누르면 이름 없는 기본 링크가 복사됨
+  const guestName = adminApp.querySelector("[data-share-guest-name]");
+  adminApp.querySelector("[data-share-guest-copy]")?.addEventListener("click", (event) => copyLink(event.currentTarget, invitationLink(guestName?.value.trim() || "")));
 }
 
 function bindSectionModeTabs() {
@@ -2745,6 +2796,14 @@ function editorData(form) {
     ["heroGapTop", "heroGapBottom"].forEach((key) => {
       if (form.elements[`appearance.design.${key}`]) next.appearance.design[key] = heroGapValue(fields.get(`appearance.design.${key}`));
     });
+    if (form.elements["appearance.design.heroToYPercent"]) {
+      next.appearance.design.heroToEnabled = fields.get("appearance.design.heroToEnabled") === "on";
+      next.appearance.design.heroToXPercent = Number(fields.get("appearance.design.heroToXPercent") || 50);
+      next.appearance.design.heroToYPercent = Number(fields.get("appearance.design.heroToYPercent") || 12);
+      next.appearance.design.heroToScale = heroScaleValue(fields.get("appearance.design.heroToScale"));
+      next.appearance.design.heroToColor = fields.get("appearance.design.heroToColor") || "#ffffff";
+      next.appearance.design.heroToAlign = fields.get("appearance.design.heroToAlign") || "center";
+    }
     if (fields.get("appearance.design.heroDecoration")) next.appearance.design.heroDecoration = fields.get("appearance.design.heroDecoration");
     if (fields.get("appearance.design.heroDecorationTint")) next.appearance.design.heroDecorationTint = fields.get("appearance.design.heroDecorationTint");
     next.appearance.design.heroDecorationSize = Number(fields.get("appearance.design.heroDecorationSize") || next.appearance.design.heroDecorationSize || 100);
@@ -3188,6 +3247,8 @@ function bindEditor() {
     }
   };
   const updateFloatingSaveForToolDock = () => {
+    // 접힌 편집 도구 머리와 저장 버튼이 겹치지 않게 저장 버튼 위치를 바꾸는 표시(styles.css)
+    document.body.classList.toggle("has-collapsed-tooldock", Boolean(toolPanel && !toolPanel.hidden && toolPanel.classList.contains("is-collapsed")));
     if (toolPanel && !toolPanel.hidden) openAdminOverlay(closeToolDockFromHistory);
     else closeAdminOverlay(closeToolDockFromHistory);
   };
@@ -3216,7 +3277,7 @@ function bindEditor() {
       const visible = context === "hero"
         ? ["media", "frame"].includes(tab)
         : context === "hero-copy"
-          ? ["copy", "position", "size", "text"].includes(tab)
+          ? ["copy", "position", "size", "hero-to", "text"].includes(tab)
         : context === "profile"
           ? ["media", "profile-info"].includes(tab)
         : context === "parents" || context === "interlude" || context === "account" || context === "calendar"
@@ -3235,6 +3296,9 @@ function bindEditor() {
       button.classList.toggle("is-active", visible && tab === activeTab);
     });
     toolPanel.querySelector(".editor-tooldock-tabs")?.toggleAttribute("hidden", visibleTabCount <= 1);
+    frameDocumentRef?.body?.classList.toggle("show-hero-to-sample", context === "hero-copy" && activeTab === "hero-to");
+    // 받는 분 탭: 예시 이름이 시트에 가리지 않게 미리보기를 그 자리로 옮김
+    if (context === "hero-copy" && activeTab === "hero-to") requestAnimationFrame(revealHeroTo);
     toolPanel.querySelectorAll("[data-tooldock-pane]").forEach((pane) => {
       pane.classList.toggle("is-active", pane.dataset.tooldockPane === activeTab);
     });
@@ -3896,6 +3960,21 @@ function bindEditor() {
   function revealHeroInPreview() {
     revealInPreview(frameDocumentRef?.querySelector(toolPanel?.dataset.context === "hero" ? ".hero-media" : ".hero-content"));
   }
+  // 받는 분 이름이 이미 보이면 그대로 두고, 미리보기 창 밖이나 시트 뒤에 있을 때만 revealInPreview
+  function revealHeroTo() {
+    const target = frameDocumentRef?.querySelector("[data-hero-to]");
+    const frameElement = copyEditor.querySelector("[data-copy-editor-frame]");
+    if (!target || !frameElement || !toolPanel || toolPanel.hidden) return;
+    const rect = target.getBoundingClientRect();
+    if (!rect.height) return;
+    const frameRect = frameElement.getBoundingClientRect();
+    const headerBottom = Math.max(0, document.querySelector(".general-admin-header")?.getBoundingClientRect().bottom || 0);
+    const top = Math.max(frameRect.top, headerBottom);
+    const bottom = Math.min(frameRect.bottom, toolPanel.getBoundingClientRect().top);
+    if (frameRect.top + rect.top >= top && frameRect.top + rect.bottom <= bottom) return;
+    revealInPreview(target);
+  }
+
   function revealInPreview(target) {
     const frameElement = copyEditor.querySelector("[data-copy-editor-frame]");
     if (!frameElement || !target || !toolPanel || toolPanel.hidden) return;
@@ -4120,6 +4199,31 @@ function bindEditor() {
     syncHeroControlsUi();
     refreshFrameAppearance();
   }));
+  // 받는 분 위치 빠른 선택
+  const syncHeroToQuick = () => {
+    const y = Number(formValue("appearance.design.heroToYPercent"));
+    const align = formValue("appearance.design.heroToAlign") || "center";
+    copyEditor.querySelectorAll("[data-hero-to-y]").forEach((button) => button.classList.toggle("is-active", HERO_TO_Y[button.dataset.heroToY] === y));
+    copyEditor.querySelectorAll("[data-hero-to-align]").forEach((button) => button.classList.toggle("is-active", button.dataset.heroToAlign === align));
+  };
+  const setHeroToRange = (name, value) => {
+    const field = form.elements[name];
+    if (!field) return;
+    field.value = String(value);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  copyEditor.querySelectorAll("[data-hero-to-y]").forEach((button) => button.addEventListener("click", () => {
+    setHeroToRange("appearance.design.heroToYPercent", HERO_TO_Y[button.dataset.heroToY]);
+    syncHeroToQuick();
+  }));
+  copyEditor.querySelectorAll("[data-hero-to-align]").forEach((button) => button.addEventListener("click", () => {
+    setFormValue("appearance.design.heroToAlign", button.dataset.heroToAlign);
+    setHeroToRange("appearance.design.heroToXPercent", HERO_TO_X[button.dataset.heroToAlign]);
+    syncHeroToQuick();
+  }));
+  toolPanel?.addEventListener("input", (event) => {
+    if (event.target?.name === "appearance.design.heroToYPercent") syncHeroToQuick();
+  });
   // 슬라이더·버튼 조정은 미리보기 갱신(대상 input 리스너)보다 먼저 '직접 조정' 표시
   toolPanel?.addEventListener("input", (event) => {
     const name = event.target?.name;
@@ -4128,6 +4232,8 @@ function bindEditor() {
       copyEditor.querySelectorAll("[data-hero-position]").forEach((button) => button.classList.remove("is-active"));
     }
     if (name === "hero.imageFrame.zoom") setFormValue("hero.imageFrame.enabled", "true");
+    // 위치·크기 조정으로 글자가 시트 뒤로 숨었을 때만 미리보기를 옮김(체크박스·색은 그대로)
+    if (name?.startsWith("appearance.design.heroTo") && event.target.type === "range") setTimeout(revealHeroTo, 60);
     if (name === "media.interludeFrame.zoom") {
       setFormValue("media.interludeFrame.enabled", "true");
       requestAnimationFrame(() => applyInterludeFramePreview());

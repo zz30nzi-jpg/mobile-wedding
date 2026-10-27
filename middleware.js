@@ -7,6 +7,8 @@
 const SUPABASE_URL = "https://djjspxgkdinimcpkdxme.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
 const DEFAULT_BOOT_BG = "#eee8e1";
+// 주소에 ?card= 가 없을 때 여는 청첩장 (rsvp-storage.js SITE_CARD_SLUG 와 같게 유지)
+const SITE_CARD_SLUG = "main";
 // 기본 제공 테마의 배경색(styles.css body[data-theme] --body-bg). 저장된 bootBackground가 없을 때 사용
 const BUILT_IN_THEME_BG = { sky: "#eff7fa", beige: "#eee8e1", pink: "#fdf0f4", gray: "#edf0f2", black: "#15191c", white: "#f7f7f7", green: "#edf3ea" };
 
@@ -101,7 +103,7 @@ export default async function middleware(request) {
   // 관리자 미리보기·레이아웃 썸네일은 원래 동작 유지
   if (url.searchParams.has("copyEditorPreview") || url.searchParams.has("__thumb") || url.searchParams.has("__layout")) return;
   try {
-    const slug = normalizeSlug(url.searchParams.get("card") || url.searchParams.get("invitation") || "main") || "main";
+    const slug = normalizeSlug(url.searchParams.get("card") || url.searchParams.get("invitation") || SITE_CARD_SLUG) || SITE_CARD_SLUG;
     const [rawHtml, meta] = await Promise.all([cachedRawHtml(url.origin), cachedInvitationMeta(slug)]);
     if (!rawHtml || !meta) return;
     let html = rawHtml;

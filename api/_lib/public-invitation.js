@@ -2,6 +2,9 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://djjspxgkdinimcpkdxme.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_j3ve_B6RZyZqREX6IdQc3Q_gMXGuNA_";
 
+// 주소에 ?card= 가 없을 때 여는 청첩장 (rsvp-storage.js SITE_CARD_SLUG 와 같게 유지)
+const SITE_CARD_SLUG = "main";
+
 function normalizeSlug(value = "") {
   return String(value || "")
     .trim()
@@ -24,4 +27,4 @@ async function fetchPublicInvitationContent(slug) {
   return invitation.status === "ok" ? invitation.content || null : null;
 }
 
-module.exports = { SUPABASE_URL, normalizeSlug, fetchPublicInvitationContent };
+module.exports = { SUPABASE_URL, SITE_CARD_SLUG, normalizeSlug, fetchPublicInvitationContent };

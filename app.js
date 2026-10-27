@@ -2,6 +2,8 @@ let data = window.INVITATION_DATA;
 const app = document.querySelector("#app");
 const modalRoot = document.querySelector("#modal-root");
 const pageParams = new URLSearchParams(location.search);
+// 개인 링크(?to=홍길동)로 들어오면 봉투에 "to. 홍길동"을 보여 줌. 이름 없는 링크는 원래 봉투 그대로
+const guestName = String(pageParams.get("to") || "").trim().slice(0, 20);
 // 이 값이 있으면 특정 청첩장·미리보기를 보는 중이라 관리자 페이지로 보내지 않음
 const hasCardContext = ["card", "invitation", "__layout", "__thumb", "previewSectionMode", "copyEditorPreview"].some((key) => pageParams.has(key));
 
@@ -605,7 +607,7 @@ function introHtml() {
   const introDateText = escapeHtml(data.hero.introDate || data.wedding.displayDate);
   const introNameText = escapeHtml(data.hero.introName || `${groom.name} · ${bride.name}`);
   // 봉투 모양·색 계산과 마크업은 관리자 미리보기와 같이 쓰도록 shared-utils.js(ENVELOPE_INTRO)에 있음
-  const envelopeIntro = window.ENVELOPE_INTRO.render({ script: data.hero.introScript, name: data.hero.introName || `${groom.name} · ${bride.name}`, date: data.hero.introDate || data.wedding.displayDate, design: introDesign, unit: "cqw" });
+  const envelopeIntro = window.ENVELOPE_INTRO.render({ script: data.hero.introScript, to: guestName, name: data.hero.introName || `${groom.name} · ${bride.name}`, date: data.hero.introDate || data.wedding.displayDate, design: introDesign, unit: "cqw" });
   // 봉투 진입화면: 문구가 봉투 위에 이미 쓰여 있고, 탭하면 실링이 떨어지고 덮개가 열린 뒤 봉투가 내려가며 청첩장이 드러남
   const introMarkup = (introDesign.style || "typing") === "envelope"
     ? `
@@ -626,8 +628,11 @@ function introHtml() {
 // ── 청첩장 섹션별 마크업 (render()가 순서대로 이어 붙임) ──
 function heroHtml() {
   const { groom, bride } = data.couple;
+  // 받는 분 이름(?to=)이 있을 때만 메인 사진 위에 "to. 이름". 관리자 미리보기는 '받는 분' 탭을 연 동안만 예시 이름으로 보여 줌
+  const heroToName = guestName || (isCopyEditorPreview ? "홍길동" : "");
   return `<header class="hero">
         <div class="media hero-media" ${mediaStyle(data.hero.image)} data-active-media="image"></div>
+        ${heroToName ? `<p class="hero-to${guestName ? "" : " is-sample"}" data-hero-to>to. ${escapeHtml(heroToName)}</p>` : ""}
         <div class="hero-content hero-content-${escapeHtml(data.hero.contentPosition || "bottom")}">
           <p class="hero-eyebrow" data-main="${escapeHtml(data.hero.eyebrowMain || "Our Wedding")}" data-script="${escapeHtml(data.hero.eyebrowScript || "Day")}">${escapeHtml(data.hero.eyebrow)}</p>
           <h1 class="hero-names">${escapeHtml(groom.name)} ${heroNameSeparatorHtml(data.appearance?.design?.heroNameSeparator)} ${escapeHtml(bride.name)}</h1>
@@ -1301,7 +1306,8 @@ function playInvitationIntro() {
 // 기본 청첩장(main)이 아니면 ?card=슬러그 를 붙임
 function cardQuery() {
   const slug = window.RSVP_STORAGE?.getActiveInvitationSlug?.() || "";
-  return slug && slug !== "main" ? `?card=${encodeURIComponent(slug)}` : "";
+  // 이 배포의 기본 청첩장은 ?card= 없이도 열리므로 붙이지 않음(짧은 주소)
+  return slug && slug !== "main" && slug !== window.RSVP_STORAGE?.SITE_CARD_SLUG ? `?card=${encodeURIComponent(slug)}` : "";
 }
 
 function sharePageUrl() {
@@ -1332,7 +1338,7 @@ function bindShareModal() {
   });
   document.querySelector("[data-copy-link]")?.addEventListener("click", async () => {
     try { await copyInvitationLink(); }
-    catch { alert(`청첩장 주소: ${location.href}`); }
+    catch { alert(`청첩장 주소: ${sharePageUrl()}`); }
   });
 }
 

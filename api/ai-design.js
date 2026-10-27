@@ -6,6 +6,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_AP
 const ANTHROPIC_MODEL = normalizeAnthropicModel(process.env.ANTHROPIC_MODEL || process.env.CLAUDE_MODEL || "claude-haiku-4-5");
 const ANTHROPIC_WEB_SEARCH_ENABLED = process.env.ANTHROPIC_WEB_SEARCH !== "false";
 const DEFAULT_ALLOWED_ORIGINS = [
+  "https://wedding-plotive.vercel.app",
   "https://mobile-wedding-ecru.vercel.app",
   "http://localhost:3000",
   "http://localhost:5500",

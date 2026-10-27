@@ -2,6 +2,9 @@ const RSVP_LOCAL_KEY = "wedding-attendance-responses";
 const GUESTBOOK_LOCAL_KEY = "wedding-guestbook-entries";
 const INVITATION_LOCAL_KEY = "wedding-invitation-preview-draft";
 const DEFAULT_INVITATION_ID = "main";
+// 주소에 ?card= 가 없으면 이 청첩장을 엶 (짧은 주소: 사이트 첫 주소 그대로)
+// middleware.js·api/_lib/public-invitation.js 의 SITE_CARD_SLUG 와 같게 유지
+const SITE_CARD_SLUG = "main";
 let activeInvitationSlug = "";
 let supabaseClientInstance = null;
 
@@ -203,7 +206,10 @@ function dateOnly(value = "") {
 function getUrlInvitationSlug() {
   if (window.__FORCE_CARD_SLUG) return normalizeSlug(window.__FORCE_CARD_SLUG);
   const params = new URLSearchParams(location.search);
-  return normalizeSlug(params.get("card") || params.get("invitation") || "");
+  const slug = normalizeSlug(params.get("card") || params.get("invitation") || "");
+  // 관리자 페이지와 관리자 미리보기는 로그인한 사람의 청첩장을 따로 찾으므로 기본값을 쓰지 않음
+  const isPublicPage = !/admin/.test(location.pathname) && !["copyEditorPreview", "previewSectionMode", "__layout", "__thumb"].some((key) => params.has(key));
+  return slug || (isPublicPage ? SITE_CARD_SLUG : "");
 }
 
 function setActiveInvitationSlug(slug) {
@@ -782,6 +788,7 @@ async function uploadInvitationImage(file, slot) {
 }
 
 window.RSVP_STORAGE = {
+  SITE_CARD_SLUG,
   getSupabaseClient,
   mediaPublicUrl,
   getActiveInvitationSlug,

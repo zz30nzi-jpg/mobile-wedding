@@ -322,6 +322,16 @@
     root.style.setProperty("--hero-date-scale", String(heroScale(heroDesign.heroDateScale)));
     root.style.setProperty("--hero-gap-top", `${Number(heroDesign.heroGapTop) || 0}px`);
     root.style.setProperty("--hero-gap-bottom", `${Number(heroDesign.heroGapBottom) || 0}px`);
+    // 메인 사진 위 받는 분 이름(개인 링크 ?to= 로 들어왔을 때만 그려짐): 보이기·위치·크기·색
+    const heroToNumber = (value, fallback) => (Number.isFinite(Number(value)) && value !== "" && value !== null ? Number(value) : fallback);
+    root.classList?.toggle("hide-hero-to", heroDesign.heroToEnabled === false);
+    // 좌측: 글자 왼쪽 끝, 우측: 오른쪽 끝, 중앙: 가운데를 기준선(x)에 맞춤 → 이름이 길거나 커져도 사진 밖으로 덜 나감
+    const heroToAlign = ["left", "right"].includes(heroDesign.heroToAlign) ? heroDesign.heroToAlign : "center";
+    root.style.setProperty("--hero-to-shift", { left: "0%", center: "-50%", right: "-100%" }[heroToAlign]);
+    root.style.setProperty("--hero-to-x", `${heroToNumber(heroDesign.heroToXPercent, { left: 8, center: 50, right: 92 }[heroToAlign])}%`);
+    root.style.setProperty("--hero-to-y", `${heroToNumber(heroDesign.heroToYPercent, 12)}%`);
+    root.style.setProperty("--hero-to-scale", String(heroScale(heroDesign.heroToScale)));
+    root.style.setProperty("--hero-to-color", /^#[0-9a-f]{6}$/i.test(String(heroDesign.heroToColor || "")) ? heroDesign.heroToColor : "#ffffff");
     root.classList?.toggle("has-custom-background-decoration", Boolean(resolved.backgroundDecoration));
     const vars = {
       background: ["--paper", "--hero-bg", "--media-start"],

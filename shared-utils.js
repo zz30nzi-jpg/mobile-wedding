@@ -171,7 +171,8 @@
   }
 
   // attrs: 봉투 바깥 요소(.invitation-intro.envelope-intro)에 붙일 속성, stage: 그 안의 봉투
-  function render({ script = "", name = "", date = "", design = {}, unit = "vw" } = {}) {
+  // to: 받는 분 이름(개인 링크 ?to=). 비어 있으면 그 줄을 그리지 않아 원래 봉투 문구만 보임
+  function render({ script = "", name = "", date = "", to = "", design = {}, unit = "vw" } = {}) {
     const c = colors(design);
     const vars = [`--env-color:${c.envelope}`, `--seal-color:${c.seal}`, `--env-u:1${unit}`];
     // pale 실링 그늘: 흰색은 옅게(0.25), 샌드 베이지처럼 조금 진한 색은 0.3
@@ -192,6 +193,7 @@
             <i class="envelope-flap" style="clip-path:${flapClip(unit)}"></i>
           </div>
           <div class="envelope-copy">
+            ${to ? `<p class="envelope-copy-to" data-envelope-to>to. ${escapeHtml(to)}</p>` : ""}
             <p class="envelope-copy-script" data-envelope-script>${escapeHtml(script || "Save the date")}</p>
             <p class="envelope-copy-lead" data-intro-name data-envelope-name>${escapeHtml(name)}</p>
             <p class="envelope-copy-date" data-envelope-date>${escapeHtml(date)}</p>
