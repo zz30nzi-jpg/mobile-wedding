@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>청첩장 관리자 사용설명서</title>
+<!-- 이 파일은 자동 생성됨: _screens/_tools/guide/build_guide.py (관리자 화면 캡처 + 버튼 위치로 번호를 찍음) -->
+<style>
+:root { --page: #eee8e1; --card: #fffdfb; --bar: #f3ece6; --brown: #7a5646; --brown-d: #4a3128; --beige: #f7f1ec; --line: #eadfd6; --ink: #2f2622; --sub: #85766e; --red: #e0352b; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; word-break: keep-all }
+main { max-width: 560px; margin: 0 auto; padding: 12px 12px 40px }
+.gh { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 6px; padding: calc(7px + env(safe-area-inset-top)) 12px 7px; background: var(--bar); border-bottom: 1px solid var(--line) }
+.gh button { flex: none; height: 36px; border: 0; border-radius: 9px; background: var(--card); color: var(--brown-d); font: inherit; font-size: 13px; font-weight: 700 }
+.gh-menu { width: 36px; display: grid; place-items: center }
+.gh-menu svg { width: 18px; height: 18px }
+.gh-close { padding: 0 12px; background: var(--brown) !important; color: #fff !important }
+.gh-close[hidden], .gh-clear[hidden] { display: none; }
+.gh-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 36px; border: 1px solid var(--line); border-radius: 9px; padding: 0 4px 0 9px; background: var(--card) }
+.gh-search svg { width: 15px; height: 15px; flex: none; color: var(--sub) }
+.gh-search input { flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 16px; background: none; color: var(--ink); -webkit-appearance: none; appearance: none; }
+.gh-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.gh .gh-clear { width: 26px; height: 26px; border-radius: 50%; font-size: 12px; color: var(--sub) }
+.results { position: sticky; top: calc(51px + env(safe-area-inset-top)); z-index: 29; max-height: 62vh; overflow-y: auto; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: 0 8px 18px rgba(60,40,30,.12) }
+.results[hidden] { display: none; }
+.results a { display: block; padding: 9px 16px; border-bottom: 1px solid var(--line) }
+.results a strong { display: block; font-size: 14px; color: var(--brown-d) }
+.results a span { display: block; font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.results mark { background: #ffe58a; color: inherit; }
+.results .none { margin: 0; padding: 12px 16px; color: var(--sub); font-size: 13px }
+.drawer { position: fixed; inset: 0; z-index: 40; }
+.drawer[hidden] { display: none; }
+.drawer .tg-top a, .drawer .tg:last-child a { padding-left: 16px; font-weight: 600; }
+.drawer .tg:last-child { margin-top: 12px; border-top: 1px solid var(--line); }
+.drawer .tg:last-child h3 { display: none; }
+.drawer-bg { position: absolute; inset: 0; background: rgba(30,20,15,.4); }
+.drawer-panel { position: absolute; top: 0; bottom: 0; left: 0; width: min(78vw, 290px); background: var(--card); overflow-y: auto; padding: calc(10px + env(safe-area-inset-top)) 0 24px; box-shadow: 4px 0 20px rgba(0,0,0,.15) }
+.drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 0 12px 10px 16px; border-bottom: 1px solid var(--line) }
+.drawer-head strong { font-size: 15px; color: var(--brown-d) }
+.drawer-head button { width: 30px; height: 30px; border: 0; border-radius: 8px; background: var(--beige); font-size: 13px; color: var(--brown-d) }
+.drawer .tg a { padding-left: 22px }
+.drawer .tg a.is-here span { color: var(--brown); }
+.drawer .tg a.is-here { background: color-mix(in srgb, var(--brown) 8%, var(--card)); box-shadow: inset 3px 0 0 var(--brown); color: var(--brown-d); font-weight: 700 }
+.task, details { scroll-margin-top: calc(64px + env(safe-area-inset-top)); }
+a { color: inherit; text-decoration: none; }
+em { font-style: normal; font-weight: 800; color: var(--red); }
+h1 { font-size: 18px; margin: 0 0 2px; color: var(--brown-d) }
+.lead { margin: 0 0 14px; color: var(--sub); font-size: 14px; }
+.rule { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; background: var(--beige); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--sub); margin-bottom: 16px }
+.rule strong { color: var(--brown-d); margin-right: 4px; }
+.rule span { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 0 7px; color: var(--ink); font-weight: 700 }
+.rule span.hot { border: 1.5px solid var(--red); color: var(--red) }
+.rule small { width: 100%; font-size: 11.5px }
+.toc { display: grid; gap: 14px; }
+.tg h3 { margin: 0; padding: 6px 16px; background: var(--beige); border-bottom: 1px solid var(--line); font-size: 11.5px; font-weight: 700; color: var(--brown); letter-spacing: .02em }
+.tg a { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px 10px 16px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 500; color: var(--ink) }
+.tg a span { flex: none; color: #b3a49b; font-size: 16px; line-height: 1 }
+.tg a:active { background: var(--beige); }
+.task { border-top: 8px solid var(--beige); margin: 26px -16px 0; padding: 22px 16px 0; }
+.is-flash .task-head h2, details.is-flash summary { background: #ffe58a; border-radius: 4px; }
+.task-head { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; margin-bottom: 10px }
+.task-head h2 { margin: 0; font-size: 17px; color: var(--brown-d) }
+.where { font-size: 10.5px; background: var(--brown); color: #fff; border-radius: 99px; padding: 1px 8px; font-weight: 700 }
+.end { width: 100%; font-size: 12px; color: var(--sub) }
+.phones { display: flex; gap: 12px; justify-content: center; }
+.phones.is-many { justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 4px 16px 10px }
+.phone { position: relative; margin: 0; flex: none; width: min(66vw, 240px); border: 4px solid #2c2420; border-radius: 20px; overflow: hidden; scroll-snap-align: center; background: #f3ece6 }
+.phone img { display: block; width: 100%; height: auto; }
+.hl { position: absolute; border: 2px solid var(--red); border-radius: 5px; box-shadow: 0 0 0 2px rgba(255,255,255,.75); }
+.badge { position: absolute; transform: translate(-45%, -45%); width: 20px; height: 20px; border-radius: 50%; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; border: 1.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3) }
+.swipe-hint { display: none; }
+.phones.is-many + .steps::before { content: "← 화면을 옆으로 넘겨 보세요 →"; display: block; text-align: center; font-size: 11.5px; color: var(--sub); margin: -2px 0 8px }
+.steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px }
+.steps li { display: flex; gap: 8px; align-items: flex-start }
+.steps li > b { flex: none; width: 19px; height: 19px; border-radius: 50%; background: var(--red); color: #fff; font-size: 11px; text-align: center; line-height: 19px; margin-top: 1px }
+.steps p { margin: 0; }
+.view-hidden { display: none !important; }
+.home { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(60,40,30,.05); }
+main > .task { border-top: 0; margin: 0; padding: 16px; background: var(--card); border-radius: 16px; box-shadow: 0 1px 2px rgba(60,40,30,.05) }
+.how { list-style: none; margin: 10px 0 14px; padding: 0; display: grid; gap: 7px }
+.how li { display: flex; gap: 9px; align-items: center }
+.how li > b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--beige); display: grid; place-items: center; font-size: 11.5px; color: var(--red) }
+.how p { margin: 0; font-size: 14px }
+.first-label { margin: 0 0 4px; font-size: 11.5px; color: var(--brown); font-weight: 700 }
+.first a { display: flex; justify-content: space-between; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 500 }
+.first { border-top: 1px solid var(--line); }
+.first a span { color: var(--sub); }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 20px 0 0 }
+.pager a { border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: 13px; font-weight: 600; color: var(--brown-d); line-height: 1.35 }
+.pager small { display: block; font-size: 11px; font-weight: 500; color: var(--sub) }
+.pager .pg-next { text-align: right; }
+.to-top { display: inline-block; margin-top: 14px; font-size: 13px; color: var(--brown); font-weight: 700; border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px; }
+details { border: 0; border-bottom: 1px solid var(--line); padding: 9px 2px; margin: 0 }
+summary { font-weight: 600; font-size: 14px; cursor: pointer }
+details p { margin: 6px 0 2px; color: var(--sub); font-size: 13px }
+details a { color: var(--red); font-weight: 700; text-decoration: underline; }
+@media (min-width: 620px) { .phones.is-many { overflow: visible; justify-content: center; margin: 0; padding: 4px 0 10px; } .phones.is-many + .steps::before { display: none; } }
+</style>
+</head>
+<body>
+<div id="top"></div>
+<header class="gh">
+  <button class="gh-menu" type="button" data-menu-open aria-label="목차 열기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <label class="gh-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input type="search" placeholder="찾기 (예: 계좌, 음악, 카톡)" autocomplete="off" enterkeyhint="search" data-search-input aria-label="설명서 검색">
+    <button class="gh-clear" type="button" data-search-clear hidden aria-label="검색어 지우기">✕</button></label>
+  <button class="gh-close" type="button" data-guide-close hidden>닫기</button>
+</header>
+<div class="results" data-results hidden></div>
+<div class="drawer" data-drawer hidden><div class="drawer-bg" data-menu-close></div>
+  <nav class="drawer-panel" aria-label="목차"><div class="drawer-head"><strong>목차</strong><button type="button" data-menu-close aria-label="목차 닫기">✕</button></div>
+    <div class="tg tg-top"><a href="#home">처음 화면<span>›</span></a></div><div class="tg"><h3>시작</h3><a href="#start">화면 구성<span>›</span></a><a href="#edit">사진·글 고치는 기본 순서<span>›</span></a></div><div class="tg"><h3>사진</h3><a href="#hero-photo">메인 사진 바꾸기<span>›</span></a><a href="#profile">신랑·신부 사진 바꾸기<span>›</span></a><a href="#gallery">갤러리 사진 추가·순서·삭제<span>›</span></a></div><div class="tg"><h3>글</h3><a href="#hero-copy">첫 화면 이름·날짜 글자<span>›</span></a><a href="#invitation">초대글 바꾸기<span>›</span></a><a href="#transport">교통 안내 고치기<span>›</span></a><a href="#account">계좌번호 고치기<span>›</span></a></div><div class="tg"><h3>꾸미기</h3><a href="#intro">봉투(첫 화면) 꾸미기<span>›</span></a><a href="#music">배경음악 바꾸기<span>›</span></a><a href="#stickers">손그림 스티커 붙이기<span>›</span></a></div><div class="tg"><h3>기본 정보·섹션</h3><a href="#date">예식 날짜·시간·식장<span>›</span></a><a href="#period">청첩장 공개 기간<span>›</span></a><a href="#sections">섹션 숨기기·순서 바꾸기<span>›</span></a></div><div class="tg"><h3>공유·하객</h3><a href="#send">청첩장 링크 보내기<span>›</span></a><a href="#card">카톡 카드 사진·제목<span>›</span></a><a href="#rsvp">참석 현황 · 방명록<span>›</span></a></div><div class="tg"><h3>도움말</h3><a href="#faq">자주 묻는 질문<span>›</span></a></div></nav></div>
+<main>
+  <section class="home" id="home">
+    <h1>사용설명서</h1>
+    <ol class="how">
+      <li><b>☰</b><p>왼쪽 위 <em>메뉴</em>에서 하고 싶은 일을 고르거나</p></li>
+      <li><b>🔍</b><p>위 <em>검색창</em>에 찾는 말을 써요 (예: 계좌, 음악)</p></li>
+      <li><b>1</b><p>설명이 열리면 <em>빨간 번호 순서대로</em> 따라 해요</p></li>
+    </ol>
+    <div class="rule"><strong>기억할 것 하나</strong><span>고치기</span>→<span>완료</span>→<span class="hot">저장</span><small>저장을 눌러야 하객 화면에 반영돼요</small></div>
+    <p class="first-label">처음이라면</p>
+    <div class="first"><a href="#start">화면 구성 보기<span>›</span></a><a href="#edit">사진·글 고치는 기본 순서<span>›</span></a></div>
+  </section>
+  <section class="task" id="start" data-search="화면 구성 메뉴 탭 화면 버튼 처음 구성 기본 — 이름·날짜·식장·계좌·공개 기간 편집 — 사진·글 바꾸기 (제일 많이 써요) 콘텐츠 — 참석 현황·방명록 섹션 — 순서·숨기기 공유 — 링크 보내기·카톡 카드 저장 — 바꾼 내용을 청첩장에 반영" data-title="화면 구성">
+  <div class="task-head"><h2>화면 구성</h2><span class="where">관리자</span></div>
+  <div class="phones"><figure class="phone"><img src="source/guide/basic-top.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:-0.77%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:4.00%;top:93.60%">1</b><i class="hl" style="left:19.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:20.00%;top:93.60%">2</b><i class="hl" style="left:39.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:40.00%;top:93.60%">3</b><i class="hl" style="left:59.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:60.00%;top:93.60%">4</b><i class="hl" style="left:79.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:80.00%;top:93.60%">5</b><i class="hl" style="left:72.05%;top:86.61%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:86.73%">6</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>기본</em> — 이름·날짜·식장·계좌·공개 기간</p></li><li><b>2</b><p><em>편집</em> — 사진·글 바꾸기 (제일 많이 써요)</p></li><li><b>3</b><p><em>콘텐츠</em> — 참석 현황·방명록</p></li><li><b>4</b><p><em>섹션</em> — 순서·숨기기</p></li><li><b>5</b><p><em>공유</em> — 링크 보내기·카톡 카드</p></li><li><b>6</b><p><em>저장</em> — 바꾼 내용을 청첩장에 반영</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#home"><small>← 처음으로</small>처음 화면</a><a class="pg-next" href="#edit"><small>다음 →</small>사진·글 고치는 기본 순서</a></nav>
+</section><section class="task" id="edit" data-search="사진·글 고치는 기본 순서 수정 수정모드 점선 고치기 편집 방법 완료 저장 취소 되돌리기 아래 편집 누르기 수정모드 켜기 (ON) — 고칠 수 있는 곳에 점선이 생겨요 고칠 곳(점선) 누르기 — 아래에서 편집 창이 올라와요 편집 창에서 고치기 — 위 미리보기에 바로 보여요 완료 누르기 (되돌리려면 '취소') 오른쪽 아래 저장 — 저장해야 하객 화면에 반영돼요" data-title="사진·글 고치는 기본 순서">
+  <div class="task-head"><h2>사진·글 고치는 기본 순서</h2><span class="where">편집 탭</span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/copy-page.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:19.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:20.00%;top:93.60%">1</b><i class="hl" style="left:2.31%;top:34.00%;width:95.38%;height:5.92%"></i><b class="badge" style="left:4.00%;top:34.12%">2</b></figure><figure class="phone"><img src="source/guide/copy-on.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:2.31%;top:40.64%;width:94.87%;height:51.66%"></i><b class="badge" style="left:4.00%;top:40.76%">3</b><i class="hl" style="left:72.05%;top:86.61%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:86.73%">6</b></figure><figure class="phone"><img src="source/guide/p-hero-copy.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:0.26%;top:72.51%;width:99.49%;height:20.02%"></i><b class="badge" style="left:4.00%;top:72.63%">4</b><i class="hl" style="left:84.62%;top:62.80%;width:13.33%;height:4.74%"></i><b class="badge" style="left:85.38%;top:62.91%">5</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>아래 <em>편집</em> 누르기</p></li><li><b>2</b><p><em>수정모드</em> 켜기 (ON) — 고칠 수 있는 곳에 점선이 생겨요</p></li><li><b>3</b><p>고칠 곳(<em>점선</em>) 누르기 — 아래에서 편집 창이 올라와요</p></li><li><b>4</b><p>편집 창에서 고치기 — 위 미리보기에 바로 보여요</p></li><li><b>5</b><p><em>완료</em> 누르기 (되돌리려면 '취소')</p></li><li><b>6</b><p>오른쪽 아래 <em>저장</em> — 저장해야 하객 화면에 반영돼요</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#start"><small>← 이전</small>화면 구성</a><a class="pg-next" href="#hero-photo"><small>다음 →</small>메인 사진 바꾸기</a></nav>
+</section><section class="task" id="hero-photo" data-search="메인 사진 바꾸기 메인 대표 사진 첫화면 커버 이미지 맨 위 큰 사진 누르기 사진을 눌러 새 사진 고르기 (선택) 보이는 영역 맞추기로 얼굴 위치 조정 완료 → 저장" data-title="메인 사진 바꾸기">
+  <div class="task-head"><h2>메인 사진 바꾸기</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/copy-on.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:2.31%;top:40.64%;width:94.87%;height:51.66%"></i><b class="badge" style="left:4.00%;top:40.76%">1</b></figure><figure class="phone"><img src="source/guide/p-hero-media.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:20.26%;top:81.04%;width:27.44%;height:3.32%"></i><b class="badge" style="left:21.03%;top:81.16%">2</b><i class="hl" style="left:2.05%;top:87.32%;width:95.90%;height:5.45%"></i><b class="badge" style="left:4.00%;top:87.44%">3</b><i class="hl" style="left:84.62%;top:68.25%;width:13.33%;height:4.74%"></i><b class="badge" style="left:85.38%;top:68.36%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>맨 위 <em>큰 사진</em> 누르기</p></li><li><b>2</b><p><em>사진</em>을 눌러 새 사진 고르기</p></li><li><b>3</b><p>(선택) <em>보이는 영역 맞추기</em>로 얼굴 위치 조정</p></li><li><b>4</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#edit"><small>← 이전</small>사진·글 고치는 기본 순서</a><a class="pg-next" href="#profile"><small>다음 →</small>신랑·신부 사진 바꾸기</a></nav>
+</section><section class="task" id="profile" data-search="신랑·신부 사진 바꾸기 신랑 신부 프로필 사진 얼굴 두사람 소개 바꿀 사진 누르기 업로드로 새 사진 고르기 (선택) 영역맞추기로 보일 부분 조정 완료 → 저장" data-title="신랑·신부 사진 바꾸기">
+  <div class="task-head"><h2>신랑·신부 사진 바꾸기</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/on-profile.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:9.74%;top:45.85%;width:38.97%;height:37.09%"></i><b class="badge" style="left:10.51%;top:45.97%">1</b></figure><figure class="phone"><img src="source/guide/p-profile.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:2.05%;top:84.00%;width:25.13%;height:8.29%"></i><b class="badge" style="left:4.00%;top:84.12%">2</b><i class="hl" style="left:28.21%;top:84.00%;width:25.13%;height:8.29%"></i><b class="badge" style="left:28.97%;top:84.12%">3</b><i class="hl" style="left:84.62%;top:74.88%;width:13.33%;height:4.74%"></i><b class="badge" style="left:85.38%;top:75.00%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>바꿀 <em>사진</em> 누르기</p></li><li><b>2</b><p><em>업로드</em>로 새 사진 고르기</p></li><li><b>3</b><p>(선택) <em>영역맞추기</em>로 보일 부분 조정</p></li><li><b>4</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#hero-photo"><small>← 이전</small>메인 사진 바꾸기</a><a class="pg-next" href="#gallery"><small>다음 →</small>갤러리 사진 추가·순서·삭제</a></nav>
+</section><section class="task" id="gallery" data-search="갤러리 사진 추가·순서·삭제 갤러리 사진첩 앨범 사진 추가 삭제 순서 바꾸기 갤러리 사진 누르기 아래 줄에서 사진 하나 고르기 ← 앞으로 / 뒤로 → 로 순서 옮기기 바꾸기 / 삭제 사진 추가 (최대 30장) 완료 → 저장" data-title="갤러리 사진 추가·순서·삭제">
+  <div class="task-head"><h2>갤러리 사진 추가·순서·삭제</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/on-gallery.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:2.31%;top:38.74%;width:94.87%;height:51.66%"></i><b class="badge" style="left:4.00%;top:38.86%">1</b></figure><figure class="phone"><img src="source/guide/p-gallery.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:-63.59%;top:69.31%;width:17.95%;height:8.29%"></i><b class="badge" style="left:4.00%;top:69.43%">2</b><i class="hl" style="left:2.05%;top:78.55%;width:24.10%;height:4.98%"></i><i class="hl" style="left:26.15%;top:78.55%;width:24.10%;height:4.98%"></i><b class="badge" style="left:4.00%;top:78.67%">3</b><i class="hl" style="left:50.00%;top:78.55%;width:24.10%;height:4.98%"></i><i class="hl" style="left:74.10%;top:78.55%;width:24.10%;height:4.98%"></i><b class="badge" style="left:50.77%;top:78.67%">4</b><i class="hl" style="left:2.05%;top:83.77%;width:47.95%;height:5.45%"></i><b class="badge" style="left:4.00%;top:83.89%">5</b><i class="hl" style="left:84.62%;top:64.22%;width:13.33%;height:4.74%"></i><b class="badge" style="left:85.38%;top:64.34%">6</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>갤러리</em> 사진 누르기</p></li><li><b>2</b><p>아래 줄에서 <em>사진 하나</em> 고르기</p></li><li><b>3</b><p><em>← 앞으로 / 뒤로 →</em> 로 순서 옮기기</p></li><li><b>4</b><p><em>바꾸기</em> / <em>삭제</em></p></li><li><b>5</b><p><em>사진 추가</em> (최대 30장)</p></li><li><b>6</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#profile"><small>← 이전</small>신랑·신부 사진 바꾸기</a><a class="pg-next" href="#hero-copy"><small>다음 →</small>첫 화면 이름·날짜 글자</a></nav>
+</section><section class="task" id="hero-copy" data-search="첫 화면 이름·날짜 글자 이름 날짜 글자 문구 제목 our wedding 첫화면 사진 위 글자 누르기 칸을 눌러 글자 고치기 (체크를 끄면 그 줄이 숨겨져요) 완료 → 저장" data-title="첫 화면 이름·날짜 글자">
+  <div class="task-head"><h2>첫 화면 이름·날짜 글자</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/copy-on.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:8.46%;top:49.17%;width:82.56%;height:14.34%"></i><b class="badge" style="left:9.23%;top:49.29%">1</b></figure><figure class="phone"><img src="source/guide/p-hero-copy.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:0.26%;top:72.51%;width:99.49%;height:20.02%"></i><b class="badge" style="left:4.00%;top:72.63%">2</b><i class="hl" style="left:84.62%;top:62.80%;width:13.33%;height:4.74%"></i><b class="badge" style="left:85.38%;top:62.91%">3</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>사진 위 <em>글자</em> 누르기</p></li><li><b>2</b><p>칸을 눌러 글자 고치기 (체크를 끄면 그 줄이 숨겨져요)</p></li><li><b>3</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#gallery"><small>← 이전</small>갤러리 사진 추가·순서·삭제</a><a class="pg-next" href="#invitation"><small>다음 →</small>초대글 바꾸기</a></nav>
+</section><section class="task" id="invitation" data-search="초대글 바꾸기 초대글 인사말 문구 글씨 굵게 글자 크기 초대글 누르기 글 상자에서 고치기 (**글자** 처럼 감싸면 굵게) 글자 크기 − / ＋ 완료 → 저장" data-title="초대글 바꾸기">
+  <div class="task-head"><h2>초대글 바꾸기</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/on-invitation.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:9.74%;top:61.14%;width:80.00%;height:6.64%"></i><b class="badge" style="left:10.51%;top:61.26%">1</b></figure><figure class="phone"><img src="source/guide/p-invitation.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:3.59%;top:66.23%;width:92.82%;height:17.77%"></i><b class="badge" style="left:4.36%;top:66.35%">2</b><i class="hl" style="left:5.64%;top:88.27%;width:13.59%;height:3.32%"></i><b class="badge" style="left:6.41%;top:88.39%">3</b><i class="hl" style="left:83.08%;top:61.61%;width:13.33%;height:4.74%"></i><b class="badge" style="left:83.85%;top:61.73%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>초대글</em> 누르기</p></li><li><b>2</b><p>글 상자에서 고치기 (**글자** 처럼 감싸면 굵게)</p></li><li><b>3</b><p><em>글자 크기</em> − / ＋</p></li><li><b>4</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#hero-copy"><small>← 이전</small>첫 화면 이름·날짜 글자</a><a class="pg-next" href="#transport"><small>다음 →</small>교통 안내 고치기</a></nav>
+</section><section class="task" id="transport" data-search="교통 안내 고치기 오시는길 교통 지하철 버스 주차 자가용 셔틀 식장안내 교통 안내 누르기 고칠 교통수단 고르기 (＋ 추가로 늘리기) 내용 고치기 ＋ 줄 추가로 줄 늘리기 완료 → 저장 (식장 안내도 같은 방법)" data-title="교통 안내 고치기">
+  <div class="task-head"><h2>교통 안내 고치기</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/on-transport.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:9.74%;top:39.22%;width:80.00%;height:50.71%"></i><b class="badge" style="left:10.51%;top:39.34%">1</b></figure><figure class="phone"><img src="source/guide/p-transport.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:1.28%;top:6.75%;width:78.46%;height:4.98%"></i><b class="badge" style="left:4.00%;top:6.87%">2</b><i class="hl" style="left:17.95%;top:14.93%;width:68.21%;height:8.06%"></i><b class="badge" style="left:18.72%;top:15.05%">3</b><i class="hl" style="left:5.13%;top:23.22%;width:14.87%;height:4.27%"></i><b class="badge" style="left:5.90%;top:23.34%">4</b><i class="hl" style="left:81.54%;top:2.37%;width:13.33%;height:4.74%"></i><b class="badge" style="left:82.31%;top:2.50%">5</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>교통 안내</em> 누르기</p></li><li><b>2</b><p>고칠 <em>교통수단</em> 고르기 (＋ 추가로 늘리기)</p></li><li><b>3</b><p><em>내용</em> 고치기</p></li><li><b>4</b><p><em>＋ 줄 추가</em>로 줄 늘리기</p></li><li><b>5</b><p><em>완료</em> → <em>저장</em> (식장 안내도 같은 방법)</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#invitation"><small>← 이전</small>초대글 바꾸기</a><a class="pg-next" href="#account"><small>다음 →</small>계좌번호 고치기</a></nav>
+</section><section class="task" id="account" data-search="계좌번호 고치기 계좌 계좌번호 은행 축의금 마음 전하실 곳 예금주 계좌 안내 누르기 신랑측 / 신부측 고르기 은행·계좌번호·예금주 고치기 ＋ 계좌 추가 (지우기는 ×) 완료 → 저장" data-title="계좌번호 고치기">
+  <div class="task-head"><h2>계좌번호 고치기</h2><span class="where">편집 탭 · 수정모드 ON</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/on-account.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:9.74%;top:55.57%;width:80.00%;height:17.77%"></i><b class="badge" style="left:10.51%;top:55.69%">1</b></figure><figure class="phone"><img src="source/guide/p-account.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:5.13%;top:6.87%;width:17.69%;height:4.74%"></i><i class="hl" style="left:22.82%;top:6.87%;width:17.69%;height:4.74%"></i><b class="badge" style="left:5.90%;top:6.99%">2</b><i class="hl" style="left:39.74%;top:20.38%;width:43.08%;height:4.98%"></i><b class="badge" style="left:40.51%;top:20.50%">3</b><i class="hl" style="left:5.13%;top:76.90%;width:89.74%;height:5.57%"></i><b class="badge" style="left:5.90%;top:77.01%">4</b><i class="hl" style="left:81.54%;top:2.37%;width:13.33%;height:4.74%"></i><b class="badge" style="left:82.31%;top:2.50%">5</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>계좌 안내</em> 누르기</p></li><li><b>2</b><p><em>신랑측 / 신부측</em> 고르기</p></li><li><b>3</b><p>은행·<em>계좌번호</em>·예금주 고치기</p></li><li><b>4</b><p><em>＋ 계좌 추가</em> (지우기는 ×)</p></li><li><b>5</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#transport"><small>← 이전</small>교통 안내 고치기</a><a class="pg-next" href="#intro"><small>다음 →</small>봉투(첫 화면) 꾸미기</a></nav>
+</section><section class="task" id="intro" data-search="봉투(첫 화면) 꾸미기 봉투 진입화면 첫화면 인트로 타이핑 위쪽 진입 화면 누르기 보이는 방식 고르기 (아래 문구·색·글꼴 탭도 있어요) 저장 누르기" data-title="봉투(첫 화면) 꾸미기">
+  <div class="task-head"><h2>봉투(첫 화면) 꾸미기</h2><span class="where">편집 탭</span><span class="end">끝나면 <em>저장</em></span></div>
+  <div class="phones"><figure class="phone"><img src="source/guide/sub-intro.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:2.31%;top:21.80%;width:25.13%;height:5.69%"></i><b class="badge" style="left:4.00%;top:21.92%">1</b><i class="hl" style="left:15.13%;top:76.54%;width:77.95%;height:3.67%"></i><i class="hl" style="left:15.13%;top:85.31%;width:77.95%;height:3.67%"></i><b class="badge" style="left:15.90%;top:76.66%">2</b><i class="hl" style="left:72.05%;top:58.41%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:58.53%">3</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>위쪽 <em>진입 화면</em> 누르기</p></li><li><b>2</b><p>보이는 <em>방식</em> 고르기 (아래 문구·색·글꼴 탭도 있어요)</p></li><li><b>3</b><p><em>저장</em> 누르기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#account"><small>← 이전</small>계좌번호 고치기</a><a class="pg-next" href="#music"><small>다음 →</small>배경음악 바꾸기</a></nav>
+</section><section class="task" id="music" data-search="배경음악 바꾸기 음악 배경음악 노래 bgm 소리 볼륨 위쪽 배경음악 누르기 배경음악 사용 켜기/끄기 곡 고르기 (▶ 미리 듣기) 볼륨 조절 저장 누르기" data-title="배경음악 바꾸기">
+  <div class="task-head"><h2>배경음악 바꾸기</h2><span class="where">편집 탭</span><span class="end">끝나면 <em>저장</em></span></div>
+  <div class="phones"><figure class="phone"><img src="source/guide/sub-music.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:72.82%;top:21.80%;width:25.13%;height:5.69%"></i><b class="badge" style="left:73.59%;top:21.92%">1</b><i class="hl" style="left:6.67%;top:35.43%;width:22.05%;height:3.67%"></i><b class="badge" style="left:7.44%;top:35.55%">2</b><i class="hl" style="left:2.82%;top:44.55%;width:80.51%;height:6.16%"></i><b class="badge" style="left:4.00%;top:44.67%">3</b><i class="hl" style="left:3.33%;top:54.98%;width:94.36%;height:4.74%"></i><b class="badge" style="left:4.10%;top:55.09%">4</b><i class="hl" style="left:72.05%;top:86.61%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:86.73%">5</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>위쪽 <em>배경음악</em> 누르기</p></li><li><b>2</b><p><em>배경음악 사용</em> 켜기/끄기</p></li><li><b>3</b><p><em>곡</em> 고르기 (▶ 미리 듣기)</p></li><li><b>4</b><p><em>볼륨</em> 조절</p></li><li><b>5</b><p><em>저장</em> 누르기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#intro"><small>← 이전</small>봉투(첫 화면) 꾸미기</a><a class="pg-next" href="#stickers"><small>다음 →</small>손그림 스티커 붙이기</a></nav>
+</section><section class="task" id="stickers" data-search="손그림 스티커 붙이기 스티커 손그림 그림 꾸미기 위쪽 스티커 누르기 아래에서 스티커 고르기 미리보기에서 놓을 곳 누르기 (끌어서 이동, 두 손가락으로 크기 조절) 저장 누르기" data-title="손그림 스티커 붙이기">
+  <div class="task-head"><h2>손그림 스티커 붙이기</h2><span class="where">편집 탭</span><span class="end">끝나면 <em>저장</em></span></div>
+  <div class="phones"><figure class="phone"><img src="source/guide/sub-stickers.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:49.23%;top:21.80%;width:25.13%;height:5.69%"></i><b class="badge" style="left:50.00%;top:21.92%">1</b><i class="hl" style="left:2.56%;top:84.00%;width:16.41%;height:7.58%"></i><b class="badge" style="left:4.00%;top:84.12%">2</b><i class="hl" style="left:5.38%;top:35.19%;width:89.23%;height:18.48%"></i><b class="badge" style="left:6.15%;top:35.31%">3</b><i class="hl" style="left:81.03%;top:78.08%;width:16.41%;height:5.45%"></i><b class="badge" style="left:81.79%;top:78.20%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>위쪽 <em>스티커</em> 누르기</p></li><li><b>2</b><p>아래에서 <em>스티커</em> 고르기</p></li><li><b>3</b><p>미리보기에서 <em>놓을 곳</em> 누르기 (끌어서 이동, 두 손가락으로 크기 조절)</p></li><li><b>4</b><p><em>저장</em> 누르기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#music"><small>← 이전</small>배경음악 바꾸기</a><a class="pg-next" href="#date"><small>다음 →</small>예식 날짜·시간·식장</a></nav>
+</section><section class="task" id="date" data-search="예식 날짜·시간·식장 날짜 시간 예식 식장 장소 주소 홀 이름 부모님 생일 아래 기본 누르기 1 기본 정보 누르기 식장·홀·날짜 고치기 (이름·부모님 성함도 여기서) 저장 누르기" data-title="예식 날짜·시간·식장">
+  <div class="task-head"><h2>예식 날짜·시간·식장</h2><span class="where">기본 탭</span><span class="end">끝나면 <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/basic-top.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:-0.77%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:4.00%;top:93.60%">1</b><i class="hl" style="left:8.46%;top:32.11%;width:83.08%;height:3.91%"></i><b class="badge" style="left:9.23%;top:32.23%">2</b></figure><figure class="phone"><img src="source/guide/basic-wedding.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:32.82%;top:35.43%;width:54.87%;height:6.16%"></i><i class="hl" style="left:32.82%;top:41.23%;width:54.87%;height:6.16%"></i><i class="hl" style="left:32.82%;top:46.92%;width:54.87%;height:6.16%"></i><b class="badge" style="left:33.59%;top:35.55%">3</b><i class="hl" style="left:72.05%;top:86.61%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:86.73%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>아래 <em>기본</em> 누르기</p></li><li><b>2</b><p><em>1 기본 정보</em> 누르기</p></li><li><b>3</b><p><em>식장·홀·날짜</em> 고치기 (이름·부모님 성함도 여기서)</p></li><li><b>4</b><p><em>저장</em> 누르기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#stickers"><small>← 이전</small>손그림 스티커 붙이기</a><a class="pg-next" href="#period"><small>다음 →</small>청첩장 공개 기간</a></nav>
+</section><section class="task" id="period" data-search="청첩장 공개 기간 공개 기간 열림 닫힘 링크 안열려 6 공개 기간 누르기 시작일·종료일 고르기 (이 기간에만 링크가 열려요) 저장 누르기" data-title="청첩장 공개 기간">
+  <div class="task-head"><h2>청첩장 공개 기간</h2><span class="where">기본 탭</span><span class="end">끝나면 <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/basic-top.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:8.46%;top:80.09%;width:83.08%;height:3.91%"></i><b class="badge" style="left:9.23%;top:80.21%">1</b></figure><figure class="phone"><img src="source/guide/basic-period.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:32.82%;top:55.33%;width:54.87%;height:6.16%"></i><i class="hl" style="left:32.82%;top:61.02%;width:54.87%;height:6.16%"></i><b class="badge" style="left:33.59%;top:55.45%">2</b><i class="hl" style="left:72.05%;top:86.61%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:86.73%">3</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>6 공개 기간</em> 누르기</p></li><li><b>2</b><p><em>시작일·종료일</em> 고르기 (이 기간에만 링크가 열려요)</p></li><li><b>3</b><p><em>저장</em> 누르기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#date"><small>← 이전</small>예식 날짜·시간·식장</a><a class="pg-next" href="#sections"><small>다음 →</small>섹션 숨기기·순서 바꾸기</a></nav>
+</section><section class="task" id="sections" data-search="섹션 숨기기·순서 바꾸기 섹션 순서 숨기기 숨김 보이기 감추기 아래 섹션 누르기 결혼식 전까지 / 당일부터 고르기 체크를 끄면 그 섹션이 숨겨져요 ☰ 꾹 눌러 위아래로 끌면 순서 변경 저장 누르기" data-title="섹션 숨기기·순서 바꾸기">
+  <div class="task-head"><h2>섹션 숨기기·순서 바꾸기</h2><span class="where">섹션 탭</span><span class="end">끝나면 <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/sections-top.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:59.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:60.00%;top:93.60%">1</b><i class="hl" style="left:5.64%;top:25.12%;width:44.36%;height:7.35%"></i><i class="hl" style="left:50.00%;top:25.12%;width:44.36%;height:7.35%"></i><b class="badge" style="left:6.41%;top:25.24%">2</b></figure><figure class="phone"><img src="source/guide/sections.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:8.72%;top:37.44%;width:73.85%;height:3.08%"></i><b class="badge" style="left:9.49%;top:37.56%">3</b><i class="hl" style="left:82.56%;top:36.97%;width:8.72%;height:4.03%"></i><b class="badge" style="left:83.33%;top:37.09%">4</b><i class="hl" style="left:72.05%;top:86.61%;width:24.62%;height:6.16%"></i><b class="badge" style="left:72.82%;top:86.73%">5</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>아래 <em>섹션</em> 누르기</p></li><li><b>2</b><p><em>결혼식 전까지 / 당일부터</em> 고르기</p></li><li><b>3</b><p><em>체크를 끄면</em> 그 섹션이 숨겨져요</p></li><li><b>4</b><p><em>☰</em> 꾹 눌러 위아래로 끌면 순서 변경</p></li><li><b>5</b><p><em>저장</em> 누르기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#period"><small>← 이전</small>청첩장 공개 기간</a><a class="pg-next" href="#send"><small>다음 →</small>청첩장 링크 보내기</a></nav>
+</section><section class="task" id="send" data-search="청첩장 링크 보내기 링크 보내기 공유 카톡 카카오톡 주소 복사 이름 아래 공유 누르기 주소 복사 또는 노란 카톡 버튼 받는 분 이름 쓰기 (봉투에 'to. 이름'이 보여요) 카톡으로 보내기" data-title="청첩장 링크 보내기">
+  <div class="task-head"><h2>청첩장 링크 보내기</h2><span class="where">공유 탭</span></div>
+  <div class="phones"><figure class="phone"><img src="source/guide/share-top.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:79.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:80.00%;top:93.60%">1</b><i class="hl" style="left:68.97%;top:25.47%;width:11.79%;height:5.45%"></i><i class="hl" style="left:80.77%;top:25.47%;width:11.79%;height:5.45%"></i><b class="badge" style="left:69.74%;top:25.59%">2</b><i class="hl" style="left:8.46%;top:41.00%;width:59.49%;height:5.21%"></i><b class="badge" style="left:9.23%;top:41.11%">3</b><i class="hl" style="left:80.77%;top:37.44%;width:11.79%;height:5.45%"></i><b class="badge" style="left:81.54%;top:37.56%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>아래 <em>공유</em> 누르기</p></li><li><b>2</b><p>주소 <em>복사</em> 또는 노란 <em>카톡</em> 버튼</p></li><li><b>3</b><p><em>받는 분 이름</em> 쓰기 (봉투에 'to. 이름'이 보여요)</p></li><li><b>4</b><p><em>카톡</em>으로 보내기</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#sections"><small>← 이전</small>섹션 숨기기·순서 바꾸기</a><a class="pg-next" href="#card"><small>다음 →</small>카톡 카드 사진·제목</a></nav>
+</section><section class="task" id="card" data-search="카톡 카드 사진·제목 카톡 카드 미리보기 썸네일 제목 설명 공유 ① 사진 ② 제목 ③ 설명 중 누르기 고치거나 아래 추천 문구 누르기 완료 → 저장" data-title="카톡 카드 사진·제목">
+  <div class="task-head"><h2>카톡 카드 사진·제목</h2><span class="where">공유 탭</span><span class="end">끝나면 <em>완료</em> → <em>저장</em></span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/share-card.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:8.21%;top:72.87%;width:83.59%;height:6.40%"></i><i class="hl" style="left:8.21%;top:78.55%;width:83.59%;height:6.40%"></i><i class="hl" style="left:8.21%;top:84.24%;width:83.59%;height:6.40%"></i><b class="badge" style="left:8.97%;top:72.99%">1</b></figure><figure class="phone"><img src="source/guide/share-sheet.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:3.08%;top:73.10%;width:93.85%;height:5.33%"></i><b class="badge" style="left:4.00%;top:73.22%">2</b><i class="hl" style="left:80.51%;top:64.93%;width:16.41%;height:4.74%"></i><b class="badge" style="left:81.28%;top:65.05%">3</b></figure></div>
+  <ol class="steps"><li><b>1</b><p><em>① 사진 ② 제목 ③ 설명</em> 중 누르기</p></li><li><b>2</b><p>고치거나 아래 <em>추천 문구</em> 누르기</p></li><li><b>3</b><p><em>완료</em> → <em>저장</em></p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#send"><small>← 이전</small>청첩장 링크 보내기</a><a class="pg-next" href="#rsvp"><small>다음 →</small>참석 현황 · 방명록</a></nav>
+</section><section class="task" id="rsvp" data-search="참석 현황 · 방명록 참석 현황 응답 방명록 메시지 숨기기 하객 rsvp 아래 콘텐츠 누르기 참석 현황 — 응답 수·예상 인원·한 명씩 보기 방명록 — 축하 메시지 보기 숨기기 / 다시 보이기 (지워지지 않아요) · 화면은 예시 데이터" data-title="참석 현황 · 방명록">
+  <div class="task-head"><h2>참석 현황 · 방명록</h2><span class="where">콘텐츠 탭</span></div>
+  <div class="phones is-many"><figure class="phone"><img src="source/guide/content.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:39.23%;top:93.48%;width:21.54%;height:6.87%"></i><b class="badge" style="left:40.00%;top:93.60%">1</b><i class="hl" style="left:4.62%;top:35.31%;width:90.77%;height:11.14%"></i><b class="badge" style="left:5.38%;top:35.43%">2</b><i class="hl" style="left:4.62%;top:47.16%;width:90.77%;height:11.14%"></i><b class="badge" style="left:5.38%;top:47.27%">3</b></figure><figure class="phone"><img src="source/guide/content-guestbook.webp" alt="" loading="lazy" width="390" height="844"><i class="hl" style="left:75.64%;top:39.57%;width:15.90%;height:4.86%"></i><i class="hl" style="left:68.46%;top:56.40%;width:22.82%;height:4.86%"></i><b class="badge" style="left:76.41%;top:39.69%">4</b></figure></div>
+  <ol class="steps"><li><b>1</b><p>아래 <em>콘텐츠</em> 누르기</p></li><li><b>2</b><p><em>참석 현황</em> — 응답 수·예상 인원·한 명씩 보기</p></li><li><b>3</b><p><em>방명록</em> — 축하 메시지 보기</p></li><li><b>4</b><p><em>숨기기 / 다시 보이기</em> (지워지지 않아요) · 화면은 예시 데이터</p></li></ol>
+  <nav class="pager"><a class="pg-prev" href="#card"><small>← 이전</small>카톡 카드 사진·제목</a><a class="pg-next" href="#faq"><small>다음 →</small>자주 묻는 질문</a></nav>
+</section>
+  <section class="task" id="faq" data-title="자주 묻는 질문"><div class="task-head"><h2>자주 묻는 질문</h2></div><details id="faq-0" data-search="바꿨는데 그대로예요 저장을 눌렀는지 확인하고, 청첩장을 새로고침해요." data-title="바꿨는데 그대로예요"><summary>바꿨는데 그대로예요</summary><p><em>저장</em>을 눌렀는지 확인하고, 청첩장을 새로고침해요.</p></details><details id="faq-1" data-search="잘못 고쳤어요 저장 전이면 취소. 저장했으면 다시 고쳐서 저장하면 돼요." data-title="잘못 고쳤어요"><summary>잘못 고쳤어요</summary><p>저장 전이면 <em>취소</em>. 저장했으면 다시 고쳐서 저장하면 돼요.</p></details><details id="faq-2" data-search="'저장하지 않은 변경 내용' 창이 떠요 취소를 누르고 저장부터 해요." data-title="'저장하지 않은 변경 내용' 창이 떠요"><summary>'저장하지 않은 변경 내용' 창이 떠요</summary><p><em>취소</em>를 누르고 저장부터 해요.</p></details><details id="faq-3" data-search="카톡 카드가 예전 모양이에요 공유 탭의 노란 카톡 버튼으로 보내요." data-title="카톡 카드가 예전 모양이에요"><summary>카톡 카드가 예전 모양이에요</summary><p>공유 탭의 <em>노란 카톡 버튼</em>으로 보내요.</p></details><details id="faq-4" data-search="청첩장이 안 열려요 공개 기간을 확인해요." data-title="청첩장이 안 열려요"><summary>청첩장이 안 열려요</summary><p><a href="#period">공개 기간</a>을 확인해요.</p></details><details id="faq-5" data-search="음악이 안 나와요 화면을 한 번 누른 뒤부터 나와요. 무음 모드도 확인해요." data-title="음악이 안 나와요"><summary>음악이 안 나와요</summary><p>화면을 한 번 누른 뒤부터 나와요. 무음 모드도 확인해요.</p></details><details id="faq-6" data-search="로그인이 풀렸어요 다시 로그인하면 돼요. 그래서 자주 저장하는 게 좋아요." data-title="로그인이 풀렸어요"><summary>로그인이 풀렸어요</summary><p>다시 로그인하면 돼요. 그래서 자주 저장하는 게 좋아요.</p></details><details id="faq-7" data-search="그래도 모르겠어요 아무것도 지우지 말고 화면을 캡처해서 보내 주세요. 같이 봐 줄게요!" data-title="그래도 모르겠어요"><summary>그래도 모르겠어요</summary><p>아무것도 지우지 말고 화면을 캡처해서 보내 주세요. 같이 봐 줄게요!</p></details><nav class="pager"><a class="pg-prev" href="#rsvp"><small>← 이전</small>참석 현황 · 방명록</a><a class="pg-next" href="#home"><small>처음으로 →</small>처음 화면</a></nav></section>
+</main>
+<script>
+(() => {
+  // 관리자 안에서 열면(?embed=1) 닫기 버튼을 보여 주고, 누르면 관리자 창에 닫으라고 알림 (admin.js openAdminGuide)
+  const embedded = new URLSearchParams(location.search).has("embed");
+  const closeBtn = document.querySelector("[data-guide-close]");
+  if (embedded) {
+    closeBtn.hidden = false;
+    closeBtn.addEventListener("click", () => parent.postMessage({ type: "admin-guide-close" }, location.origin));
+  }
+
+  // 한 번에 한 화면만 보여 줌: 처음 화면(#home) 또는 고른 설명 하나. 주소 #으로 기억해서 뒤로 가기가 이전 설명으로 돌아감
+  const views = [...document.querySelectorAll("main > section")];
+  let current = "home";
+  function show(id, flashId) {
+    const target = document.getElementById(id);
+    const view = target?.closest("main > section") || document.getElementById("home");
+    views.forEach((v) => v.classList.toggle("view-hidden", v !== view));
+    current = view.id;
+    window.scrollTo({ top: 0, behavior: "instant" });
+    const flash = flashId ? document.getElementById(flashId) : view;
+    if (flash && flash.tagName === "DETAILS") { flash.open = true; flash.scrollIntoView({ block: "start" }); }
+    if (flash && flash !== document.getElementById("home")) {
+      flash.classList.add("is-flash");
+      setTimeout(() => flash.classList.remove("is-flash"), 1400);
+    }
+  }
+  function go(id) {
+    box.hidden = true;
+    input.blur();
+    if (("#" + id) === location.hash) show(id, id);
+    else location.hash = id;
+  }
+  window.addEventListener("hashchange", () => { const id = location.hash.slice(1) || "home"; show(id, id); });
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href^='#']");
+    if (!a || a.closest("[data-results]")) return;
+    e.preventDefault();
+    setMenu(false);
+    go(a.getAttribute("href").slice(1));
+  });
+
+  // ☰ 목차: 지금 보고 있는 항목을 칠해서 보여 줌
+  const drawer = document.querySelector("[data-drawer]");
+  function setMenu(open) { drawer.hidden = !open; document.body.style.overflow = open ? "hidden" : ""; }
+  document.querySelector("[data-menu-open]").addEventListener("click", () => {
+    box.hidden = true;
+    drawer.querySelectorAll(".tg a").forEach((a) => a.classList.toggle("is-here", a.getAttribute("href") === "#" + current));
+    setMenu(true);
+  });
+  drawer.querySelectorAll("[data-menu-close]").forEach((el) => el.addEventListener("click", () => setMenu(false)));
+
+  // 검색: 띄어쓰기 무시, 제목·설명·비슷한 말(계좌↔축의금, 음악↔노래)에서 찾음
+  const input = document.querySelector("[data-search-input]");
+  const clear = document.querySelector("[data-search-clear]");
+  const box = document.querySelector("[data-results]");
+  const items = [...document.querySelectorAll("[data-search]")];
+  const norm = (v) => v.toLowerCase().replace(/\s+/g, "");
+  const esc = (v) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const snippet = (el, q) => {
+    const lines = [...el.querySelectorAll(".steps p, details p")].map((p) => p.textContent);
+    const hit = lines.find((l) => norm(l).includes(q)) || lines[0] || "";
+    const word = input.value.trim().toLowerCase();
+    const at = hit.toLowerCase().indexOf(word);
+    return at < 0 || !word ? esc(hit) : esc(hit.slice(0, at)) + "<mark>" + esc(hit.slice(at, at + word.length)) + "</mark>" + esc(hit.slice(at + word.length));
+  };
+  function render() {
+    const q = norm(input.value);
+    clear.hidden = !q;
+    if (!q) { box.hidden = true; box.innerHTML = ""; return; }
+    const found = items.filter((el) => norm(el.dataset.search).includes(q));
+    box.innerHTML = found.length
+      ? found.map((el) => `<a href="#${el.id}"><strong>${esc(el.dataset.title)}</strong><span>${snippet(el, q)}</span></a>`).join("")
+      : '<p class="none">찾는 내용이 없어요. 다른 말로 찾거나 ☰ 목차를 눌러 보세요.</p>';
+    box.hidden = false;
+    box.scrollTop = 0;
+  }
+  input.addEventListener("input", render);
+  input.addEventListener("focus", () => { if (input.value) render(); });
+  input.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const first = box.querySelector("a");
+    if (first) go(first.getAttribute("href").slice(1));
+  });
+  clear.addEventListener("click", (e) => { e.preventDefault(); input.value = ""; render(); input.focus(); });
+  box.addEventListener("click", (e) => { const a = e.target.closest("a"); if (!a) return; e.preventDefault(); go(a.getAttribute("href").slice(1)); });
+  document.addEventListener("click", (e) => { if (!box.hidden && !e.target.closest("[data-results], .gh-search")) box.hidden = true; });
+
+  show(location.hash.slice(1) || "home");
+})();
+</script>
+</body>
+</html>

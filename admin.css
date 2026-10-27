@@ -261,6 +261,12 @@ body[data-admin-area="general"] .editor-tooldock .text-layout-control output {
 
 
 
+/* 사용설명서 전체 창 (admin.js openAdminGuide) */
+.admin-guide-layer { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; background: #fff; }
+.admin-guide-layer[hidden] { display: none; }
+.admin-guide-frame { flex: 1; width: 100%; border: 0; }
+html.has-admin-guide, html.has-admin-guide body { overflow: hidden; }
+
 /* Touch target policy */
 body[data-admin-area="general"] .btn-icon-only,
 body[data-admin-area="general"] .icon-btn,

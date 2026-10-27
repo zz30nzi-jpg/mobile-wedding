@@ -266,6 +266,7 @@ function adminHeader(active) {
         <span class="section-label">관리자</span>
       </div>
       <div class="admin-header-actions">
+        <button class="btn btn-icon-only" type="button" data-admin-guide title="사용설명서" aria-label="사용설명서">${ico("M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4 M12 17.5v.1", '<circle cx="12" cy="12" r="9.5"/>')}</button>
         <a class="btn btn-icon-only" href="${cardUrl}" target="_blank" rel="noopener" title="내 청첩장 보기">${ico("M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3")}</a>
         <button class="btn btn-icon-only" id="admin-logout" title="로그아웃">${ico("M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9")}</button>
       </div>
@@ -273,7 +274,50 @@ function adminHeader(active) {
     ${generalMenu.replace("</nav>", `${["editor", "copy", "sections", "share"].includes(active) ? '<button class="admin-floating-save" type="submit" form="invitation-editor"><span>✓</span> 저장</button>' : ""}</nav>`)}`;
 }
 
+// 사용설명서(guide.html)는 편집 화면 위에 전체 창으로 띄움. 닫아도 편집 중인 내용은 그대로 남고, 다시 열면 보던 위치에서 이어 봄
+function openAdminGuide() {
+  let layer = document.querySelector("[data-admin-guide-layer]");
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.className = "admin-guide-layer";
+    layer.dataset.adminGuideLayer = "";
+    layer.setAttribute("role", "dialog");
+    layer.setAttribute("aria-label", "사용설명서");
+    // 닫기 버튼은 설명서 고정 헤더 안에 있음(?embed=1) — 누르면 postMessage로 알려 줌
+    layer.innerHTML = `<iframe class="admin-guide-frame" src="./guide.html?embed=1&v=20261027-guide7" title="사용설명서"></iframe>`;
+    document.body.append(layer);
+    layer.querySelector("iframe").addEventListener("load", syncAdminGuideTheme);
+    window.addEventListener("message", (event) => {
+      if (event.origin !== location.origin || event.data?.type !== "admin-guide-close") return;
+      layer.hidden = true;
+      document.documentElement.classList.remove("has-admin-guide");
+    });
+  }
+  layer.hidden = false;
+  document.documentElement.classList.add("has-admin-guide");
+  syncAdminGuideTheme();
+}
+
+// 설명서 색을 지금 관리자 테마 색으로 맞춤 (열 때마다 — 그사이 테마를 바꿨을 수 있음). 빨간 번호는 캡처와 맞추려고 그대로 둠
+const ADMIN_GUIDE_THEME_VARS = { "--brown": "--accent-dark", "--brown-d": "--ink", "--beige": "--soft-bg", "--line": "--line", "--ink": "--ink", "--sub": "--muted" };
+function syncAdminGuideTheme() {
+  const root = document.querySelector(".admin-guide-frame")?.contentDocument?.documentElement;
+  if (!root) return;
+  const style = getComputedStyle(document.body);
+  Object.entries(ADMIN_GUIDE_THEME_VARS).forEach(([guideVar, adminVar]) => {
+    const value = style.getPropertyValue(adminVar).trim();
+    if (value) root.style.setProperty(guideVar, value);
+  });
+  // 배경은 관리자 화면과 같은 세 겹: 페이지 바탕, 카드, 위쪽 헤더
+  const header = document.querySelector(".general-admin-header");
+  const backgrounds = { "--page": style.backgroundColor, "--card": style.getPropertyValue("--card").trim(), "--bar": header && getComputedStyle(header).backgroundColor };
+  Object.entries(backgrounds).forEach(([guideVar, value]) => {
+    if (value && value !== "rgba(0, 0, 0, 0)" && value !== "transparent") root.style.setProperty(guideVar, value);
+  });
+}
+
 function bindAdminNavigation() {
+  document.querySelector("[data-admin-guide]")?.addEventListener("click", openAdminGuide);
   document.querySelector("#admin-logout")?.addEventListener("click", async (event) => {
     if (!confirmLeaveEditor()) { event.stopImmediatePropagation(); return; }
     const client = getAdminSupabaseClient();
@@ -2597,6 +2641,7 @@ function bindKakaoPreview() {
   adminApp.querySelector("[data-share-guest-copy]")?.addEventListener("click", (event) => copyLink(event.currentTarget, invitationLink(guestName?.value.trim() || "")));
   // 카카오톡으로 보내기: 청첩장 안의 공유 버튼과 같은 버튼 카드(청첩장 보기·위치 보기). 이름 칸 옆 버튼은 이름 넣은 링크로 보냄
   loadKakaoShare().catch(() => {});
+  const cardParam = slug && slug !== "main" && slug !== window.RSVP_STORAGE?.SITE_CARD_SLUG ? slug : "";
   const mapUrl = `${location.origin}/api/map${cardParam ? `?card=${encodeURIComponent(cardParam)}` : ""}`;
   adminApp.querySelectorAll("[data-share-kakao]").forEach((button) => button.addEventListener("click", async () => {
     const name = button.dataset.shareKakao === "guest" ? guestName?.value.trim() || "" : "";
